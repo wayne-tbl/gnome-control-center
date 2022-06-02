@@ -68,7 +68,7 @@ finish_setup (CEPage8021xSecurity *self, gpointer unused, GError *error, gpointe
 	if (error)
 		return;
 
-	self->group = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
+	self->group = gtk_size_group_new (GTK_SIZE_GROUP_VERTICAL);
 
 	self->security = nma_ws_802_1x_new (self->connection, FALSE, FALSE);
 	if (!self->security) {
