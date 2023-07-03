@@ -859,6 +859,7 @@ setup_power_saving (CcPowerPanel *self)
 
   setup_blank_screen_rows (self);
 
+#if 0
   /* The default values for these settings are unfortunate for us;
    * timeout == 0, action == suspend means 'do nothing' - just
    * as timout === anything, action == nothing.
@@ -897,6 +898,7 @@ setup_power_saving (CcPowerPanel *self)
 
       update_suspend_notice_visibility (self);
     }
+#endif
 }
 
 static const char *
