@@ -1,0 +1,126 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcCryptedPanel: $CcPanel {
+  child: Adw.ToastOverlay toast_overlay {
+    child: Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {
+        [end]
+        Switch enable_switch {
+          accessibility {
+            label: _("Enable Encryption");
+          }
+        }
+      }
+
+      content: Stack stack {
+        Adw.StatusPage encryption_unknown_page {
+          icon-name: "dialog-question-symbolic";
+          title: _("Unknown status");
+          description: _("Unable to determine encryption status");
+        }
+
+        Adw.StatusPage encryption_unsupported_page {
+          icon-name: "face-sad-symbolic";
+          title: _("Encryption unsupported");
+          description: _("Your device doesn't support disk encryption");
+        }
+
+        Adw.StatusPage encryption_unconfigured_page {
+          icon-name: "network-wireless-encrypted-symbolic";
+          title: _("Encryption has not been configured");
+          description: _("Keep your data at rest safe by enabling encryption");
+        }
+
+        Adw.PreferencesPage encryption_enable_page {
+          Adw.PreferencesGroup {
+            title: _("Enable encryption");
+            description: _("The passphrase will be used to unlock your device and will be asked at every boot");
+
+            Adw.PasswordEntryRow passphrase_entry {
+              title: _("Passphrase");
+              visible: false;
+            }
+
+            Adw.PasswordEntryRow passphrase_confirm_entry {
+              title: _("Passphrase (confirm)");
+              visible: false;
+            }
+
+            Adw.ActionRow {
+              subtitle: "Once enabled, you will not be able to disable encryption";
+
+              [suffix]
+              Button encryption_start_button {
+                icon-name: "object-select-symbolic";
+                valign: center;
+
+                styles [
+                  "suggested-action",
+                  "circular",
+                ]
+              }
+            }
+          }
+        }
+
+        Adw.PreferencesPage encryption_status_page {
+          Adw.PreferencesGroup {
+            title: _("Encryption");
+
+            Adw.ActionRow {
+              title: _("Status");
+
+              Spinner encryption_spinner {
+                spinning: true;
+
+                styles [
+                  "dim-label",
+                ]
+              }
+
+              Label encryption_status {
+                label: _("");
+
+                styles [
+                  "dim-label",
+                ]
+              }
+            }
+          }
+
+          Adw.PreferencesGroup {
+            title: _("Password");
+
+            Adw.PasswordEntryRow current_password_entry {
+              title: _("Current Password");
+              visible: false;
+            }
+
+            Adw.PasswordEntryRow new_password_entry {
+              title: _("New Password");
+              visible: false;
+            }
+
+            Adw.ActionRow {
+              subtitle: "Change your encryption password";
+
+              [suffix]
+              Button password_change_button {
+                icon-name: "object-select-symbolic";
+                valign: center;
+                visible: false;
+
+                styles [
+                  "suggested-action",
+                  "circular",
+                ]
+              }
+            }
+          }
+        }
+      };
+    };
+  };
+}

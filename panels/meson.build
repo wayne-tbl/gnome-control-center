@@ -10,6 +10,7 @@ panels = [
   'background',
   'color',
   'display',
+  'crypted',
   'mouse',
   'multitasking',
   'nfc',
