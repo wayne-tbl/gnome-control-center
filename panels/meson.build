@@ -10,6 +10,7 @@ panels = [
   'background',
   'color',
   'display',
+  'droidian-encryption',
   'mouse',
   'multitasking',
   'nfc',
