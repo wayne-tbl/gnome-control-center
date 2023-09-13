@@ -805,7 +805,7 @@ rebuild_ui (CcDisplayPanel *self)
         type = CC_DISPLAY_CONFIG_JOIN;
 
       gtk_widget_set_visible (self->display_settings_group, type == CC_DISPLAY_CONFIG_JOIN);
-      gtk_widget_set_visible (self->display_multiple_displays, TRUE);
+      gtk_widget_set_visible (self->display_multiple_displays, FALSE);
       gtk_widget_set_visible (self->arrangement_row, type == CC_DISPLAY_CONFIG_JOIN);
 
       if (type == CC_DISPLAY_CONFIG_CLONE)
