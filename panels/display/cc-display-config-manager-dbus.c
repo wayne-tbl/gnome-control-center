@@ -418,9 +418,10 @@ cc_display_config_manager_dbus_get_apply_allowed (CcDisplayConfigManager *pself)
 static gboolean
 cc_display_config_manager_dbus_get_night_light_supported (CcDisplayConfigManager *pself)
 {
-  CcDisplayConfigManagerDBus *self = CC_DISPLAY_CONFIG_MANAGER_DBUS (pself);
+//  CcDisplayConfigManagerDBus *self = CC_DISPLAY_CONFIG_MANAGER_DBUS (pself);
 
-  return self->night_light_supported;
+//  return self->night_light_supported;
+  return TRUE;
 }
 
 static void
