@@ -22,6 +22,7 @@ panels = [
   'system',
   'universal-access',
   'wellbeing',
+  'usb',
   'wwan',
 ]
 

@@ -1,0 +1,131 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcUsbPanel: $CcPanel {
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    content: Adw.Clamp {
+      child: ScrolledWindow {
+        child: Adw.PreferencesPage {
+          Adw.PreferencesGroup {
+            title: _("USB Settings");
+
+            Adw.ExpanderRow {
+              title: _("USB State");
+              subtitle: _("Choose the USB state");
+
+              Adw.ActionRow {
+                title: _("MTP");
+                subtitle: _("Transfer files to/from your device");
+
+                [suffix]
+                CheckButton usb_state_mtp {
+                  valign: center;
+                }
+              }
+
+              Adw.ActionRow {
+                title: _("RNDIS");
+                subtitle: _("Use your device as a network adapter");
+
+                [suffix]
+                CheckButton usb_state_rndis {
+                  valign: center;
+                  group: usb_state_mtp;
+                }
+              }
+
+              Adw.ActionRow {
+                title: _("None");
+                subtitle: _("No special USB functionality enabled");
+
+                [suffix]
+                CheckButton usb_state_none {
+                  valign: center;
+                  group: usb_state_mtp;
+                }
+              }
+            }
+          }
+
+          Adw.PreferencesGroup {
+            title: _("CD-ROM Settings");
+
+            Adw.ActionRow {
+              title: _("CD-ROM State");
+              subtitle: _("Mark the device as a CD-ROM to computers");
+              use-underline: true;
+
+              [suffix]
+              Switch cdrom_enabled_switch {
+                valign: center;
+
+                accessibility {
+                  label: _("Mark the device as a CD-ROM to computers");
+                }
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Select an ISO");
+              subtitle: _("ISO image to mount as CD-ROM");
+              use-underline: true;
+
+              [suffix]
+              Button iso_selection_switch {
+                label: _("Select file");
+                valign: center;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Selected image");
+              subtitle: _("Selected image file");
+              activatable: false;
+              use-underline: false;
+
+              [suffix]
+              Label iso_label {
+                valign: center;
+                ellipsize: end;
+                selectable: true;
+              }
+            }
+          }
+
+          Adw.PreferencesGroup {
+            title: _("USB Port Settings");
+
+            Adw.ExpanderRow {
+              title: _("USB Power Role");
+              subtitle: _("Choose the USB power role");
+
+              Adw.ActionRow {
+                title: _("Sink");
+                subtitle: _("Device receives power from the connected USB host");
+
+                [suffix]
+                CheckButton power_role_sink {
+                  valign: center;
+                }
+              }
+
+              Adw.ActionRow {
+                title: _("Source");
+                subtitle: _("Device provides power to the connected USB device");
+
+                [suffix]
+                CheckButton power_role_source {
+                  valign: center;
+                  group: power_role_sink;
+                }
+              }
+            }
+          }
+        };
+      };
+    };
+  };
+}
