@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="CcNfcPanel" parent="CcPanel">
+    <property name="child">
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwClamp">
+            <child>
+              <object class="GtkStack" id="stack">
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">content</property>
+                    <property name="child">
+                      <object class="GtkBox" id="content_box">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">12</property>
+                        <property name="margin-top">12</property>
+                        <property name="margin-bottom">12</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title" translatable="yes">NFC Settings</property>
+                            <child>
+                              <object class="AdwActionRow">
+                                <property name="title" translatable="yes">NFC State</property>
+                                <property name="subtitle" translatable="yes">Enable or disable NFC</property>
+                                <property name="activatable">false</property>
+                                <child>
+                                  <object class="GtkSwitch" id="nfc_enabled_switch">
+                                    <property name="valign">center</property>
+                                    <property name="visible">true</property>
+                                    <accessibility>
+                                      <property name="label" translatable="yes">Enable NFC Server</property>
+                                    </accessibility>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">status</property>
+                    <property name="child">
+                      <object class="AdwStatusPage" id="status_page">
+                        <property name="icon-name">dialog-warning-symbolic</property>
+                        <property name="title" translatable="yes">NFC Unavailable</property>
+                        <property name="description" translatable="yes">NFC is not available right now</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>
