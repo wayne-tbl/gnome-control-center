@@ -11,6 +11,7 @@ panels = [
   'display',
   'mouse',
   'multitasking',
+  'nfc',
   'notifications',
   'online-accounts',
   'power',
