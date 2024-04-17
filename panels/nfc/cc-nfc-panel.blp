@@ -1,0 +1,54 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcNfcPanel: $CcPanel {
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    content: Adw.Clamp {
+      child: Stack stack {
+        StackPage {
+          name: "content";
+          child: Box content_box {
+            orientation: vertical;
+            spacing: 12;
+            margin-top: 12;
+            margin-bottom: 12;
+            margin-start: 12;
+            margin-end: 12;
+
+            Adw.PreferencesGroup {
+              title: _("NFC Settings");
+
+              Adw.ActionRow {
+                title: _("NFC State");
+                subtitle: _("Enable or disable NFC");
+                activatable: false;
+
+                [suffix]
+                Switch nfc_enabled_switch {
+                  valign: center;
+                  visible: true;
+
+                  accessibility {
+                    label: _("Enable NFC Server");
+                  }
+                }
+              }
+            }
+          };
+        }
+
+        StackPage {
+          name: "status";
+          child: Adw.StatusPage status_page {
+            icon-name: "dialog-warning-symbolic";
+            title: _("NFC Unavailable");
+            description: _("NFC is not available right now");
+          };
+        }
+      };
+    };
+  };
+}
