@@ -393,6 +393,7 @@ static const gchar * const panel_order[] = {
   "keyboard",
   "color",
   "usb",
+  "nfc",
   "printers",
   "wacom",
 
