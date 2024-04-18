@@ -52,6 +52,7 @@ extern GType cc_online_accounts_panel_get_type (void);
 extern GType cc_power_panel_get_type (void);
 extern GType cc_printers_panel_get_type (void);
 extern GType cc_privacy_panel_get_type (void);
+extern GType cc_andromeda_panel_get_type (void);
 extern GType cc_usb_panel_get_type (void);
 extern GType cc_search_panel_get_type (void);
 extern GType cc_sharing_panel_get_type (void);
@@ -109,6 +110,7 @@ static CcPanelLoaderVtable default_panels[] =
   PANEL_TYPE("printers",         cc_printers_panel_get_type,             NULL),
   PANEL_TYPE("privacy",          cc_privacy_panel_get_type,              NULL),
 //  PANEL_TYPE("search",           cc_search_panel_get_type,               NULL),
+  PANEL_TYPE("andromeda",         cc_andromeda_panel_get_type,             NULL),
   PANEL_TYPE("usb",              cc_usb_panel_get_type,                  NULL),
   PANEL_TYPE("sharing",          cc_sharing_panel_get_type,              cc_sharing_panel_static_init_func),
   PANEL_TYPE("sound",            cc_sound_panel_get_type,                NULL),
