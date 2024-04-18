@@ -1,0 +1,147 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcFingerprintPanel: $CcPanel {
+  child: Adw.ToastOverlay toast_overlay {
+    child: Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {}
+
+      content: Adw.BottomSheet bottom_sheet {
+        can-open: true;
+        modal: true;
+        open: false;
+
+        content: Adw.Clamp {
+          child: ScrolledWindow {
+            hscrollbar-policy: never;
+            min-content-height: 400;
+            vexpand: true;
+
+            child: Box {
+              orientation: vertical;
+              spacing: 24;
+              margin-top: 24;
+              margin-bottom: 24;
+              margin-start: 24;
+              margin-end: 24;
+
+              Adw.PreferencesGroup {
+                title: _("Registered Fingerprints");
+
+                ListBox finger_list {
+                  name: "finger_list";
+                  selection-mode: none;
+
+                  styles [
+                    "boxed-list",
+                  ]
+                }
+              }
+            };
+          };
+        };
+
+        sheet: Stack enroll_stack {
+          transition-type: slide_left_right;
+          transition-duration: 300;
+
+          StackPage {
+            name: "select_finger_step";
+            child: ScrolledWindow select_finger_step {
+              hscrollbar-policy: never;
+              min-content-height: 400;
+              vexpand: true;
+              propagate-natural-height: true;
+
+              child: Box {
+                orientation: vertical;
+                spacing: 12;
+                margin-top: 40;
+                margin-bottom: 24;
+                margin-start: 24;
+                margin-end: 24;
+
+                Label title {
+                  valign: start;
+                  label: _("Register New Finger");
+                  justify: center;
+                  wrap: true;
+
+                  styles [
+                    "title-2",
+                  ]
+                }
+
+                ListBox unenrolled_finger_list {
+                  selection-mode: none;
+                  margin-top: 8;
+
+                  styles [
+                    "boxed-list",
+                  ]
+                }
+              };
+            };
+          }
+
+          StackPage {
+            name: "enroll_step";
+            child: ScrolledWindow enroll_step {
+              hscrollbar-policy: never;
+              min-content-height: 400;
+              vexpand: true;
+              propagate-natural-height: true;
+
+              child: Box {
+                orientation: vertical;
+                spacing: 12;
+                margin-top: 40;
+                margin-bottom: 24;
+                margin-start: 24;
+                margin-end: 24;
+
+                Label enroll_finger_title {
+                  valign: start;
+                  label: _("Registering Fingerprint");
+                  justify: center;
+                  wrap: true;
+
+                  styles [
+                    "title-2",
+                  ]
+                }
+
+                Label {
+                  valign: start;
+                  label: _("Repeatedly tap your finger against the power button.");
+                  wrap: true;
+                }
+
+                Overlay fingerprint_overlay {
+                  halign: center;
+
+                  child: Image fingerprint_image {
+                    pixel-size: 256;
+                    icon-name: "fingerprint-detection-symbolic";
+                    margin-bottom: 24;
+                  };
+
+                  [overlay]
+                  ProgressBar enroll_progress {
+                    visible: false;
+                    valign: end;
+
+                    styles [
+                      "osd",
+                    ]
+                  }
+                }
+              };
+            };
+          }
+        };
+      };
+    };
+  };
+}
