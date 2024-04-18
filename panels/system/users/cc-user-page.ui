@@ -147,6 +147,7 @@
                         <property name="title" translatable="yes">_Administrator</property>
                         <property name="subtitle-lines">0</property>
                         <property name="use_underline">True</property>
+                        <property name="visible">FALSE</property>
                         <child type="suffix">
                           <object class="CcListRowInfoButton">
                             <property name="valign">center</property>
