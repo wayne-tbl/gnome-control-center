@@ -11,6 +11,7 @@ panels = [
   'color',
   'display',
   'crypted',
+  'fingerprint',
   'mouse',
   'multitasking',
   'nfc',
