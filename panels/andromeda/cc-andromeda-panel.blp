@@ -1,0 +1,236 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcAndromedaPanel: $CcPanel {
+  child: Adw.ToastOverlay toast_overlay {
+    child: Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {
+        [end]
+        Box {}
+      }
+
+      content: Adw.BottomSheet bottom_sheet {
+        can-open: true;
+        modal: true;
+        open: false;
+
+        content: Adw.Clamp {
+          child: ScrolledWindow {
+            child: Adw.PreferencesPage {
+              Adw.PreferencesGroup {
+                title: _("Android App Settings");
+
+                Adw.ActionRow {
+                  title: _("Android");
+                  subtitle: _("Start Android Container");
+                  use-underline: true;
+
+                  [suffix]
+                  Switch andromeda_enabled_switch {
+                    valign: center;
+
+                    accessibility {
+                      label: _("Enabled");
+                    }
+                  }
+                }
+
+                Adw.ActionRow {
+                  title: _("Auto start");
+                  subtitle: _("Auto start the Android Container");
+                  use-underline: true;
+
+                  [suffix]
+                  Switch andromeda_autostart_switch {
+                    valign: center;
+
+                    accessibility {
+                      label: _("Enabled");
+                    }
+                  }
+                }
+
+                Adw.ActionRow {
+                  title: _("Shared Folder");
+                  subtitle: _("Enable shared folder between guest and host");
+                  use-underline: true;
+
+                  [suffix]
+                  Switch andromeda_shared_folder_switch {
+                    valign: center;
+
+                    accessibility {
+                      label: _("Enabled");
+                    }
+                  }
+                }
+
+                Adw.ActionRow {
+                  title: _("NFC Access");
+                  subtitle: _("Allow access to NFC inside the container");
+                  use-underline: true;
+
+                  [suffix]
+                  Switch andromeda_nfc_switch {
+                    valign: center;
+
+                    accessibility {
+                      label: _("Enabled");
+                    }
+                  }
+                }
+
+                Adw.ActionRow {
+                  title: _("Notification");
+                  subtitle: _("Enable notification passthrough from guest to host");
+                  use-underline: true;
+
+                  [suffix]
+                  Switch andromeda_notification_switch {
+                    valign: center;
+
+                    accessibility {
+                      label: _("Enabled");
+                    }
+                  }
+                }
+
+                Adw.ActionRow {
+                  title: _("Android IP");
+                  subtitle: _("IP Address of Android");
+                  activatable: false;
+                  use-underline: false;
+
+                  [suffix]
+                  Label andromeda_ip_label {
+                    valign: center;
+                    ellipsize: end;
+                    selectable: true;
+                  }
+                }
+
+                Adw.ActionRow {
+                  title: _("Android OS version");
+                  subtitle: _("Android LineageOS version");
+                  activatable: false;
+                  use-underline: false;
+
+                  [suffix]
+                  Label andromeda_version_label {
+                    valign: center;
+                    ellipsize: end;
+                    selectable: true;
+                  }
+                }
+
+                Adw.ExpanderRow app_selector {
+                  title: _("Installed Apps");
+                  subtitle: _("Expand to see installed Android apps");
+                  expanded: false;
+                  enable-expansion: true;
+                }
+
+                FlowBox {
+                  orientation: horizontal;
+                  row-spacing: 10;
+                  column-spacing: 10;
+                  homogeneous: true;
+                  max-children-per-line: 4;
+                  min-children-per-line: 1;
+                  margin-top: 10;
+                  margin-bottom: 10;
+
+                  Button store_button {
+                    child: Label {
+                      label: _("Software Store");
+                      wrap: false;
+                      ellipsize: none;
+                    };
+                  }
+
+                  Button install_app_button {
+                    child: Label {
+                      label: _("Install");
+                      wrap: false;
+                      ellipsize: end;
+                    };
+                  }
+
+                  Button refresh_app_list_button {
+                    child: Label {
+                      label: _("Refresh");
+                      wrap: false;
+                      ellipsize: end;
+                    };
+                  }
+
+                  Button factory_reset_button {
+                    child: Label {
+                      label: _("Wipe data");
+                      wrap: false;
+                      ellipsize: end;
+                    };
+                  }
+                }
+              }
+            };
+          };
+        };
+
+        sheet: Box {
+          orientation: vertical;
+          spacing: 12;
+          margin-top: 40;
+          margin-bottom: 24;
+          margin-start: 24;
+          margin-end: 24;
+
+          Button launch_app_button {
+            child: Label {
+              label: _("Launch");
+              wrap: false;
+              ellipsize: none;
+            };
+          }
+
+          Button remove_app_button {
+            styles [
+              "destructive-action",
+            ]
+
+            child: Label {
+              label: _("Remove");
+              wrap: false;
+              ellipsize: none;
+            };
+          }
+
+          Button clear_app_data_button {
+            styles [
+              "destructive-action",
+            ]
+
+            child: Label {
+              label: _("Clear app data");
+              wrap: false;
+              ellipsize: none;
+            };
+          }
+
+          Button kill_app_button {
+            styles [
+              "destructive-action",
+            ]
+
+            child: Label {
+              label: _("Kill app");
+              wrap: false;
+              ellipsize: none;
+            };
+          }
+        };
+      };
+    };
+  };
+}
