@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="CcAndromedaPanel" parent="CcPanel">
+
+    <property name="child">
+      <object class="AdwToastOverlay" id="toast_overlay">
+        <child>
+          <object class="AdwToolbarView">
+
+            <child type="top">
+              <object class="AdwHeaderBar">
+                <child type="end">
+                </child>
+              </object>
+            </child>
+
+            <property name="content">
+              <object class="AdwBottomSheet" id="bottom_sheet">
+                <property name="can-open">True</property>
+                <property name="modal">True</property>
+                <property name="open">False</property>
+
+                <property name="content">
+                  <object class="AdwClamp">
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <child>
+                          <object class="AdwPreferencesPage">
+
+                            <child>
+                              <object class="AdwPreferencesGroup">
+                                <property name="title" translatable="yes">Android App Settings</property>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">Android</property>
+                                    <property name="subtitle" translatable="yes">Start Android Container</property>
+                                    <property name="use-underline">true</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="andromeda_enabled_switch">
+                                        <property name="valign">center</property>
+                                        <accessibility>
+                                          <property name="label" translatable="yes">Enabled</property>
+                                        </accessibility>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">Auto start</property>
+                                    <property name="subtitle" translatable="yes">Auto start the Android Container</property>
+                                    <property name="use-underline">true</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="andromeda_autostart_switch">
+                                        <property name="valign">center</property>
+                                        <accessibility>
+                                          <property name="label" translatable="yes">Enabled</property>
+                                        </accessibility>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">Shared Folder</property>
+                                    <property name="subtitle" translatable="yes">Enable shared folder between guest and host</property>
+                                    <property name="use-underline">true</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="andromeda_shared_folder_switch">
+                                        <property name="valign">center</property>
+                                        <accessibility>
+                                          <property name="label" translatable="yes">Enabled</property>
+                                        </accessibility>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">NFC Access</property>
+                                    <property name="subtitle" translatable="yes">Allow access to NFC inside the container</property>
+                                    <property name="use-underline">true</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="andromeda_nfc_switch">
+                                        <property name="valign">center</property>
+                                        <accessibility>
+                                          <property name="label" translatable="yes">Enabled</property>
+                                        </accessibility>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">Notification</property>
+                                    <property name="subtitle" translatable="yes">Enable notification passthrough from guest to host</property>
+                                    <property name="use-underline">true</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="andromeda_notification_switch">
+                                        <property name="valign">center</property>
+                                        <accessibility>
+                                          <property name="label" translatable="yes">Enabled</property>
+                                        </accessibility>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">Android IP</property>
+                                    <property name="subtitle" translatable="yes">IP Address of Android</property>
+                                    <property name="activatable">false</property>
+                                    <property name="use-underline">false</property>
+                                    <child>
+                                      <object class="GtkLabel" id="andromeda_ip_label">
+                                        <property name="valign">center</property>
+                                        <property name="ellipsize">end</property>
+                                        <property name="selectable">true</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">Android OS version</property>
+                                    <property name="subtitle" translatable="yes">Android LineageOS version</property>
+                                    <property name="activatable">false</property>
+                                    <property name="use-underline">false</property>
+                                    <child>
+                                      <object class="GtkLabel" id="andromeda_version_label">
+                                        <property name="valign">center</property>
+                                        <property name="ellipsize">end</property>
+                                        <property name="selectable">true</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwExpanderRow" id="app_selector">
+                                    <property name="title" translatable="yes">Installed Apps</property>
+                                    <property name="subtitle" translatable="yes">Expand to see installed Android apps</property>
+                                    <property name="expanded">false</property>
+                                    <property name="enable-expansion">true</property>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="GtkFlowBox">
+                                    <property name="orientation">horizontal</property>
+                                    <property name="row-spacing">10</property>
+                                    <property name="column-spacing">10</property>
+                                    <property name="homogeneous">TRUE</property>
+                                    <property name="max-children-per-line">4</property>
+                                    <property name="min-children-per-line">1</property>
+
+                                    <property name="margin-top">10</property>
+                                    <property name="margin-bottom">10</property>
+
+                                    <child>
+                                      <object class="GtkButton" id="store_button">
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label" translatable="yes">Software Store</property>
+                                            <property name="wrap">FALSE</property>
+                                            <property name="ellipsize">none</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+
+                                    <child>
+                                      <object class="GtkButton" id="install_app_button">
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label" translatable="yes">Install</property>
+                                            <property name="wrap">FALSE</property>
+                                            <property name="ellipsize">end</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+
+                                    <child>
+                                      <object class="GtkButton" id="refresh_app_list_button">
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label" translatable="yes">Refresh</property>
+                                            <property name="wrap">FALSE</property>
+                                            <property name="ellipsize">end</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+
+                                    <child>
+                                      <object class="GtkButton" id="factory_reset_button">
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label" translatable="yes">Wipe data</property>
+                                            <property name="wrap">FALSE</property>
+                                            <property name="ellipsize">end</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+
+                <property name="sheet">
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">12</property>
+                    <property name="margin-top">40</property>
+                    <property name="margin-bottom">24</property>
+                    <property name="margin-start">24</property>
+                    <property name="margin-end">24</property>
+
+                    <child>
+                      <object class="GtkButton" id="launch_app_button">
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Launch</property>
+                            <property name="wrap">FALSE</property>
+                            <property name="ellipsize">none</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkButton" id="remove_app_button">
+                        <property name="css-classes">destructive-action</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Remove</property>
+                            <property name="wrap">FALSE</property>
+                            <property name="ellipsize">none</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkButton" id="clear_app_data_button">
+                        <property name="css-classes">destructive-action</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Clear app data</property>
+                            <property name="wrap">FALSE</property>
+                            <property name="ellipsize">none</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkButton" id="kill_app_button">
+                        <property name="css-classes">destructive-action</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Kill app</property>
+                            <property name="wrap">FALSE</property>
+                            <property name="ellipsize">none</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                  </object>
+                </property>
+
+              </object>
+            </property>
+
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>
