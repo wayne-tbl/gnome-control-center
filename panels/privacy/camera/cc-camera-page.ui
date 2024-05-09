@@ -26,6 +26,7 @@
               <object class="AdwPreferencesGroup">
                 <property name="title" translatable="yes">Permitted Apps</property>
                 <property name="description" translatable="yes">The following sandboxed apps have been given permission to use cameras. Apps that are not sandboxed can use cameras without asking for permission.</property>
+                <property name="visible">FALSE</property>
                 <child>
                   <object class="GtkListBox" id="camera_apps_list_box">
                     <property name="selection-mode">none</property>
