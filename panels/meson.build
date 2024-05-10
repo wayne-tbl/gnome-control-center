@@ -13,6 +13,7 @@ panels = [
   'display',
   'droidian-encryption',
   'fingerprint',
+  'gps',
   'mouse',
   'multitasking',
   'nfc',
