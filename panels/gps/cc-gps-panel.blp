@@ -1,0 +1,40 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcGpsPanel: $CcPanel {
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    content: Adw.Clamp {
+      child: ScrolledWindow {
+        child: Adw.PreferencesPage {
+          Adw.PreferencesGroup {
+            title: _("GPS Settings");
+
+            Adw.ActionRow {
+              title: _("SUPL Server");
+              subtitle: _("SUPL Server will speed up GPS recognition");
+              use-underline: true;
+
+              [suffix]
+              Switch gps_supl_enabled_switch {
+                valign: center;
+
+                accessibility {
+                  label: _("Enable GPS Server");
+                }
+              }
+            }
+
+            Adw.EntryRow supl_server_url_entry {
+              title: _("SUPL Server URL");
+              activatable: true;
+              selectable: true;
+            }
+          }
+        };
+      };
+    };
+  };
+}
