@@ -13,6 +13,7 @@ panels = [
   'display',
   'crypted',
   'fingerprint',
+  'gps',
   'mouse',
   'multitasking',
   'nfc',
