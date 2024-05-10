@@ -396,6 +396,7 @@ static const gchar * const panel_order[] = {
   "andromeda",
   "usb",
   "nfc",
+  "gps",
   "crypted",
   "fingerprint",
   "printers",

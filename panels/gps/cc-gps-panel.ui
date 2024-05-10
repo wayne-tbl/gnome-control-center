@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="CcGpsPanel" parent="CcPanel">
+    <property name="child">
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwClamp">
+            <child>
+              <object class="GtkScrolledWindow">
+                <child>
+                  <object class="AdwPreferencesPage">
+                    <child>
+                      <object class="AdwPreferencesGroup">
+                        <property name="title" translatable="yes">GPS Settings</property>
+
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">SUPL Server</property>
+                            <property name="subtitle" translatable="yes">SUPL Server will speed up GPS recognition</property>
+                            <property name="use-underline">true</property>
+                            <child>
+                              <object class="GtkSwitch" id="gps_supl_enabled_switch">
+                                <property name="valign">center</property>
+                                <accessibility>
+                                  <property name="label" translatable="yes">Enable GPS Server</property>
+                                 </accessibility>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="AdwEntryRow" id="supl_server_url_entry">
+                            <property name="title" translatable="yes">SUPL Server URL</property>
+                            <property name="activatable">true</property>
+                            <property name="selectable">true</property>
+                          </object>
+                        </child>
+
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>
