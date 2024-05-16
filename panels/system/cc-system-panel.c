@@ -47,6 +47,7 @@ struct _CcSystemPanel
 
   CcSecureShellPage *secure_shell_dialog;
   AdwNavigationPage *software_updates_group;
+  AdwNavigationPage *reboot_recovery_group;
 };
 
 CC_PANEL_REGISTER (CcSystemPanel, cc_system_panel)
@@ -119,6 +120,13 @@ cc_system_page_open_software_update (CcSystemPanel *self)
 }
 
 static void
+cc_system_page_reboot_recovery (CcSystemPanel *self)
+{
+  gchar *argv[] = {"pkexec", "/usr/sbin/reboot", "-f", "recovery", NULL};
+  g_spawn_async (NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, NULL, NULL);
+}
+
+static void
 on_secure_shell_row_clicked (CcSystemPanel *self)
 {
   if (self->secure_shell_dialog == NULL)
@@ -144,8 +152,10 @@ cc_system_panel_class_init (CcSystemPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcSystemPanel, remote_desktop_row);
   gtk_widget_class_bind_template_child (widget_class, CcSystemPanel, users_row);
   gtk_widget_class_bind_template_child (widget_class, CcSystemPanel, software_updates_group);
+  gtk_widget_class_bind_template_child (widget_class, CcSystemPanel, reboot_recovery_group);
 
   gtk_widget_class_bind_template_callback (widget_class, cc_system_page_open_software_update);
+  gtk_widget_class_bind_template_callback (widget_class, cc_system_page_reboot_recovery);
   gtk_widget_class_bind_template_callback (widget_class, on_secure_shell_row_clicked);
 
   g_type_ensure (CC_TYPE_ABOUT_PAGE);
@@ -164,6 +174,7 @@ cc_system_panel_init (CcSystemPanel *self)
   gtk_widget_init_template (GTK_WIDGET (self));
 
   gtk_widget_set_visible (GTK_WIDGET (self->software_updates_group), show_software_updates_group (self));
+  gtk_widget_set_visible (GTK_WIDGET (self->reboot_recovery_group), TRUE);
 
   cc_panel_add_static_subpage (CC_PANEL (self), "about", CC_TYPE_ABOUT_PAGE);
   cc_panel_add_static_subpage (CC_PANEL (self), "datetime", CC_TYPE_DATE_TIME_PAGE);

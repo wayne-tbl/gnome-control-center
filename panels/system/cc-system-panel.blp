@@ -85,6 +85,24 @@ template $CcSystemPanel: $CcPanel {
             }
           }
         }
+
+        Adw.PreferencesGroup reboot_recovery_group {
+          visible: false;
+
+          Adw.ActionRow {
+            activatable: true;
+            title: _("Reboot to recovery");
+            icon-name: "restart-symbolic";
+            use-underline: true;
+            activated => $cc_system_page_reboot_recovery(template);
+
+            [suffix]
+            Image {
+              valign: center;
+              icon-name: "adw-external-link-symbolic";
+            }
+          }
+        }
       };
     };
   }
