@@ -37,6 +37,7 @@
     <file preprocess="xml-stripblanks">icons/scalable/status/fingerprint-detection-complete-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/fingerprint-detection-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/fingerprint-detection-warning-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/restart-symbolic.svg</file>
   </gresource>
 
 </gresources>

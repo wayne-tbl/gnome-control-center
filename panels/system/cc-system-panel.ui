@@ -105,6 +105,28 @@
                     </child>
                   </object>
                 </child>
+
+                <!-- Reboot to recovery -->
+                <child>
+                  <object class="AdwPreferencesGroup" id="reboot_recovery_group">
+                    <property name="visible">False</property>
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="activatable">True</property>
+                        <property name="title" translatable="yes">Reboot to recovery</property>
+                        <property name="icon-name">restart-symbolic</property>
+                        <property name="use-underline">True</property>
+                        <signal name="activated" handler="cc_system_page_reboot_recovery" swapped="yes"/>
+                        <child type="suffix">
+                          <object class="GtkImage">
+                            <property name="valign">center</property>
+                            <property name="icon-name">adw-external-link-symbolic</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
             </property>
 
