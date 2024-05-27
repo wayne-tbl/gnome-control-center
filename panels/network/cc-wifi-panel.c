@@ -232,6 +232,17 @@ add_wifi_device (CcWifiPanel *self,
 {
   GtkWidget *header_widget;
   NetDeviceWifi *net_device;
+  const char *iface;
+
+  iface = nm_device_get_iface(device);
+
+  /* Check if the interface is "ap0" or "p2p0" and ignore it */
+  if (g_strcmp0 (iface, "ap0") == 0 || g_strcmp0 (iface, "p2p0") == 0) {
+    g_debug ("Ignoring device with interface: %s", iface);
+    return;
+  }
+
+  g_debug ("Adding device with interface: %s", iface);
 
   /* Create the NetDevice */
   net_device = net_device_wifi_new (CC_PANEL (self),
