@@ -185,8 +185,18 @@ wifi_panel_update_qr_image_cb (CcWifiPanel *self)
 
   child  = NET_DEVICE_WIFI (gtk_stack_get_visible_child (self->stack));
   device = net_device_wifi_get_device (child);
-  hotspot = wifi_device_get_hotspot (self, device);
 
+  const GPtrArray *devices = nm_client_get_devices (self->client);
+  for (guint i = 0; i < devices->len; i++) {
+    NMDevice *ap_device = g_ptr_array_index (devices, i);
+    const char *iface = nm_device_get_iface (ap_device);
+    if (g_strcmp0 (iface, "ap0") == 0) {
+      device = g_object_ref (ap_device);
+      break;
+    }
+  }
+
+  hotspot = wifi_device_get_hotspot (self, device);
   if (hotspot)
     {
       g_autofree gchar *str = NULL;
@@ -239,6 +249,10 @@ add_wifi_device (CcWifiPanel *self,
   /* Check if the interface is "ap0" or "p2p0" and ignore it */
   if (g_strcmp0 (iface, "ap0") == 0 || g_strcmp0 (iface, "p2p0") == 0) {
     g_debug ("Ignoring device with interface: %s", iface);
+    g_signal_connect_object (device, "state-changed",
+                             G_CALLBACK (wifi_panel_update_qr_image_cb),
+                             self,
+                             G_CONNECT_SWAPPED);
     return;
   }
 
