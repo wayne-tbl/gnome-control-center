@@ -187,6 +187,11 @@ device_is_hotspot (NetDeviceWifi *self)
         gboolean is_shared = connection_is_shared (c);
         g_debug ("Connection for device %s is %sshared.", device_name, is_shared ? "" : "not ");
 
+        if (is_shared)
+                gtk_widget_set_sensitive (GTK_WIDGET (self->hotspot_row), FALSE);
+        else
+                gtk_widget_set_sensitive (GTK_WIDGET (self->hotspot_row), TRUE);
+
         return is_shared;
 }
 
