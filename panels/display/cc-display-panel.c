@@ -34,6 +34,7 @@
 #include "cc-display-config.h"
 #include "cc-display-arrangement.h"
 #include "cc-night-light-page.h"
+#include "cc-display-customization.h"
 #include "cc-display-resources.h"
 #include "cc-display-settings.h"
 
@@ -79,6 +80,9 @@ struct _CcDisplayPanel
 
   CcNightLightPage *night_light_page;
   CcListRow        *night_light_row;
+
+  CcDisplayCustomization *display_customization_page;
+  CcListRow              *display_customization_row;
 
   UpClient *up_client;
   gboolean lid_is_closed;
@@ -578,6 +582,7 @@ cc_display_panel_class_init (CcDisplayPanelClass *klass)
 
   g_type_ensure (CC_TYPE_LIST_ROW);
   g_type_ensure (CC_TYPE_NIGHT_LIGHT_PAGE);
+  g_type_ensure (CC_TYPE_DISPLAY_CUSTOMIZATION);
 
   panel_class->get_help_uri = cc_display_panel_get_help_uri;
 
@@ -610,6 +615,8 @@ cc_display_panel_class_init (CcDisplayPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, night_light_page);
   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, night_light_row);
   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, primary_display_row);
+  gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, display_customization_page);
+  gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, display_customization_row);
   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, single_display_settings_group);
 
   gtk_widget_class_bind_template_callback (widget_class, apply_current_configuration);

@@ -157,6 +157,20 @@
                   </object>
                 </child>
 
+                <!-- Display Customization -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <child>
+                      <object class="CcListRow" id="display_customization_row">
+                        <property name="title" translatable="yes" comments="Display customization over PQ">_Display Customization</property>
+                        <property name="show-arrow">True</property>
+                        <property name="action-name">navigation.push</property>
+                        <property name="action-target">'display-customization'</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
               </object>
             </property>
           </object>
@@ -220,6 +234,69 @@
             <!-- Night Light -->
             <property name="content">
               <object class="CcNightLightPage" id="night_light_page" />
+            </property>
+
+          </object>
+        </property>
+      </object>
+    </child>
+
+    <!-- Display Customization page -->
+    <child type="subpage">
+      <object class="AdwNavigationPage">
+        <property name="tag">display-customization</property>
+        <property name="title" translatable="yes">Display Customization</property>
+        <property name="child">
+          <object class="AdwToolbarView">
+
+            <child type="top">
+              <object class="AdwHeaderBar">
+                <property name="visible" bind-source="CcDisplayPanel" bind-property="showing-apply-titlebar" bind-flags="sync-create"/>
+                <property name="show-start-title-buttons">False</property>
+                <property name="show-end-title-buttons">False</property>
+
+                <child type="start">
+                  <object class="GtkButton">
+                    <property name="use-underline">True</property>
+                    <property name="label" translatable="yes">_Cancel</property>
+                    <property name="can-shrink">True</property>
+                    <signal name="clicked" handler="cancel_current_configuration" object="CcDisplayPanel" swapped="yes" />
+                  </object>
+                </child>
+
+                <property name="title-widget">
+                  <object class="AdwWindowTitle">
+                    <property name="title" bind-source="apply_titlebar_title_widget" bind-property="title" bind-flags="sync-create"/>
+                    <property name="subtitle" bind-source="apply_titlebar_title_widget" bind-property="subtitle" bind-flags="sync-create"/>
+                  </object>
+                </property>
+
+                <child type="end">
+                  <object class="GtkButton">
+                    <property name="use-underline">True</property>
+                    <property name="label" translatable="yes">_Apply</property>
+                    <property name="can-shrink">True</property>
+                    <signal name="clicked" handler="apply_current_configuration" object="CcDisplayPanel" swapped="yes" />
+                    <property name="sensitive" bind-source="apply_button" bind-property="sensitive" bind-flags="sync-create"/>
+                    <style>
+                      <class name="suggested-action" />
+                    </style>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+            <!-- Display Customization titlebar -->
+            <child type="top"> 
+              <object class="AdwHeaderBar" id="display_customization_titlebar">
+                <property name="visible" bind-source="CcDisplayPanel" bind-property="showing-apply-titlebar" bind-flags="sync-create|invert-boolean"/>
+              </object>
+            </child>
+
+            <!-- Display Customization -->
+            <property name="content">
+              <object class="CcDisplayCustomization" id="display_customization_page" />
             </property>
 
           </object>
