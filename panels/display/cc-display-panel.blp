@@ -119,6 +119,15 @@ template $CcDisplayPanel: $CcPanel {
         }
 
         Adw.PreferencesGroup {
+          $CcListRow display_customization_row {
+            title: _("_Display Customization");
+            show-arrow: true;
+            action-name: "navigation.push";
+            action-target: "'display-customization'";
+          }
+        }
+
+        Adw.PreferencesGroup {
           Adw.SwitchRow wake_gesture_row {
             title: _("Wake Gesture");
             subtitle: _("Enable or disable wake gesture sensor");
@@ -241,6 +250,54 @@ template $CcDisplayPanel: $CcPanel {
           Adw.Bin display_settings_bin {}
         }
       };
+    };
+  }
+
+  [subpage]
+  Adw.NavigationPage {
+    tag: "display-customization";
+    title: _("Display Customization");
+
+    child: Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {
+        visible: bind template.showing-apply-titlebar;
+        show-start-title-buttons: false;
+        show-end-title-buttons: false;
+
+        [start]
+        Button {
+          use-underline: true;
+          label: _("_Cancel");
+          can-shrink: true;
+          clicked => $cancel_current_configuration(template);
+        }
+
+        title-widget: Adw.WindowTitle {
+          title: bind apply_titlebar_title_widget.title;
+          subtitle: bind apply_titlebar_title_widget.subtitle;
+        };
+
+        [end]
+        Button {
+          use-underline: true;
+          label: _("_Apply");
+          can-shrink: true;
+          clicked => $apply_current_configuration(template);
+          sensitive: bind apply_button.sensitive;
+
+          styles [
+            "suggested-action",
+          ]
+        }
+      }
+
+      [top]
+      Adw.HeaderBar display_customization_titlebar {
+        visible: bind template.showing-apply-titlebar inverted;
+      }
+
+      content: $CcDisplayCustomization display_customization_page {};
     };
   }
 }
