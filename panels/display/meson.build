@@ -19,6 +19,7 @@ sources = files(
   'cc-display-config-manager.c',
   'cc-display-settings.c',
   'cc-night-light-page.c',
+  'cc-display-customization.c'
 )
 
 sources += gnome.compile_resources(

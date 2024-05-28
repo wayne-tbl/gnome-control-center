@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="CcDisplayCustomization" parent="CcPanel">
+    <property name="child">
+      <object class="AdwToolbarView">
+
+        <property name="content">
+          <object class="AdwPreferencesPage">
+
+            <child>
+              <object class="AdwPreferencesGroup">
+                <child>
+                  <object class="AdwPreferencesRow">
+                    <property name="activatable">False</property>
+                    <property name="focusable">False</property>
+                    <property name="overflow">hidden</property>
+                    <style>
+                      <class name="customization-preview-wrap" />
+                    </style>
+                    <child>
+                      <object class="GtkPicture">
+                        <property name="keep-aspect-ratio">true</property>
+                        <property name="content-fit">cover</property>
+                        <property name="height-request">250</property>
+                        <property name="file">resource:///org/gnome/control-center/display/customization-preview-01.jpg</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <child>
+              <object class="AdwPreferencesGroup">
+
+                <!-- SetPQMode -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">PQ Mode</property>
+                    <property name="subtitle" translatable="yes">Enable vivid screen mode</property>
+                    <child>
+                      <object class="GtkSwitch" id="pq_mode_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Set PQ Mode</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureDisplayColor -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Display Color</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Display Color feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="display_color_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Display Color</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureContentColor -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Content Color</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Content Color feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="content_color_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Content Color</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureContentColorVideo -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Content Color Video</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Content Color Video feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="content_color_video_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Content Color Video</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureSharpness -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Sharpness</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Sharpness feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="sharpness_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Sharpness</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureDynamicContrast -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Dynamic Contrast</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Dynamic Contrast feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="dynamic_contrast_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Dynamic Contrast</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureDynamicSharpness -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Dynamic Sharpness</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Dynamic Sharpness feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="dynamic_sharpness_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Dynamic Sharpness</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureDisplayCCorr -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Display CCorr</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Display CCorr feature</property>
+                    <property name="visible">FALSE</property>
+                    <child>
+                      <object class="GtkSwitch" id="display_ccorr_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Display CCorr</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureDisplayGamma -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Display Gamma</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Display Gamma feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="display_gamma_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Display Gamma</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureDisplayOverDrive -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Display Over Drive</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Display Over Drive feature</property>
+                    <property name="visible">FALSE</property>
+                    <child>
+                      <object class="GtkSwitch" id="display_over_drive_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Display Over Drive</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureISOAdaptiveSharpness -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">ISO Adaptive Sharpness</property>
+                    <property name="subtitle" translatable="yes">Enable or disable ISO Adaptive Sharpness feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="iso_adaptive_sharpness_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable ISO Adaptive Sharpness</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureUltraResolution -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Ultra Resolution</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Ultra Resolution feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="ultra_resolution_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Ultra Resolution</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- SetFeatureVideoHDR -->
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title" translatable="yes">Video HDR</property>
+                    <property name="subtitle" translatable="yes">Enable or disable Video HDR feature</property>
+                    <child>
+                      <object class="GtkSwitch" id="video_hdr_switch">
+                        <property name="valign">center</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Enable Video HDR</property>
+                        </accessibility>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>
