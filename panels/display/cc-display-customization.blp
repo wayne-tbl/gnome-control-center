@@ -1,0 +1,213 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcDisplayCustomization: $CcPanel {
+  child: Adw.ToolbarView {
+    content: Adw.PreferencesPage {
+      Adw.PreferencesGroup {
+        Adw.PreferencesRow {
+          activatable: false;
+          focusable: false;
+          overflow: hidden;
+
+          styles [
+            "customization-preview-wrap",
+          ]
+
+          Picture {
+            keep-aspect-ratio: true;
+            content-fit: cover;
+            height-request: 250;
+            file: "resource:///org/gnome/control-center/display/customization-preview-01.jpg";
+          }
+        }
+      }
+
+      Adw.PreferencesGroup {
+        Adw.ActionRow {
+          title: _("PQ Mode");
+          subtitle: _("Enable vivid screen mode");
+
+          [suffix]
+          Switch pq_mode_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Set PQ Mode");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Display Color");
+          subtitle: _("Enable or disable Display Color feature");
+
+          [suffix]
+          Switch display_color_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Display Color");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Content Color");
+          subtitle: _("Enable or disable Content Color feature");
+
+          [suffix]
+          Switch content_color_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Content Color");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Content Color Video");
+          subtitle: _("Enable or disable Content Color Video feature");
+
+          [suffix]
+          Switch content_color_video_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Content Color Video");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Sharpness");
+          subtitle: _("Enable or disable Sharpness feature");
+
+          [suffix]
+          Switch sharpness_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Sharpness");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Dynamic Contrast");
+          subtitle: _("Enable or disable Dynamic Contrast feature");
+
+          [suffix]
+          Switch dynamic_contrast_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Dynamic Contrast");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Dynamic Sharpness");
+          subtitle: _("Enable or disable Dynamic Sharpness feature");
+
+          [suffix]
+          Switch dynamic_sharpness_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Dynamic Sharpness");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Display CCorr");
+          subtitle: _("Enable or disable Display CCorr feature");
+          visible: false;
+
+          [suffix]
+          Switch display_ccorr_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Display CCorr");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Display Gamma");
+          subtitle: _("Enable or disable Display Gamma feature");
+
+          [suffix]
+          Switch display_gamma_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Display Gamma");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Display Over Drive");
+          subtitle: _("Enable or disable Display Over Drive feature");
+          visible: false;
+
+          [suffix]
+          Switch display_over_drive_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Display Over Drive");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("ISO Adaptive Sharpness");
+          subtitle: _("Enable or disable ISO Adaptive Sharpness feature");
+
+          [suffix]
+          Switch iso_adaptive_sharpness_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable ISO Adaptive Sharpness");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Ultra Resolution");
+          subtitle: _("Enable or disable Ultra Resolution feature");
+
+          [suffix]
+          Switch ultra_resolution_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Ultra Resolution");
+            }
+          }
+        }
+
+        Adw.ActionRow {
+          title: _("Video HDR");
+          subtitle: _("Enable or disable Video HDR feature");
+
+          [suffix]
+          Switch video_hdr_switch {
+            valign: center;
+
+            accessibility {
+              label: _("Enable Video HDR");
+            }
+          }
+        }
+      }
+    };
+  };
+}
