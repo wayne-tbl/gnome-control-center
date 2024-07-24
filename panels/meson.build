@@ -7,6 +7,7 @@ dependent_panels = [
 panels = [
   'andromeda',
   'applications',
+  'assistant',
   'background',
   'color',
   'display',
