@@ -1,0 +1,160 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcAssistantPanel: $CcPanel {
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    content: Adw.Clamp {
+      child: ScrolledWindow {
+        child: Adw.PreferencesPage main_page {
+          Adw.PreferencesGroup {
+            title: _("Gesture to configure");
+
+            Adw.ActionRow button_action_row {
+              title: _("Gesture");
+              subtitle-lines: 0;
+
+              Box button_action_box {
+                valign: center;
+                homogeneous: true;
+                margin-top: 12;
+                margin-bottom: 12;
+
+                styles [
+                  "linked",
+                ]
+
+                ToggleButton short_press {
+                  hexpand: true;
+                  label: _("_Short");
+                  height-request: 35;
+                  use-underline: true;
+                  group: long_press;
+                }
+
+                ToggleButton long_press {
+                  hexpand: true;
+                  label: _("_Long");
+                  height-request: 35;
+                  use-underline: true;
+                }
+
+                ToggleButton double_press {
+                  hexpand: true;
+                  label: _("_Double");
+                  height-request: 35;
+                  use-underline: true;
+                  group: long_press;
+                }
+              }
+            }
+          }
+
+          Adw.PreferencesGroup action_switch_group {
+            title: _("Predefined actions");
+
+            Adw.ActionRow {
+              title: _("No Action (Disable)");
+              use-underline: true;
+
+              [prefix]
+              CheckButton no_action {
+                valign: center;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Toggle flashlight");
+              use-underline: true;
+
+              [prefix]
+              CheckButton toggle_flashlight {
+                valign: center;
+                group: no_action;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Open camera");
+              use-underline: true;
+
+              [prefix]
+              CheckButton open_camera {
+                valign: center;
+                group: no_action;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Take picture");
+              use-underline: true;
+
+              [prefix]
+              CheckButton take_picture {
+                valign: center;
+                group: no_action;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Take screenshot");
+              use-underline: true;
+
+              [prefix]
+              CheckButton take_screenshot {
+                valign: center;
+                group: no_action;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Send Tab key");
+              use-underline: true;
+
+              [prefix]
+              CheckButton send_tab {
+                valign: center;
+                group: no_action;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Manual autorotation");
+              use-underline: true;
+
+              [prefix]
+              CheckButton manual_autorotate {
+                valign: center;
+                group: no_action;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Send Back key");
+              use-underline: true;
+
+              [prefix]
+              CheckButton send_xf86back {
+                valign: center;
+                group: no_action;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Send Escape key");
+              use-underline: true;
+
+              [prefix]
+              CheckButton send_escape {
+                valign: center;
+                group: no_action;
+              }
+            }
+          }
+        };
+      };
+    };
+  };
+}
