@@ -160,11 +160,24 @@
                           </object>
                         </child>
 
+                        <!-- SIM Toolkit -->
+                        <child>
+                          <object class="CcListRow" id="stk_row">
+                            <property name="show-arrow">False</property>
+                            <property name="title" translatable="yes">SIM Toolkit</property>
+                            <child type="suffix">
+                              <object class="GtkImage">
+                                <property name="valign">center</property>
+                                <property name="icon-name">adw-external-link-symbolic</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
                       </object>
                     </child>
                   </object>
                 </child>
-
               </object>
             </property>
           </object>
