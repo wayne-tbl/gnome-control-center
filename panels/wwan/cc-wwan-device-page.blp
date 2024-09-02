@@ -123,6 +123,17 @@ template $CcWwanDevicePage: Box {
               show-arrow: true;
               title: _("M_odem Details");
             }
+
+            $CcListRow stk_row {
+              show-arrow: false;
+              title: _("SIM Toolkit");
+
+              [suffix]
+              Image {
+                valign: center;
+                icon-name: "adw-external-link-symbolic";
+              }
+            }
           }
         }
       };
