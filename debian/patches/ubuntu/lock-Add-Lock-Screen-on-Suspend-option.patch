@@ -1,0 +1,87 @@
+From: Tim Lunn <tim@feathertop.org>
+Date: Mon, 3 Jun 2013 17:27:45 +1000
+Subject: lock: Add "Lock Screen on Suspend" option
+
+https://launchpad.net/bugs/938076
+---
+ panels/privacy/cc-screen-page.c  | 19 +++++++++++++++++++
+ panels/privacy/cc-screen-page.ui |  8 ++++++++
+ 2 files changed, 27 insertions(+)
+
+diff --git a/panels/privacy/cc-screen-page.c b/panels/privacy/cc-screen-page.c
+index 2dd8682..2527da8 100644
+--- a/panels/privacy/cc-screen-page.c
++++ b/panels/privacy/cc-screen-page.c
+@@ -47,6 +47,7 @@ struct _CcScreenPage
+   AdwPreferencesGroup *screen_privacy_group;
+   GDBusProxy          *usb_proxy;
+   AdwSwitchRow        *automatic_screen_lock_row;
++  AdwSwitchRow        *lock_on_suspend_row;
+   AdwSwitchRow        *privacy_screen_row;
+   AdwSwitchRow        *show_notifications_row;
+   AdwSwitchRow        *usb_protection_row;
+@@ -270,6 +271,7 @@ cc_screen_page_class_init (CcScreenPageClass *klass)
+   gtk_widget_class_bind_template_child (widget_class, CcScreenPage, automatic_screen_lock_row);
+   gtk_widget_class_bind_template_child (widget_class, CcScreenPage, blank_screen_row);
+   gtk_widget_class_bind_template_child (widget_class, CcScreenPage, lock_after_row);
++  gtk_widget_class_bind_template_child (widget_class, CcScreenPage, lock_on_suspend_row);
+   gtk_widget_class_bind_template_child (widget_class, CcScreenPage, privacy_screen_row);
+   gtk_widget_class_bind_template_child (widget_class, CcScreenPage, screen_privacy_group);
+   gtk_widget_class_bind_template_child (widget_class, CcScreenPage, show_notifications_row);
+@@ -316,6 +318,7 @@ update_display_config (CcScreenPage *self)
+ static void
+ cc_screen_page_init (CcScreenPage *self)
+ {
++  g_autoptr(GSettingsSchema) schema = NULL;
+   guint value;
+ 
+   gtk_widget_init_template (GTK_WIDGET (self));
+@@ -327,6 +330,8 @@ cc_screen_page_init (CcScreenPage *self)
+   self->notification_settings = g_settings_new ("org.gnome.desktop.notifications");
+   self->session_settings = g_settings_new ("org.gnome.desktop.session");
+ 
++  g_object_get (self->lock_settings, "settings-schema", &schema, NULL);
++
+   g_settings_bind (self->lock_settings,
+                    "lock-enabled",
+                    self->automatic_screen_lock_row,
+@@ -347,6 +352,20 @@ cc_screen_page_init (CcScreenPage *self)
+                    "active",
+                    G_SETTINGS_BIND_DEFAULT);
+ 
++  if (g_settings_schema_has_key (schema, "ubuntu-lock-on-suspend"))
++    {
++      g_settings_bind (self->lock_settings,
++                       "ubuntu-lock-on-suspend",
++                       self->lock_on_suspend_row,
++                       "active",
++                       G_SETTINGS_BIND_DEFAULT);
++    }
++  else
++    {
++      g_warning ("No ubuntu-lock-on-suspend settings key found");
++      gtk_widget_set_visible (GTK_WIDGET (self->lock_on_suspend_row), FALSE);
++    }
++
+   value = g_settings_get_uint (self->session_settings, "idle-delay");
+   set_blank_screen_delay_value (self, value);
+ 
+diff --git a/panels/privacy/cc-screen-page.ui b/panels/privacy/cc-screen-page.ui
+index bdb29c5..9bcb94c 100644
+--- a/panels/privacy/cc-screen-page.ui
++++ b/panels/privacy/cc-screen-page.ui
+@@ -69,6 +69,14 @@
+                   </object>
+                 </child>
+ 
++                <!-- Automatic Screen Lock Delay row -->
++                <child>
++                  <object class="AdwSwitchRow" id="lock_on_suspend_row">
++                    <property name="title" translatable="yes">Lock Screen _on Suspend</property>
++                    <property name="use-underline">true</property>
++                  </object>
++                </child>
++
+                 <!-- USB protection row -->
+                 <child>
+                   <object class="AdwSwitchRow" id="usb_protection_row">
