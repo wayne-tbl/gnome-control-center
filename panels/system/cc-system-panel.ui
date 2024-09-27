@@ -55,6 +55,7 @@
                         <property name="subtitle" translatable="yes">Allow this device to be used remotely</property>
                         <property name="icon-name">org.gnome.Settings-remote-desktop-symbolic</property>
                         <property name="show-arrow">True</property>
+                        <property name="visible">False</property>
                         <property name="action-name">navigation.push</property>
                         <property name="action-target">'remote-desktop'</property>
                       </object>
