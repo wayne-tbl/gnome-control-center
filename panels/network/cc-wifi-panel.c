@@ -32,6 +32,7 @@
 #include <NetworkManager.h>
 
 #define QR_IMAGE_SIZE 180
+#define IS_FURIOS 1
 
 typedef enum
 {
@@ -382,6 +383,87 @@ load_wifi_devices (CcWifiPanel *self)
   check_main_stack_page (self);
 }
 
+#if IS_FURIOS
+static gboolean
+get_rfkill_property (const gchar *property)
+{
+    GDBusConnection *connection;
+    GVariant *result;
+    gboolean value = FALSE;
+    GError *error = NULL;
+
+    connection = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, &error);
+    if (connection == NULL) {
+        g_warning ("Failed to connect to session bus: %s", error->message);
+        g_clear_error (&error);
+        return FALSE;
+    }
+
+    result = g_dbus_connection_call_sync (connection,
+                                          "org.gnome.SettingsDaemon.Rfkill",
+                                          "/org/gnome/SettingsDaemon/Rfkill",
+                                          "org.freedesktop.DBus.Properties",
+                                          "Get",
+                                          g_variant_new ("(ss)",
+                                                         "org.gnome.SettingsDaemon.Rfkill",
+                                                         property),
+                                          G_VARIANT_TYPE("(v)"),
+                                          G_DBUS_CALL_FLAGS_NONE,
+                                          -1,
+                                          NULL,
+                                          &error);
+
+    if (error) {
+        g_warning ("Failed to get property %s: %s", property, error->message);
+        g_clear_error (&error);
+    } else if (result != NULL) {
+        GVariant *v;
+        g_variant_get (result, "(v)", &v);
+        value = g_variant_get_boolean (v);
+        g_variant_unref (v);
+        g_variant_unref (result);
+    }
+
+    g_object_unref (connection);
+
+    return value;
+}
+
+static void
+sync_airplane_mode_switch (CcWifiPanel *self)
+{
+  gboolean enabled, should_show, hw_enabled;
+
+  enabled = get_rfkill_property ("HasAirplaneMode");
+  should_show = get_rfkill_property ("ShouldShowAirplaneMode");
+
+  gtk_widget_set_visible (GTK_WIDGET (self->rfkill_widget), enabled && should_show);
+  if (!enabled || !should_show)
+    return;
+
+  enabled = get_rfkill_property ("AirplaneMode");
+  hw_enabled = get_rfkill_property ("HardwareAirplaneMode");
+
+  enabled |= hw_enabled;
+
+  if (enabled != adw_switch_row_get_active (self->rfkill_row))
+    {
+      g_signal_handlers_block_by_func (self->rfkill_row,
+                                       rfkill_switch_notify_activate_cb,
+                                       self);
+      g_object_set (self->rfkill_row, "active", enabled, NULL);
+      check_main_stack_page (self);
+      g_signal_handlers_unblock_by_func (self->rfkill_row,
+                                         rfkill_switch_notify_activate_cb,
+                                         self);
+  }
+
+  gtk_widget_set_sensitive (GTK_WIDGET (self->rfkill_row), !hw_enabled);
+
+  check_main_stack_page (self);
+}
+
+#else
 static inline gboolean
 get_cached_rfkill_property (CcWifiPanel *self,
                             const gchar *property)
@@ -425,6 +507,7 @@ sync_airplane_mode_switch (CcWifiPanel *self)
 
   check_main_stack_page (self);
 }
+#endif
 
 static void
 update_devices_names (CcWifiPanel *self)
