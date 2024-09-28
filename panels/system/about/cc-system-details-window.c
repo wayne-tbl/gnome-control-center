@@ -364,6 +364,21 @@ get_os_type (void)
 }
 
 char *
+furios_get_primary_disk_info (void)
+{
+  struct statvfs stat;
+  if (statvfs ("/", &stat) != 0) {
+    g_printerr ("Error getting disk information\n");
+    return NULL;
+  }
+
+  guint64 total_size = stat.f_blocks * stat.f_frsize;
+  gdouble total_size_gb = (gdouble)total_size / (1024 * 1024 * 1024);
+
+  return g_strdup_printf ("%.2f GB", total_size_gb);
+}
+
+char *
 get_primary_disk_info (void)
 {
   g_autoptr(UDisksClient) client = NULL;
@@ -483,6 +498,42 @@ get_kernel_version_string ()
     return NULL;
 
   return g_strdup_printf ("%s %s", kernel_name, kernel_release);
+}
+
+char *
+furios_get_cpu_info ()
+{
+  gchar * content = NULL;
+  GError * error = NULL;
+
+  if (g_file_get_contents ("/usr/lib/furios/device/cpuinfo", &content, NULL, &error))
+    return g_strstrip (content);
+
+  g_clear_error (&error);
+
+  if (!g_file_get_contents ("/proc/cpuinfo", &content, NULL, &error)) {
+    g_printerr ("Error reading file: %s\n", error->message);
+    g_error_free (error);
+    return NULL;
+  }
+
+  gchar ** lines = g_strsplit (content, "\n", -1);
+  g_free (content);
+
+  for (gchar ** line = lines; *line != NULL; line++) {
+    if (g_str_has_prefix (*line, "Hardware")) {
+      gchar ** parts = g_strsplit (*line, ":", 2);
+      if (parts[1] != NULL) {
+        gchar * hardware = g_strstrip (g_strdup (parts[1]));
+        g_strfreev (parts);
+        g_strfreev (lines);
+        return hardware;
+      }
+      g_strfreev (parts);
+    }
+  }
+  g_strfreev (lines);
+  return NULL;
 }
 
 char *
@@ -758,7 +809,9 @@ on_copy_button_clicked_cb (GtkWidget              *widget,
 
   g_string_append (result_str, "- ");
   system_details_window_title_print_padding ("**Processor:**", result_str, 0);
-  cpu_text = get_cpu_info ();
+  cpu_text = furios_get_cpu_info ();
+  if (cpu_text == NULL)
+    cpu_text = get_cpu_info ();
   g_string_append_printf (result_str, "%s\n", cpu_text);
 
   graphics_hardware_list = get_graphics_hardware_list ();
@@ -781,7 +834,9 @@ on_copy_button_clicked_cb (GtkWidget              *widget,
 
   g_string_append (result_str, "- ");
   system_details_window_title_print_padding ("**Disk Capacity:**", result_str, 0);
-  disk_capacity_string = get_primary_disk_info ();
+  disk_capacity_string = furios_get_primary_disk_info ();
+  if (disk_capacity_string == NULL)
+    disk_capacity_string = get_primary_disk_info ();
   g_string_append_printf (result_str, "%s\n", disk_capacity_string);
 
   g_string_append (result_str, "\n");
@@ -861,15 +916,20 @@ system_details_window_setup_overview (CcSystemDetailsWindow *self)
   memory_text = g_format_size_full (ram_size, G_FORMAT_SIZE_IEC_UNITS);
   cc_info_entry_set_value (self->memory_row, memory_text);
 
-  cpu_text = get_cpu_info ();
+  cpu_text = furios_get_cpu_info ();
+  if (cpu_text == NULL)
+    cpu_text = get_cpu_info ();
   cc_info_entry_set_value (self->processor_row, cpu_text);
 
   graphics_hardware_list = get_graphics_hardware_list ();
   create_graphics_rows (self, graphics_hardware_list);
 
-  disk_capacity_string = get_primary_disk_info ();
-  if (disk_capacity_string == NULL)
-    disk_capacity_string = g_strdup (_("Unknown"));
+  disk_capacity_string = furios_get_primary_disk_info ();
+  if (disk_capacity_string == NULL) {
+    disk_capacity_string = get_primary_disk_info ();
+    if (disk_capacity_string == NULL)
+      disk_capacity_string = g_strdup (_("Unknown"));
+  }
   cc_info_entry_set_value (self->disk_row, disk_capacity_string);
 
   os_name_text = get_os_name ();
