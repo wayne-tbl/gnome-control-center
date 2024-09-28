@@ -39,6 +39,8 @@
 #include "shell/cc-log.h"
 #include "shell/cc-object-storage.h"
 
+#define IS_FURIOS 1
+
 typedef enum {
   OPERATION_NULL,
   OPERATION_SHOW_DEVICE,
@@ -305,6 +307,83 @@ wwan_data_list_selected_sim_changed_cb (CcWwanPanel *self)
   cc_wwan_data_item_activate_cb (self, device);
 }
 
+#if IS_FURIOS
+static gboolean
+get_rfkill_property (const gchar *property)
+{
+    GDBusConnection *connection;
+    GVariant *result;
+    gboolean value = FALSE;
+    GError *error = NULL;
+
+    connection = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, &error);
+    if (connection == NULL) {
+        g_warning ("Failed to connect to session bus: %s", error->message);
+        g_clear_error (&error);
+        return FALSE;
+    }
+
+    result = g_dbus_connection_call_sync (connection,
+                                          "org.gnome.SettingsDaemon.Rfkill",
+                                          "/org/gnome/SettingsDaemon/Rfkill",
+                                          "org.freedesktop.DBus.Properties",
+                                          "Get",
+                                          g_variant_new ("(ss)",
+                                                         "org.gnome.SettingsDaemon.Rfkill",
+                                                         property),
+                                          G_VARIANT_TYPE("(v)"),
+                                          G_DBUS_CALL_FLAGS_NONE,
+                                          -1,
+                                          NULL,
+                                          &error);
+
+    if (error) {
+        g_warning ("Failed to get property %s: %s", property, error->message);
+        g_clear_error (&error);
+    } else if (result != NULL) {
+        GVariant *v;
+        g_variant_get (result, "(v)", &v);
+        value = g_variant_get_boolean (v);
+        g_variant_unref (v);
+        g_variant_unref (result);
+    }
+
+    g_object_unref (connection);
+
+    return value;
+}
+
+static void
+cc_wwan_panel_update_view (CcWwanPanel *self)
+{
+  gboolean has_airplane, is_airplane = FALSE, enabled = FALSE;
+
+  has_airplane = get_rfkill_property ("HasAirplaneMode");
+  has_airplane &= get_rfkill_property ("ShouldShowAirplaneMode");
+
+  if (has_airplane)
+    {
+      is_airplane = get_rfkill_property ("AirplaneMode");
+      is_airplane |= get_rfkill_property ("HardwareAirplaneMode");
+    }
+
+  if (self->nm_client)
+    enabled = nm_client_wwan_get_enabled (self->nm_client);
+
+  if (has_airplane && is_airplane)
+    gtk_stack_set_visible_child_name (self->main_stack, "airplane-mode");
+  else if (enabled && g_list_model_get_n_items (G_LIST_MODEL (self->devices)) > 0)
+    gtk_stack_set_visible_child_name (self->main_stack, "device-settings");
+  else
+    gtk_stack_set_visible_child_name (self->main_stack, "no-wwan-devices");
+
+  gtk_widget_set_sensitive (GTK_WIDGET (self->enable_switch), !is_airplane);
+
+  if (enabled)
+    gtk_revealer_set_reveal_child (self->multi_device_revealer,
+                                   g_list_model_get_n_items (G_LIST_MODEL (self->devices)) > 1);
+}
+#else
 static gboolean
 cc_wwan_panel_get_cached_dbus_property (GDBusProxy  *proxy,
                                         const gchar *property)
@@ -350,6 +429,7 @@ cc_wwan_panel_update_view (CcWwanPanel *self)
     gtk_revealer_set_reveal_child (self->multi_device_revealer,
                                    g_list_model_get_n_items (G_LIST_MODEL (self->devices)) > 1);
 }
+#endif
 
 static void
 cc_wwan_panel_add_device (CcWwanPanel  *self,
