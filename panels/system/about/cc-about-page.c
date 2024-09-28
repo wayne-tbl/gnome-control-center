@@ -65,12 +65,17 @@ about_page_setup_overview (CcAboutPage *self)
   memory_text = g_format_size_full (ram_size, G_FORMAT_SIZE_IEC_UNITS);
   adw_action_row_set_subtitle (self->memory_row, memory_text);
 
-  cpu_text = get_cpu_info ();
+  cpu_text = droid_get_cpu_info ();
+  if (cpu_text == NULL)
+    cpu_text = get_cpu_info ();
   adw_action_row_set_subtitle (self->processor_row, cpu_text);
 
-  disk_capacity_string = get_primary_disk_info ();
-  if (disk_capacity_string == NULL)
-    disk_capacity_string = g_strdup (_("Unknown"));
+  disk_capacity_string = droid_get_primary_disk_info ();
+  if (disk_capacity_string == NULL) {
+    disk_capacity_string = get_primary_disk_info ();
+    if (disk_capacity_string == NULL)
+      disk_capacity_string = g_strdup (_("Unknown"));
+  }
   adw_action_row_set_subtitle (self->disk_row, disk_capacity_string);
 
   os_name_text = get_os_name ();

@@ -20,6 +20,7 @@
 #pragma once
 
 #include <adwaita.h>
+#include <sys/statvfs.h>
 
 G_BEGIN_DECLS
 
@@ -33,4 +34,7 @@ char                    *get_os_name                    (void);
 guint64                  get_ram_size_dmi               (void);
 guint64                  get_ram_size_libgtop           (void);
 char                    *get_primary_disk_info          (void);
+
+char                    *droid_get_cpu_info             (void);
+char                    *droid_get_primary_disk_info    (void);
 G_END_DECLS
