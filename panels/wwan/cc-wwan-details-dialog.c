@@ -52,6 +52,10 @@ struct _CcWwanDetailsDialog
   CcListRow    *own_numbers;
   CcListRow    *signal_strength;
 
+  CcListRow    *ims_registeration;
+  CcListRow    *ims_voice_capable;
+  CcListRow    *ims_sms_capable;
+
   CcWwanDevice *device;
 };
 
@@ -108,6 +112,9 @@ cc_wwan_details_signal_changed_cb (CcWwanDetailsDialog *self)
 {
   g_autofree gchar *network_type_string = NULL;
   g_autofree gchar *signal_string = NULL;
+  g_autofree gchar *ims_registeration_string = NULL;
+  g_autofree gchar *ims_voice_capable_string = NULL;
+  g_autofree gchar *ims_sms_capable_string = NULL;
   const gchar *operator_name;
 
   g_assert (CC_IS_WWAN_DETAILS_DIALOG (self));
@@ -123,6 +130,18 @@ cc_wwan_details_signal_changed_cb (CcWwanDetailsDialog *self)
   signal_string = cc_wwan_device_dup_signal_string (self->device);
   if (signal_string)
     cc_list_row_set_secondary_label (self->signal_strength, signal_string);
+
+  ims_registeration_string = cc_wwan_device_get_ims_registered (self->device);
+  if (ims_registeration_string)
+    cc_list_row_set_secondary_label (self->ims_registeration, ims_registeration_string);
+
+  ims_voice_capable_string = cc_wwan_device_get_ims_voice_capable (self->device);
+  if (ims_voice_capable_string)
+    cc_list_row_set_secondary_label (self->ims_voice_capable, ims_voice_capable_string);
+
+  ims_sms_capable_string = cc_wwan_device_get_ims_sms_capable (self->device);
+  if (ims_sms_capable_string)
+    cc_list_row_set_secondary_label (self->ims_sms_capable, ims_sms_capable_string);
 
   cc_wwan_details_update_network_status (self);
 }
@@ -235,6 +254,10 @@ cc_wwan_details_dialog_class_init (CcWwanDetailsDialogClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcWwanDetailsDialog, operator_name);
   gtk_widget_class_bind_template_child (widget_class, CcWwanDetailsDialog, own_numbers);
   gtk_widget_class_bind_template_child (widget_class, CcWwanDetailsDialog, signal_strength);
+
+  gtk_widget_class_bind_template_child (widget_class, CcWwanDetailsDialog, ims_registeration);
+  gtk_widget_class_bind_template_child (widget_class, CcWwanDetailsDialog, ims_voice_capable);
+  gtk_widget_class_bind_template_child (widget_class, CcWwanDetailsDialog, ims_sms_capable);
 }
 
 static void

@@ -43,6 +43,7 @@ sources = files(
   'cc-wwan-details-dialog.c',
   'cc-wwan-sim-lock-dialog.c',
   'cc-wwan-apn-dialog.c',
+  'cc-wwan-ims.c',
 )
 
 sources += gnome.compile_resources(
