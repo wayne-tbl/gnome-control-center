@@ -38,6 +38,7 @@
 
 #include "cc-wwan-errors-private.h"
 #include "cc-wwan-device.h"
+#include "cc-wwan-ims.h"
 
 /**
  * @short_description: Device Object
@@ -1478,4 +1479,58 @@ cc_wwan_device_pin_valid (const gchar *password,
       return FALSE;
 
   return TRUE;
+}
+
+gchar *
+cc_wwan_device_get_ims_registered (CcWwanDevice *self)
+{
+  g_return_val_if_fail (CC_IS_WWAN_DEVICE (self), g_strdup ("Unregistered"));
+
+  const gchar *port_name;
+  gboolean is_registered;
+
+  port_name = mm_modem_get_primary_port (self->modem);
+
+  if (!port_name)
+    return g_strdup ("Unregistered");
+
+  is_registered = cc_wwan_ims_check_registered (port_name);
+
+  return g_strdup (is_registered ? "Registered" : "Unregistered");
+}
+
+gchar *
+cc_wwan_device_get_ims_voice_capable (CcWwanDevice *self)
+{
+  g_return_val_if_fail (CC_IS_WWAN_DEVICE (self), g_strdup ("No"));
+
+  const gchar *port_name;
+  gboolean voice_capable;
+
+  port_name = mm_modem_get_primary_port (self->modem);
+
+  if (!port_name)
+    return g_strdup ("No");
+
+  voice_capable = cc_wwan_ims_check_voice_capable (port_name);
+
+  return g_strdup (voice_capable ? "Yes" : "No");
+}
+
+gchar *
+cc_wwan_device_get_ims_sms_capable (CcWwanDevice *self)
+{
+  g_return_val_if_fail (CC_IS_WWAN_DEVICE (self), g_strdup ("No"));
+
+  const gchar *port_name;
+  gboolean sms_capable;
+
+  port_name = mm_modem_get_primary_port (self->modem);
+
+  if (!port_name)
+    return g_strdup ("No");
+
+  sms_capable = cc_wwan_ims_check_sms_capable (port_name);
+
+  return g_strdup (sms_capable ? "Yes" : "No");
 }

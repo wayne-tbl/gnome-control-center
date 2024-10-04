@@ -149,4 +149,8 @@ CcWwanData    *cc_wwan_device_get_data                (CcWwanDevice        *self
 gboolean       cc_wwan_device_pin_valid               (const gchar         *password,
                                                        MMModemLock          lock);
 
+gchar        *cc_wwan_device_get_ims_registered      (CcWwanDevice *self);
+gchar        *cc_wwan_device_get_ims_voice_capable   (CcWwanDevice *self);
+gchar        *cc_wwan_device_get_ims_sms_capable     (CcWwanDevice *self);
+
 G_END_DECLS
