@@ -131,6 +131,75 @@ template $CcWwanDetailsDialog: Dialog {
             row: 4;
           }
         }
+
+        Label {
+          label: _("IMS Registration");
+          xalign: 1.0;
+
+          styles [
+            "dim-label",
+          ]
+
+          layout {
+            column: 0;
+            row: 5;
+          }
+        }
+
+        Label ims_registered {
+          xalign: 0.0;
+
+          layout {
+            column: 1;
+            row: 5;
+          }
+        }
+
+        Label {
+          label: _("IMS Voice Capable");
+          xalign: 1.0;
+
+          styles [
+            "dim-label",
+          ]
+
+          layout {
+            column: 0;
+            row: 6;
+          }
+        }
+
+        Label ims_voice_capable {
+          xalign: 0.0;
+
+          layout {
+            column: 1;
+            row: 6;
+          }
+        }
+
+        Label {
+          label: _("IMS SMS Capable");
+          xalign: 1.0;
+
+          styles [
+            "dim-label",
+          ]
+
+          layout {
+            column: 0;
+            row: 7;
+          }
+        }
+
+        Label ims_sms_capable {
+          xalign: 0.0;
+
+          layout {
+            column: 1;
+            row: 7;
+          }
+        }
       }
     }
 
