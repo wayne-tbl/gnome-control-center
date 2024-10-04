@@ -140,6 +140,78 @@
                   </object>
                 </child>
 
+                <!-- IMS Registered -->
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">IMS Registration</property>
+                    <property name="xalign">1.0</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                    <layout>
+                      <property name="column">0</property>
+                      <property name="row">5</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="ims_registered">
+                    <property name="xalign">0.0</property>
+                    <layout>
+                      <property name="column">1</property>
+                      <property name="row">5</property>
+                    </layout>
+                  </object>
+                </child>
+
+                <!-- IMS Voice Capable -->
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">IMS Voice Capable</property>
+                    <property name="xalign">1.0</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                    <layout>
+                      <property name="column">0</property>
+                      <property name="row">6</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="ims_voice_capable">
+                    <property name="xalign">0.0</property>
+                    <layout>
+                      <property name="column">1</property>
+                      <property name="row">6</property>
+                    </layout>
+                  </object>
+                </child>
+
+                <!-- IMS SMS Capable -->
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">IMS SMS Capable</property>
+                    <property name="xalign">1.0</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                    <layout>
+                      <property name="column">0</property>
+                      <property name="row">7</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="ims_sms_capable">
+                    <property name="xalign">0.0</property>
+                    <layout>
+                      <property name="column">1</property>
+                      <property name="row">7</property>
+                    </layout>
+                  </object>
+                </child>
+
               </object>
             </child>
           </object>
