@@ -171,6 +171,23 @@
                   </object>
                 </child>
 
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <child>
+                      <object class="AdwSwitchRow" id="wake_gesture_row">
+                        <property name="title" translatable="yes">Wake Gesture</property>
+                        <property name="subtitle" translatable="yes">Enable or disable wake gesture sensor</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwSwitchRow" id="tilt_wake_gesture_row">
+                        <property name="title" translatable="yes">Tilt To Wake Gesture</property>
+                        <property name="subtitle" translatable="yes">Enable or disable tilt to wake gesture sensor</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
               </object>
             </property>
           </object>
