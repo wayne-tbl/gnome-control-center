@@ -1,0 +1,30 @@
+From: Alessandro Astone <alessandro.astone@canonical.com>
+Date: Thu, 10 Oct 2024 13:25:06 +0200
+Subject: power: Fix the insert position of new items in combo widgets
+
+The set_value_for_combo_row helper will insert a new item if the
+chosen value was not already present in the list, and inserts it in
+sorted order.
+However commit a0d49cb3 broke the position where the new item is
+inserted, making it always the last element.
+Because it then tries to select the row corresponding to the correct
+sorted position, it would select the wrong row.
+
+Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/2873
+---
+ panels/power/cc-power-panel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/panels/power/cc-power-panel.c b/panels/power/cc-power-panel.c
+index 1c7b245..fa36c5d 100644
+--- a/panels/power/cc-power-panel.c
++++ b/panels/power/cc-power-panel.c
+@@ -419,7 +419,7 @@ set_value_for_combo_row (AdwComboRow *combo_row, gint value)
+ 
+   /* The value is not listed, so add it at the best point (or the end). */
+   text = cc_util_time_to_string_text (value * 1000);
+-  gtk_string_list_append (GTK_STRING_LIST (model), text);
++  gtk_string_list_splice (GTK_STRING_LIST (model), insert_before, 0, (const char *[]) { text, NULL });
+ 
+   new_item = g_list_model_get_item (model, i);
+   g_object_set_data (G_OBJECT (new_item), "value", GUINT_TO_POINTER (value));

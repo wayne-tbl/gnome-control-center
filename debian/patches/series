@@ -27,3 +27,4 @@ ubuntu/mouse-Add-animations-following-the-accent-colors.patch
 ubuntu/CVE-2023-5616.patch
 ubuntu/list-apps-even-without-malcontent.patch
 datetime-fix-disabling-of-auto-timezone-during-pane.patch
+power-Fix-the-insert-position-of-new-items-in-combo-widge.patch
