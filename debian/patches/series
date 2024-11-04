@@ -27,3 +27,4 @@ ubuntu/mouse-Add-animations-following-the-accent-colors.patch
 ubuntu/CVE-2023-5616.patch
 ubuntu/list-apps-even-without-malcontent.patch
 wifi-Add-6GHz-to-Supported-Frequencies.patch
+display-snap-Monitors-after-updating-prefer-mode-to-curre.patch
