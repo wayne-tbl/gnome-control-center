@@ -1,10 +1,24 @@
 gnome-control-center (1:46.5-0ubuntu0.24.04.1) UNRELEASED; urgency=medium
 
+  [ Alessandro Astone ]
   * New upstream release (LP: #2087565).
     - Fix showing custom idle-delay values in the Power panel (LP: #2084232).
     - Avoid the Privacy panel resetting idle-delay to zero (LP: #2083869).
+  * Rebase patches
+  * Drop patches applied upstream:
+    - d/p/datetime-fix-disabling-of-auto-timezone-during-pane.patch
+  * d/p/ubuntu/mouse-animations: Fix unregistering resources (LP: #2085610)
 
- -- Alessandro Astone <alessandro.astone@canonical.com>  Fri, 08 Nov 2024 17:12:21 +0100
+  [ Dirk Su ]
+  * d/p/wifi-Add-6GHz-to-Supported-Frequencies.patch:
+    - Add 6GHz to "Supported Frequencies" in wireless connection detail
+      (lp: #2084405)
+
+  [ ChunAn Wu ]
+  * Can't set join mode from mirror mode (LP: #2084407)
+    d/p/display-snap-Monitors-after-updating-prefer-mode.patch
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Mon, 11 Nov 2024 11:53:07 +0100
 
 gnome-control-center (1:46.4-0ubuntu0.24.04.1) noble; urgency=medium
 
