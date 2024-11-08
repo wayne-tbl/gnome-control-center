@@ -1,3 +1,11 @@
+gnome-control-center (1:46.5-0ubuntu0.24.04.1) UNRELEASED; urgency=medium
+
+  * New upstream release (LP: #2087565).
+    - Fix showing custom idle-delay values in the Power panel (LP: #2084232).
+    - Avoid the Privacy panel resetting idle-delay to zero (LP: #2083869).
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Fri, 08 Nov 2024 17:12:21 +0100
+
 gnome-control-center (1:46.4-0ubuntu0.24.04.1) noble; urgency=medium
 
   * New upstream version (LP: #2080611).
