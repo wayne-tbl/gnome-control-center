@@ -170,6 +170,7 @@ cc_background_paintable_set_property (GObject      *object,
                                       GParamSpec   *pspec)
 {
   CcBackgroundPaintable *self = CC_BACKGROUND_PAINTABLE (object);
+  int scale_factor;
 
   switch (prop_id)
     {
@@ -190,8 +191,14 @@ cc_background_paintable_set_property (GObject      *object,
       break;
 
     case PROP_SCALE_FACTOR:
-      self->scale_factor = g_value_get_int (value);
-      update_cache (self);
+      scale_factor = g_value_get_int (value);
+      if (self->scale_factor != scale_factor)
+        {
+          self->scale_factor = scale_factor;
+          /* Update cache, but only if it's already constructed */
+          if (self->texture || self->dark_texture)
+            update_cache (self);
+        }
       break;
 
     case PROP_TEXT_DIRECTION:
@@ -260,6 +267,7 @@ cc_background_paintable_class_init (CcBackgroundPaintableClass *klass)
                       "Scale Factor",
                       1, G_MAXINT, 1,
                       G_PARAM_READWRITE |
+                      G_PARAM_CONSTRUCT |
                       G_PARAM_STATIC_STRINGS);
 
   properties[PROP_TEXT_DIRECTION] =
@@ -269,6 +277,7 @@ cc_background_paintable_class_init (CcBackgroundPaintableClass *klass)
                        GTK_TYPE_TEXT_DIRECTION,
                        GTK_TEXT_DIR_LTR,
                        G_PARAM_READWRITE |
+                       G_PARAM_CONSTRUCT |
                        G_PARAM_STATIC_STRINGS);
 
   properties[PROP_PAINT_FLAGS] =
@@ -287,8 +296,6 @@ cc_background_paintable_class_init (CcBackgroundPaintableClass *klass)
 static void
 cc_background_paintable_init (CcBackgroundPaintable *self)
 {
-  self->scale_factor = 1;
-  self->text_direction = GTK_TEXT_DIR_LTR;
 }
 
 static void
@@ -375,7 +382,8 @@ cc_background_paintable_new (GnomeDesktopThumbnailFactory *thumbnail_factory,
                              CcBackgroundItem             *item,
                              CcBackgroundPaintFlags        paint_flags,
                              int                           width,
-                             int                           height)
+                             int                           height,
+                             int                           scale_factor)
 {
   g_return_val_if_fail (GNOME_DESKTOP_IS_THUMBNAIL_FACTORY (thumbnail_factory), NULL);
   g_return_val_if_fail (CC_IS_BACKGROUND_ITEM (item), NULL);
@@ -386,5 +394,6 @@ cc_background_paintable_new (GnomeDesktopThumbnailFactory *thumbnail_factory,
                        "paint-flags", paint_flags,
                        "width", width,
                        "height", height,
+                       "scale-factor", scale_factor,
                        NULL);
 }
