@@ -1,3 +1,9 @@
+gnome-control-center (1:47.1.1-0ubuntu1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Tue, 12 Nov 2024 18:01:15 +0100
+
 gnome-control-center (1:47.0.1-1ubuntu2) oracular; urgency=medium
 
   * d/p/ubuntu: Add back the noble patches for recoloring the mouse animations.
