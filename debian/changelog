@@ -1,8 +1,20 @@
 gnome-control-center (1:47.1.1-0ubuntu1) UNRELEASED; urgency=medium
 
+  [ Alessandro Astone ]
   * New upstream release
+  * Refresh patches
+  * Replace the accent-color-assets workaround with upstream fix.
+    (LP: #2085683, #2085610, #2085786)
 
- -- Alessandro Astone <alessandro.astone@canonical.com>  Tue, 12 Nov 2024 18:01:15 +0100
+  [ Marco Trevisan (Treviño) ]
+  * d/p/fractional-scaling-toggle: Support toggling fractional scaling in nested mode
+    (LP: #2085722)
+
+  [ ChunAn Wu ]
+  * Can't set join mode from mirror mode (LP: #2084407)
+    d/p/display-snap-Monitors-after-updating-prefer-mode.patch
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Tue, 12 Nov 2024 18:06:57 +0100
 
 gnome-control-center (1:47.0.1-1ubuntu2) oracular; urgency=medium
 
