@@ -1,7 +1,7 @@
-gnome-control-center (1:47.1.1-0ubuntu1) UNRELEASED; urgency=medium
+gnome-control-center (1:47.1.1-0ubuntu1) oracular; urgency=medium
 
   [ Alessandro Astone ]
-  * New upstream release
+  * New upstream release (lp: #2085721)
   * Refresh patches
   * Replace the accent-color-assets workaround with upstream fix.
     (LP: #2085683, #2085610, #2085786)
