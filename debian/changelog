@@ -1,4 +1,4 @@
-gnome-control-center (1:46.5-0ubuntu0.24.04.1) UNRELEASED; urgency=medium
+gnome-control-center (1:46.5-0ubuntu0.24.04.1) noble; urgency=medium
 
   [ Alessandro Astone ]
   * New upstream release (LP: #2087565).
@@ -7,7 +7,8 @@ gnome-control-center (1:46.5-0ubuntu0.24.04.1) UNRELEASED; urgency=medium
   * Rebase patches
   * Drop patches applied upstream:
     - d/p/datetime-fix-disabling-of-auto-timezone-during-pane.patch
-  * d/p/ubuntu/mouse-animations: Fix unregistering resources (LP: #2085610)
+  * d/p/ubuntu/mouse-Add-animations-following-the-accent-colors.patch:
+    - Fix unregistering resources (LP: #2085610)
 
   [ Dirk Su ]
   * d/p/wifi-Add-6GHz-to-Supported-Frequencies.patch:
@@ -18,7 +19,7 @@ gnome-control-center (1:46.5-0ubuntu0.24.04.1) UNRELEASED; urgency=medium
   * Can't set join mode from mirror mode (LP: #2084407)
     d/p/display-snap-Monitors-after-updating-prefer-mode.patch
 
- -- Alessandro Astone <alessandro.astone@canonical.com>  Mon, 11 Nov 2024 11:53:07 +0100
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Thu, 21 Nov 2024 13:11:07 +0100
 
 gnome-control-center (1:46.4-0ubuntu0.24.04.1) noble; urgency=medium
 
