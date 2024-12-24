@@ -324,17 +324,32 @@ create_graphics_rows (CcSystemDetailsWindow *self, GSList *devices)
     }
 }
 
+static gchar *
+get_furios_version (void)
+{
+  gchar *content = NULL;
+  if (g_file_get_contents ("/usr/share/furios-branding/furios-version", &content, NULL, NULL))
+    return g_strstrip (content);
+  if (content)
+    g_free (content);
+  return NULL;
+}
+
 char *
 get_os_name (void)
 {
   g_autofree gchar *name = NULL;
   g_autofree gchar *version_id = NULL;
   g_autofree gchar *pretty_name = NULL;
+  g_autofree gchar *furios_version = NULL;
 
   name = g_get_os_info (G_OS_INFO_KEY_NAME);
   version_id = g_get_os_info (G_OS_INFO_KEY_VERSION_ID);
   pretty_name = g_get_os_info (G_OS_INFO_KEY_PRETTY_NAME);
+  furios_version = get_furios_version ();
 
+  if (furios_version)
+    return g_strdup_printf ("%s %s", pretty_name, furios_version);
   if (pretty_name)
     return g_steal_pointer (&pretty_name);
   else if (name && version_id)
