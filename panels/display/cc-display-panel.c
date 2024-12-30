@@ -113,6 +113,10 @@ struct _CcDisplayPanel
 
   AdwSwitchRow *wake_gesture_row;
   AdwSwitchRow *tilt_wake_gesture_row;
+
+  AdwSwitchRow *glove_mode_row;
+  AdwSwitchRow *palm_rejection_row;
+
   GSettings    *gesture_settings;
 };
 
@@ -626,6 +630,8 @@ cc_display_panel_class_init (CcDisplayPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, single_display_settings_group);
   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, wake_gesture_row);
   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, tilt_wake_gesture_row);
+  gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, glove_mode_row);
+  gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, palm_rejection_row);
 
   gtk_widget_class_bind_template_callback (widget_class, apply_current_configuration);
   gtk_widget_class_bind_template_callback (widget_class, cancel_current_configuration);
@@ -1179,10 +1185,28 @@ cc_display_panel_init (CcDisplayPanel *self)
       g_settings_bind (self->gesture_settings, "tilt-sensor-enabled",
                        self->tilt_wake_gesture_row, "active",
                        G_SETTINGS_BIND_DEFAULT);
+
+      if (g_settings_schema_has_key (gesture_schema, "glove-mode-supported") &&
+          g_settings_get_boolean (self->gesture_settings, "glove-mode-supported"))
+        g_settings_bind (self->gesture_settings, "glove-mode-enabled",
+                         self->glove_mode_row, "active",
+                         G_SETTINGS_BIND_DEFAULT);
+      else
+        gtk_widget_set_visible (GTK_WIDGET (self->glove_mode_row), FALSE);
+
+      if (g_settings_schema_has_key (gesture_schema, "palm-rejection-supported") &&
+          g_settings_get_boolean (self->gesture_settings, "palm-rejection-supported"))
+        g_settings_bind (self->gesture_settings, "palm-rejection-enabled",
+                         self->palm_rejection_row, "active",
+                         G_SETTINGS_BIND_DEFAULT);
+      else
+        gtk_widget_set_visible (GTK_WIDGET (self->palm_rejection_row), FALSE);
     }
   else
     {
-      gtk_widget_set_sensitive (GTK_WIDGET (self->wake_gesture_row), FALSE);
-      gtk_widget_set_sensitive (GTK_WIDGET (self->tilt_wake_gesture_row), FALSE);
+      gtk_widget_set_visible (GTK_WIDGET (self->wake_gesture_row), FALSE);
+      gtk_widget_set_visible (GTK_WIDGET (self->tilt_wake_gesture_row), FALSE);
+      gtk_widget_set_visible (GTK_WIDGET (self->glove_mode_row), FALSE);
+      gtk_widget_set_visible (GTK_WIDGET (self->palm_rejection_row), FALSE);
     }
 }

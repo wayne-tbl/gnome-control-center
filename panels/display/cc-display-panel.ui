@@ -191,6 +191,23 @@
                   </object>
                 </child>
 
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <child>
+                      <object class="AdwSwitchRow" id="glove_mode_row">
+                        <property name="title" translatable="yes">Glove Mode</property>
+                        <property name="subtitle" translatable="yes">Enable or disable glove mode</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwSwitchRow" id="palm_rejection_row">
+                        <property name="title" translatable="yes">Palm Rejection</property>
+                        <property name="subtitle" translatable="yes">Enable or disable palm rejection</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
               </object>
             </property>
           </object>
