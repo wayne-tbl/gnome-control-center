@@ -33,8 +33,10 @@ struct _CcCameraPage
 
   GtkListBox   *camera_apps_list_box;
   AdwSwitchRow *camera_row;
+  AdwSwitchRow *camera_background;
 
   GSettings    *privacy_settings;
+  GSettings    *camera_settings;
   GCancellable *cancellable;
 
   GDBusProxy   *perm_store;
@@ -415,11 +417,15 @@ cc_camera_page_class_init (CcCameraPageClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class, CcCameraPage, camera_apps_list_box);
   gtk_widget_class_bind_template_child (widget_class, CcCameraPage, camera_row);
+  gtk_widget_class_bind_template_child (widget_class, CcCameraPage, camera_background);
 }
 
 static void
 cc_camera_page_init (CcCameraPage *self)
 {
+  GSettingsSchemaSource *schema_source;
+  g_autoptr (GSettingsSchema) camera_schema = NULL;
+
   gtk_widget_init_template (GTK_WIDGET (self));
 
   self->camera_icon_size_group = gtk_size_group_new (GTK_SIZE_GROUP_BOTH);
@@ -450,4 +456,25 @@ cc_camera_page_init (CcCameraPage *self)
                             self->cancellable,
                             on_perm_store_ready,
                             self);
+
+  schema_source = g_settings_schema_source_get_default();
+  camera_schema = g_settings_schema_source_lookup (schema_source, "io.furios.camera", TRUE);
+
+  if (camera_schema)
+    self->camera_settings = g_settings_new ("io.furios.camera");
+  else
+    self->camera_settings = NULL;
+  if (self->camera_settings)
+    {
+      if (g_settings_schema_has_key (camera_schema, "camera-background"))
+          g_settings_bind (self->camera_settings, "camera-background",
+          self->camera_background, "active",
+          G_SETTINGS_BIND_DEFAULT);
+      else
+        gtk_widget_set_visible (GTK_WIDGET (self->camera_background), FALSE);
+    }
+  else
+    {
+      gtk_widget_set_visible (GTK_WIDGET (self->camera_background), FALSE);
+    }
 }

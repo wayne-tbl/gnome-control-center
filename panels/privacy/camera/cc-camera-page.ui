@@ -24,6 +24,18 @@
 
             <child>
               <object class="AdwPreferencesGroup">
+                <child>
+                  <object class="AdwSwitchRow" id="camera_background">
+                    <property name="title" translatable="yes">_Background Running</property>
+                    <property name="subtitle" translatable="yes">Allow Camera app to run in the background for faster launch time</property>
+                    <property name="use-underline">True</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <child>
+              <object class="AdwPreferencesGroup">
                 <property name="title" translatable="yes">Permitted Apps</property>
                 <property name="description" translatable="yes">The following sandboxed apps have been given permission to use cameras. Apps that are not sandboxed can use cameras without asking for permission.</property>
                 <property name="visible">FALSE</property>
