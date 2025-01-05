@@ -16,6 +16,12 @@ template $CcCameraPage: Adw.NavigationPage {
           subtitle: _("Allow permitted apps to use cameras");
           use-underline: true;
         }
+
+        Adw.SwitchRow camera_background {
+          title: _("_Background Running");
+          subtitle: _("Allow Camera app to run in the background for faster launch time");
+          use-underline: true;
+        }
       }
 
       Adw.PreferencesGroup {
