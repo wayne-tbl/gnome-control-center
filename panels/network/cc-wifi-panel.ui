@@ -42,7 +42,7 @@
                 <child>
                   <object class="AdwSwitchRow" id="rfkill_row">
                     <property name="title" translatable="yes">Airplane Mode</property>
-                    <property name="subtitle" translatable="yes">Disables Wi-Fi, Bluetooth and mobile broadband</property>
+                    <property name="subtitle" translatable="yes">Disables mobile broadband</property>
                     <signal name="notify::active" handler="rfkill_switch_notify_activate_cb" object="CcWifiPanel" swapped="yes" />
                   </object>
                 </child>
