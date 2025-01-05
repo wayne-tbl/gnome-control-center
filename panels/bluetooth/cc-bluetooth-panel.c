@@ -121,6 +121,11 @@ adapter_status_changed_cb (CcBluetoothPanel *self)
 	gboolean sensitive, powered;
 	const char *page;
 
+	self->hardware_airplane_mode = FALSE;
+	self->bt_airplane_mode = FALSE;
+	self->airplane_mode = FALSE;
+	self->has_airplane_mode = TRUE;
+
 	g_debug ("Updating airplane mode: BluetoothHasAirplaneMode %d, BluetoothHardwareAirplaneMode %d, BluetoothAirplaneMode %d, AirplaneMode %d",
 		 self->has_airplane_mode, self->hardware_airplane_mode, self->bt_airplane_mode, self->airplane_mode);
 
