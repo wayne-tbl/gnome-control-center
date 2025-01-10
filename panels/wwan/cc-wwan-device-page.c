@@ -39,6 +39,7 @@
 #include "cc-wwan-sim-lock-dialog.h"
 #include "cc-wwan-apn-dialog.h"
 #include "cc-wwan-device-page.h"
+#include "cc-wwan-mms-dialog.h"
 #include "cc-wwan-resources.h"
 
 #include "shell/cc-application.h"
@@ -93,6 +94,8 @@ struct _CcWwanDevicePage
   gboolean is_self_change;
   gboolean is_retry;
 
+  CcListRow     *mms_settings_row;
+  GtkWindow     *mms_dialog;
   CcListRow     *stk_row;
 };
 
@@ -164,6 +167,35 @@ wwan_data_show_apn_dialog (CcWwanDevicePage *self)
     }
 
   gtk_widget_set_visible (GTK_WIDGET (self->apn_dialog), TRUE);
+}
+
+static gboolean
+wwan_mms_dialog_closed_cb (CcWwanDevicePage *self)
+{
+  if (gtk_widget_in_destruction (GTK_WIDGET (self)))
+    return FALSE;
+
+  g_object_set_data (G_OBJECT (self->mms_dialog), "row", NULL);
+
+  return FALSE;
+}
+
+static void
+wwan_data_show_mms_dialog (CcWwanDevicePage *self)
+{
+  GtkWindow *top_level;
+
+  top_level = GTK_WINDOW (gtk_widget_get_root (GTK_WIDGET (self)));
+
+  if (!self->mms_dialog)
+    {
+      self->mms_dialog = cc_wwan_mms_dialog_new (top_level, self->device);
+      g_signal_connect_object (self->mms_dialog, "unmap",
+                               G_CALLBACK (wwan_mms_dialog_closed_cb),
+                               self, G_CONNECT_SWAPPED);
+    }
+
+  gtk_widget_set_visible (GTK_WIDGET (self->mms_dialog), TRUE);
 }
 
 static void
@@ -418,6 +450,10 @@ wwan_advanced_settings_activated_cb (CcWwanDevicePage *self,
     {
       wwan_data_show_apn_dialog (self);
     }
+  else if (row == self->mms_settings_row)
+    {
+      wwan_data_show_mms_dialog (self);
+    }
   else if (row == self->stk_row)
     {
       cc_wwan_open_stk_tool (self);
@@ -546,6 +582,7 @@ cc_wwan_device_page_dispose (GObject *object)
   CcWwanDevicePage *self = (CcWwanDevicePage *)object;
 
   g_clear_pointer (&self->apn_dialog, gtk_window_destroy);
+  g_clear_pointer (&self->mms_dialog, gtk_window_destroy);
   g_clear_pointer (&self->details_dialog, gtk_window_destroy);
   g_clear_pointer (&self->network_mode_dialog, gtk_window_destroy);
   g_clear_pointer (&self->network_dialog, gtk_window_destroy);
@@ -600,6 +637,7 @@ cc_wwan_device_page_class_init (CcWwanDevicePageClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, wwan_advanced_settings_activated_cb);
 
   gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, stk_row);
+  gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, mms_settings_row);
 }
 
 static void

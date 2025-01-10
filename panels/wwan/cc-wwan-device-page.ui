@@ -143,6 +143,14 @@
                           </object>
                         </child>
 
+                        <!-- MMS Settings -->
+                        <child>
+                          <object class="CcListRow" id="mms_settings_row">
+                            <property name="show-arrow">true</property>
+                            <property name="title" translatable="yes">_Multimedia Messaging Service</property>
+                          </object>
+                        </child>
+
                         <!-- SIM Lock -->
                         <child>
                           <object class="CcListRow" id="sim_lock_row">
