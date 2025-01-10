@@ -1,0 +1,65 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcWwanMmsDialog: Dialog {
+  default-height: 480;
+  default-width: 360;
+  hide-on-close: true;
+  title: _("MMS Settings");
+  modal: true;
+
+  [titlebar]
+  HeaderBar {
+    [start]
+    Button save_button {
+      label: _("_Save");
+      use-underline: true;
+
+      styles [
+        "suggested-action",
+      ]
+    }
+  }
+
+  child: Box {
+    orientation: vertical;
+    margin-start: 12;
+    margin-end: 12;
+    margin-top: 12;
+    margin-bottom: 12;
+    spacing: 12;
+
+    ListBox {
+      selection-mode: none;
+
+      styles [
+        "content",
+      ]
+
+      Adw.EntryRow message_proxy_row {
+        title: _("Message Proxy");
+        text: "";
+      }
+
+      Adw.EntryRow message_center_row {
+        title: _("Message Center (MMSC)");
+        text: "";
+      }
+
+      Adw.EntryRow access_point_row {
+        title: _("Access Point Name (APN)");
+        text: "";
+      }
+
+      Adw.EntryRow username_row {
+        title: _("Username");
+        text: "";
+      }
+
+      Adw.EntryRow password_row {
+        title: _("Password");
+        text: "";
+      }
+    }
+  };
+}

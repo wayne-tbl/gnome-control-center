@@ -1534,3 +1534,14 @@ cc_wwan_device_get_ims_sms_capable (CcWwanDevice *self)
 
   return g_strdup (sms_capable ? "Yes" : "No");
 }
+
+const gchar *
+cc_wwan_device_get_primary_port (CcWwanDevice *self)
+{
+  g_return_val_if_fail (CC_IS_WWAN_DEVICE (self), NULL);
+
+  const gchar *port_name;
+  port_name = mm_modem_get_primary_port (self->modem);
+
+  return port_name;
+}

@@ -17,6 +17,7 @@ ui_sources = files(
   'cc-wwan-details-dialog.blp',
   'cc-wwan-device-page.blp',
   'cc-wwan-mode-dialog.blp',
+  'cc-wwan-mms-dialog.blp',
   'cc-wwan-network-dialog.blp',
   'cc-wwan-panel.blp',
   'cc-wwan-sim-lock-dialog.blp',
@@ -43,6 +44,7 @@ sources = files(
   'cc-wwan-details-dialog.c',
   'cc-wwan-sim-lock-dialog.c',
   'cc-wwan-apn-dialog.c',
+  'cc-wwan-mms-dialog.c',
   'cc-wwan-ims.c',
 )
 
