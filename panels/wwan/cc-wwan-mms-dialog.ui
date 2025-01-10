@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="CcWwanMmsDialog" parent="GtkDialog">
+    <property name="default-height">480</property>
+    <property name="default-width">360</property>
+    <property name="hide-on-close">True</property>
+    <property name="title" translatable="yes">MMS Settings</property>
+    <property name="modal">True</property>
+    <child type="titlebar">
+      <object class="GtkHeaderBar">
+        <child type="start">
+          <object class="GtkButton" id="save_button">
+            <property name="label" translatable="yes">_Save</property>
+            <property name="use-underline">True</property>
+            <style>
+              <class name="suggested-action"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="margin-start">12</property>
+        <property name="margin-end">12</property>
+        <property name="margin-top">12</property>
+        <property name="margin-bottom">12</property>
+        <property name="spacing">12</property>
+        <child>
+          <object class="GtkListBox">
+            <property name="selection-mode">none</property>
+            <style>
+              <class name="content"/>
+            </style>
+            <child>
+              <object class="AdwEntryRow" id="message_proxy_row">
+                <property name="title" translatable="yes">Message Proxy</property>
+                <property name="text"></property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwEntryRow" id="message_center_row">
+                <property name="title" translatable="yes">Message Center</property>
+                <property name="text"></property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwEntryRow" id="access_point_row">
+                <property name="title" translatable="yes">Access Point Name</property>
+                <property name="text"></property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
