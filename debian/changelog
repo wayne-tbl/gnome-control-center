@@ -1,3 +1,9 @@
+gnome-control-center (1:46.7-0ubuntu0.24.04.1) UNRELEASED; urgency=medium
+
+  * New upstream release (LP: #2095618).
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Thu, 23 Jan 2025 15:59:23 +0100
+
 gnome-control-center (1:46.5-0ubuntu0.24.04.1) noble; urgency=medium
 
   [ Alessandro Astone ]
