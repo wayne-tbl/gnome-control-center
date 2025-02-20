@@ -16,179 +16,170 @@
                   <object class="AdwPreferencesPage" id="main_page">
                     <child>
                       <object class="AdwPreferencesGroup">
-                        <property name="title" translatable="yes">Assistant button settings</property>
-                      </object>
-                      <object class="AdwPreferencesPage" id="preferences">
-
+                        <property name="title" translatable="yes">Gesture to configure</property>
                         <child>
-                          <object class="AdwPreferencesGroup">
-                            <property name="title" translatable="yes">Gesture to configure</property>
+                          <object class="AdwActionRow" id="button_action_row">
+                            <property name="title" translatable="yes">Gesture</property>
+                            <property name="subtitle-lines">0</property>
                             <child>
-                              <object class="AdwActionRow" id="button_action_row">
-                                <property name="title" translatable="yes">Gesture</property>
-                                <property name="subtitle-lines">0</property>
+                              <object class="GtkBox" id="button_action_box">
+                                <property name="valign">center</property>
+                                <property name="homogeneous">True</property>
+                                <property name="margin_top">12</property>
+                                <property name="margin_bottom">12</property>
+                                <style>
+                                 <class name="linked"/>
+                                </style>
                                 <child>
-                                  <object class="GtkBox" id="button_action_box">
-                                    <property name="valign">center</property>
-                                    <property name="homogeneous">True</property>
-                                    <property name="margin_top">12</property>
-                                    <property name="margin_bottom">12</property>
-                                    <style>
-                                     <class name="linked"/>
-                                    </style>
-                                    <child>
-                                      <object class="GtkToggleButton" id="short_press">
-                                        <property name="hexpand">True</property>
-                                        <property name="label" translatable="yes">_Short</property>
-                                        <property name="height_request">35</property>
-                                        <property name="use-underline">True</property>
-                                        <property name="group">long_press</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkToggleButton" id="long_press">
-                                        <property name="hexpand">True</property>
-                                        <property name="label" translatable="yes">_Long</property>
-                                        <property name="height_request">35</property>
-                                        <property name="use-underline">True</property>
-                                      </object>
-                                    </child>
-                                   <child>
-                                      <object class="GtkToggleButton" id="double_press">
-                                        <property name="hexpand">True</property>
-                                        <property name="label" translatable="yes">_Double</property>
-                                        <property name="height_request">35</property>
-                                        <property name="use-underline">True</property>
-                                        <property name="group">long_press</property>
-                                      </object>
-                                    </child>
+                                  <object class="GtkToggleButton" id="short_press">
+                                    <property name="hexpand">True</property>
+                                    <property name="label" translatable="yes">_Short</property>
+                                    <property name="height_request">35</property>
+                                    <property name="use-underline">True</property>
+                                    <property name="group">long_press</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkToggleButton" id="long_press">
+                                    <property name="hexpand">True</property>
+                                    <property name="label" translatable="yes">_Long</property>
+                                    <property name="height_request">35</property>
+                                    <property name="use-underline">True</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkToggleButton" id="double_press">
+                                    <property name="hexpand">True</property>
+                                    <property name="label" translatable="yes">_Double</property>
+                                    <property name="height_request">35</property>
+                                    <property name="use-underline">True</property>
+                                    <property name="group">long_press</property>
                                   </object>
                                 </child>
                               </object>
                             </child>
                           </object>
                         </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwPreferencesGroup" id="action_switch_group">
+                        <property name="title" translatable="yes">Predefined actions</property>
 
                         <child>
-                          <object class="AdwPreferencesGroup" id="action_switch_group">
-                            <property name="title" translatable="yes">Predefined actions</property>
-
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">No Action (Disable)</property>
-                                <property name="use-underline">True</property>
-                                <child type="prefix">
-                                  <object class="GtkCheckButton" id="no_action">
-                                    <property name="valign">center</property>
-                                  </object>
-                                </child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">No Action (Disable)</property>
+                            <property name="use-underline">True</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="no_action">
+                                <property name="valign">center</property>
                               </object>
                             </child>
+                          </object>
+                        </child>
 
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Toggle flashlight</property>
-                                <property name="use-underline">True</property>
-                                <child type="prefix">
-                                  <object class="GtkCheckButton" id="toggle_flashlight">
-                                    <property name="valign">center</property>
-                                    <property name="group">no_action</property>
-                                  </object>
-                                </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Toggle flashlight</property>
+                            <property name="use-underline">True</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="toggle_flashlight">
+                                <property name="valign">center</property>
+                                <property name="group">no_action</property>
                               </object>
                             </child>
+                          </object>
+                        </child>
 
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Open camera</property>
-                                <property name="use-underline">True</property>
-                                <child type="prefix">
-                                  <object class="GtkCheckButton" id="open_camera">
-                                    <property name="valign">center</property>
-                                    <property name="group">no_action</property>
-                                  </object>
-                                </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Open camera</property>
+                            <property name="use-underline">True</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="open_camera">
+                                <property name="valign">center</property>
+                                <property name="group">no_action</property>
                               </object>
                             </child>
+                          </object>
+                        </child>
 
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Take picture</property>
-                                <property name="use-underline">True</property>
-                                <child type="prefix">
-                                  <object class="GtkCheckButton" id="take_picture">
-                                    <property name="valign">center</property>
-                                    <property name="group">no_action</property>
-                                  </object>
-                                </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Take picture</property>
+                            <property name="use-underline">True</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="take_picture">
+                                <property name="valign">center</property>
+                                <property name="group">no_action</property>
                               </object>
                             </child>
+                          </object>
+                        </child>
 
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Take screenshot</property>
-                                <property name="use-underline">True</property>
-                                <child type="prefix">
-                                  <object class="GtkCheckButton" id="take_screenshot">
-                                    <property name="valign">center</property>
-                                    <property name="group">no_action</property>
-                                  </object>
-                                </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Take screenshot</property>
+                            <property name="use-underline">True</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="take_screenshot">
+                                <property name="valign">center</property>
+                                <property name="group">no_action</property>
                               </object>
                             </child>
+                          </object>
+                        </child>
 
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Send Tab key</property>
-                                <property name="use-underline">True</property>
-                                <child type="prefix">
-                                  <object class="GtkCheckButton" id="send_tab">
-                                    <property name="valign">center</property>
-                                    <property name="group">no_action</property>
-                                  </object>
-                                </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Send Tab key</property>
+                            <property name="use-underline">True</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="send_tab">
+                                <property name="valign">center</property>
+                                <property name="group">no_action</property>
                               </object>
                             </child>
+                          </object>
+                        </child>
 
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Manual autorotation</property>
-                                <property name="use-underline">True</property>
-                                <child type="prefix">
-                                  <object class="GtkCheckButton" id="manual_autorotate">
-                                    <property name="valign">center</property>
-                                    <property name="group">no_action</property>
-                                  </object>
-                                </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Manual autorotation</property>
+                            <property name="use-underline">True</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="manual_autorotate">
+                                <property name="valign">center</property>
+                                <property name="group">no_action</property>
                               </object>
                             </child>
+                          </object>
+                        </child>
 
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Send Back key</property>
-                                <property name="use-underline">True</property>
-                                <child type="prefix">
-                                  <object class="GtkCheckButton" id="send_xf86back">
-                                    <property name="valign">center</property>
-                                    <property name="group">no_action</property>
-                                  </object>
-                                </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Send Back key</property>
+                            <property name="use-underline">True</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="send_xf86back">
+                                <property name="valign">center</property>
+                                <property name="group">no_action</property>
                               </object>
                             </child>
+                          </object>
+                        </child>
 
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Send Escape key</property>
-                                <property name="use-underline">True</property>
-                                <child type="prefix">
-                                  <object class="GtkCheckButton" id="send_escape">
-                                    <property name="valign">center</property>
-                                    <property name="group">no_action</property>
-                                  </object>
-                                </child>
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">Send Escape key</property>
+                            <property name="use-underline">True</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="send_escape">
+                                <property name="valign">center</property>
+                                <property name="group">no_action</property>
                               </object>
                             </child>
-
                           </object>
                         </child>
 
