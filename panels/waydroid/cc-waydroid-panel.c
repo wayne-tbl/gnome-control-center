@@ -1034,27 +1034,71 @@ set_widgets_state (CcWaydroidPanel *self, gboolean state)
 }
 
 static gboolean
-set_enable_widgets_state (CcWaydroidPanel *self)
+close_bottom_sheet_and_refresh (CcWaydroidPanel *self)
 {
   set_widgets_state (self, TRUE);
+  adw_bottom_sheet_set_open (self->bottom_sheet, FALSE);
   return G_SOURCE_REMOVE;
+}
+
+static void
+show_confirmation_alert_dialog (CcWaydroidPanel *self,
+                                const gchar *title,
+                                const gchar *description,
+                                const gchar *confirm_text,
+                                GCallback confirm_callback)
+{
+  AdwDialog *dialog;
+  GtkWindow *parent;
+
+  parent = GTK_WINDOW (gtk_widget_get_root (GTK_WIDGET (self)));
+
+  dialog = ADW_DIALOG (adw_alert_dialog_new (title, description));
+  adw_alert_dialog_add_response (ADW_ALERT_DIALOG (dialog), "cancel", ("Cancel"));
+  adw_alert_dialog_add_response (ADW_ALERT_DIALOG (dialog), "confirm", confirm_text);
+  adw_alert_dialog_set_response_appearance (ADW_ALERT_DIALOG (dialog), "confirm", ADW_RESPONSE_DESTRUCTIVE);
+  adw_alert_dialog_set_default_response (ADW_ALERT_DIALOG (dialog), "cancel");
+
+  g_signal_connect (dialog, "response::confirm", confirm_callback, self);
+
+  adw_dialog_present (dialog, GTK_WIDGET (parent));
+}
+
+static void
+on_remove_app_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel *self)
+{
+  if (g_strcmp0 (response, "confirm") == 0) {
+    gchar *pkgname = self->selected_app_pkgname;
+    if (pkgname != NULL) {
+      set_widgets_state (self, FALSE);
+
+      gchar *stripped_pkgname = g_strstrip (pkgname);
+      waydroid_remove_app (stripped_pkgname);
+
+      g_timeout_add_seconds (5, (GSourceFunc) close_bottom_sheet_and_refresh, self);
+      update_app_list_threaded (self);
+    }
+  }
 }
 
 static void
 cc_waydroid_panel_uninstall_app (GtkWidget *widget, CcWaydroidPanel *self)
 {
-  gchar *pkgname = self->selected_app_pkgname;
-  if (pkgname != NULL) {
-    set_widgets_state (self, FALSE);
+  if (self->selected_app_pkgname != NULL) {
+    gchar *title = g_strdup_printf (("Uninstall %s?"), self->selected_app_name);
+    gchar *description = g_strdup_printf (("This will completely remove %s from your device. This action cannot be undone."), self->selected_app_name);
 
-    gchar *stripped_pkgname = g_strstrip (pkgname);
-    waydroid_remove_app (stripped_pkgname);
+    show_confirmation_alert_dialog (self,
+                                    title,
+                                    description,
+                                    ("Uninstall"),
+                                    G_CALLBACK (on_remove_app_confirm));
 
-    g_timeout_add_seconds (5, (GSourceFunc) set_enable_widgets_state, self);
-
-    update_app_list_threaded (self);
-  } else
+    g_free (title);
+    g_free (description);
+  } else {
     show_toast (self, "No app selected");
+  }
 }
 
 static gpointer
@@ -1231,6 +1275,38 @@ update_waydroid_info_idle (gpointer user_data)
 }
 
 static void
+on_clear_app_data_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel *self)
+{
+  if (g_strcmp0 (response, "confirm") == 0) {
+    gchar *pkgname = self->selected_app_pkgname;
+    if (pkgname != NULL) {
+      set_widgets_state (self, FALSE);
+
+      gchar *stripped_pkgname = g_strstrip (pkgname);
+      waydroid_clear_app_data (stripped_pkgname);
+
+      g_timeout_add_seconds (2, (GSourceFunc) close_bottom_sheet_and_refresh, self);
+    }
+  }
+}
+
+static void
+on_kill_app_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel *self)
+{
+  if (g_strcmp0 (response, "confirm") == 0) {
+    gchar *pkgname = self->selected_app_pkgname;
+    if (pkgname != NULL) {
+      set_widgets_state (self, FALSE);
+
+      gchar *stripped_pkgname = g_strstrip (pkgname);
+      waydroid_kill_app (stripped_pkgname);
+
+      g_timeout_add_seconds (2, (GSourceFunc) close_bottom_sheet_and_refresh, self);
+    }
+  }
+}
+
+static void
 cc_waydroid_refresh_button (GtkButton *button, gpointer user_data)
 {
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
@@ -1297,31 +1373,40 @@ cc_waydroid_panel_open_store (GtkButton *button, gpointer user_data)
 static void
 cc_waydroid_panel_clear_app_data (GtkWidget *widget, CcWaydroidPanel *self)
 {
-  gchar *pkgname = self->selected_app_pkgname;
-  if (pkgname != NULL) {
-    set_widgets_state (self, FALSE);
+  if (self->selected_app_pkgname != NULL) {
+    gchar *title = g_strdup_printf (("Clear data for %s?"), self->selected_app_name);
+    gchar *description = g_strdup_printf (("This will permanently delete all app data for %s. This action cannot be undone."), self->selected_app_name);
 
-    gchar *stripped_pkgname = g_strstrip (pkgname);
-    waydroid_clear_app_data (stripped_pkgname);
-
-    g_timeout_add_seconds (2, (GSourceFunc) set_enable_widgets_state, self);
-  } else
+    show_confirmation_alert_dialog (self,
+                                    title,
+                                    description,
+                                    ("Clear Data"),
+                                    G_CALLBACK (on_clear_app_data_confirm));
+    g_free (title);
+    g_free (description);
+  } else {
     show_toast (self, "No app selected");
+  }
 }
 
 static void
 cc_waydroid_panel_kill_app (GtkWidget *widget, CcWaydroidPanel *self)
 {
-  gchar *pkgname = self->selected_app_pkgname;
-  if (pkgname != NULL) {
-    set_widgets_state (self, FALSE);
+  if (self->selected_app_pkgname != NULL) {
+    gchar *title = g_strdup_printf (("Kill %s?"), self->selected_app_name);
+    gchar *description = g_strdup_printf (("This will forcefully stop %s. Any unsaved data may be lost."), self->selected_app_name);
 
-    gchar *stripped_pkgname = g_strstrip (pkgname);
-    waydroid_kill_app (stripped_pkgname);
+    show_confirmation_alert_dialog (self,
+                                    title,
+                                    description,
+                                    ("Kill App"),
+                                    G_CALLBACK (on_kill_app_confirm));
 
-    g_timeout_add_seconds (2, (GSourceFunc) set_enable_widgets_state, self);
-  } else
+    g_free (title);
+    g_free (description);
+  } else {
     show_toast (self, "No app selected");
+  }
 }
 
 static void

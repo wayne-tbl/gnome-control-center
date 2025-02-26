@@ -248,6 +248,7 @@
 
                     <child>
                       <object class="GtkButton" id="remove_app_button">
+                        <property name="css-classes">destructive-action</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Remove</property>
@@ -260,6 +261,7 @@
 
                     <child>
                       <object class="GtkButton" id="clear_app_data_button">
+                        <property name="css-classes">destructive-action</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Clear app data</property>
@@ -272,6 +274,7 @@
 
                     <child>
                       <object class="GtkButton" id="kill_app_button">
+                        <property name="css-classes">destructive-action</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Kill app</property>
