@@ -9,7 +9,6 @@
 #include "cc-util.h"
 
 #include "panels/nfc/cc-systemd-service.h"
-#include "cc-systemd-service-ext.h"
 
 #define WAYDROID_CONTAINER_DBUS_NAME          "id.waydro.Container"
 #define WAYDROID_CONTAINER_DBUS_PATH          "/ContainerManager"
@@ -19,7 +18,7 @@
 #define WAYDROID_SESSION_DBUS_PATH          "/SessionManager"
 #define WAYDROID_SESSION_DBUS_INTERFACE     "id.waydro.SessionManager"
 
-#define WAYDROID_NOTIFICATION_CLIENT_SERVICE  "waydroid-notification-client.service"
+#define WAYDROID_NOTIFICATION_SERVER_SERVICE  "waydroid-notification-server.service"
 
 struct _CcWaydroidPanel {
   CcPanel            parent;
@@ -694,6 +693,47 @@ waydroid_get_all_names (void)
   return names;
 }
 
+static void
+waydroid_enable_notification_server (gboolean enable)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_CONTAINER_DBUS_NAME,
+    WAYDROID_CONTAINER_DBUS_PATH,
+    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s", error->message);
+    g_clear_error (&error);
+    return;
+  }
+
+  g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "EnableNotificationServer",
+    g_variant_new("(b)", enable),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling EnableNotificationServer: %s", error->message);
+    g_clear_error (&error);
+  }
+
+  g_object_unref (waydroid_proxy);
+}
+
 static int
 is_mounted (const char *path)
 {
@@ -738,27 +778,6 @@ is_mounted (const char *path)
 }
 
 static void
-cc_waydroid_panel_enable_notification (CcWaydroidPanel *self, gboolean state)
-{
-  GError *error = NULL;
-
-  if (!state) {
-    cc_stop_service (WAYDROID_NOTIFICATION_CLIENT_SERVICE, G_BUS_TYPE_SESSION, &error);
-    cc_mask_user_service (WAYDROID_NOTIFICATION_CLIENT_SERVICE);
-    cc_reload_systemd (G_BUS_TYPE_SESSION, &error);
-  } else {
-    cc_unmask_user_service (WAYDROID_NOTIFICATION_CLIENT_SERVICE);
-    cc_reload_systemd (G_BUS_TYPE_SESSION, &error);
-    cc_start_service (WAYDROID_NOTIFICATION_CLIENT_SERVICE, G_BUS_TYPE_SESSION, &error);
-  }
-
-  if (error != NULL) {
-    g_printerr ("Failed to toggle notification client service: %s\n", error->message);
-    g_error_free (error);
-  }
-}
-
-static void
 cc_waydroid_panel_nfc (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
 {
   waydroid_toggle_nfc ();
@@ -769,7 +788,7 @@ cc_waydroid_panel_nfc (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
 static void
 cc_waydroid_panel_notification (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
 {
-  cc_waydroid_panel_enable_notification (self, state);
+  waydroid_enable_notification_server (state);
   gtk_switch_set_state (GTK_SWITCH (self->waydroid_notification_switch), state);
   gtk_switch_set_active (GTK_SWITCH (self->waydroid_notification_switch), state);
 }
@@ -1145,7 +1164,7 @@ check_waydroid_notification (gpointer user_data)
 {
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
 
-  self->waydroid_notification_active = cc_is_service_active (WAYDROID_NOTIFICATION_CLIENT_SERVICE, G_BUS_TYPE_SESSION);
+  self->waydroid_notification_active = cc_is_service_active (WAYDROID_NOTIFICATION_SERVER_SERVICE, G_BUS_TYPE_SYSTEM);
 
   g_idle_add (check_notification_idle, self);
 
