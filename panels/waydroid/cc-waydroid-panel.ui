@@ -130,22 +130,6 @@
 
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title" translatable="yes">Android Vendor</property>
-                                    <property name="subtitle" translatable="yes">Vendor type of Android</property>
-                                    <property name="activatable">false</property>
-                                    <property name="use-underline">false</property>
-                                    <child>
-                                      <object class="GtkLabel" id="waydroid_vendor_label">
-                                        <property name="valign">center</property>
-                                        <property name="ellipsize">end</property>
-                                        <property name="selectable">true</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-
-                                <child>
-                                  <object class="AdwActionRow">
                                     <property name="title" translatable="yes">Android OS version</property>
                                     <property name="subtitle" translatable="yes">Android LineageOS version</property>
                                     <property name="activatable">false</property>

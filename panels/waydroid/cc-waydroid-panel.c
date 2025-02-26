@@ -30,7 +30,6 @@ struct _CcWaydroidPanel {
   GtkWidget        *waydroid_nfc_switch;
   GtkWidget        *waydroid_notification_switch;
   GtkWidget        *waydroid_ip_label;
-  GtkWidget        *waydroid_vendor_label;
   GtkWidget        *waydroid_version_label;
   AdwExpanderRow   *app_selector;
   GtkListBox       *app_list;
@@ -51,7 +50,6 @@ struct _CcWaydroidPanel {
   gchar            *selected_app_pkgname;
 
   gchar            *waydroid_ip_output;
-  gchar            *waydroid_vendor_output;
   gchar            *waydroid_version_output;
 
   gboolean         refreshing;
@@ -75,8 +73,6 @@ cc_waydroid_panel_finalize (GObject *object)
     g_free (self->selected_app_pkgname);
   if (self->waydroid_ip_output != NULL)
     g_free (self->waydroid_ip_output);
-  if (self->waydroid_vendor_output != NULL)
-    g_free (self->waydroid_vendor_output);
   if (self->waydroid_version_output != NULL)
     g_free (self->waydroid_version_output);
   if (self->apps != NULL)
@@ -260,54 +256,6 @@ waydroid_toggle_nfc (void)
   }
 
   g_object_unref (waydroid_proxy);
-}
-
-static gchar *
-waydroid_get_vendor (void)
-{
-  GDBusProxy *waydroid_proxy;
-  GError *error = NULL;
-  GVariant *result;
-  gchar *vendor = NULL;
-
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
-    G_BUS_TYPE_SESSION,
-    G_DBUS_PROXY_FLAGS_NONE,
-    NULL,
-    WAYDROID_SESSION_DBUS_NAME,
-    WAYDROID_SESSION_DBUS_PATH,
-    WAYDROID_SESSION_DBUS_INTERFACE,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_debug ("Error creating proxy: %s", error->message);
-    g_clear_error (&error);
-    return NULL;
-  }
-
-  result = g_dbus_proxy_call_sync(
-    waydroid_proxy,
-    "VendorType",
-    NULL,
-    G_DBUS_CALL_FLAGS_NONE,
-    G_MAXINT,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_debug ("Error calling VendorType: %s", error->message);
-    g_clear_error (&error);
-  } else {
-    g_variant_get (result, "(s)", &vendor);
-    g_variant_unref (result);
-  }
-
-  g_object_unref (waydroid_proxy);
-
-  return vendor;
 }
 
 static gchar *
@@ -1121,34 +1069,6 @@ cc_waydroid_panel_launch_app_threaded (GtkWidget *widget, CcWaydroidPanel *self)
 }
 
 static gboolean
-update_vendor_idle (gpointer user_data)
-{
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-
-  gtk_label_set_text (GTK_LABEL (self->waydroid_vendor_label), self->waydroid_vendor_output);
-
-  return G_SOURCE_REMOVE;
-}
-
-static gpointer
-update_waydroid_vendor (gpointer user_data)
-{
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-
-  self->waydroid_vendor_output = waydroid_get_vendor ();
-
-  g_idle_add (update_vendor_idle, self);
-
-  return NULL;
-}
-
-static void
-update_waydroid_vendor_threaded (CcWaydroidPanel *self)
-{
-  g_thread_new ("update_waydroid_vendor", update_waydroid_vendor, self);
-}
-
-static gboolean
 update_version_idle (gpointer user_data)
 {
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
@@ -1276,7 +1196,6 @@ static void
 update_waydroid_info (CcWaydroidPanel *self)
 {
   update_waydroid_ip_threaded (self);
-  update_waydroid_vendor_threaded (self);
   update_waydroid_version_threaded (self);
   update_app_list_threaded (self);
   check_waydroid_notification_threaded (self);
@@ -1488,7 +1407,6 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
     }
 
     gtk_label_set_text (GTK_LABEL (self->waydroid_ip_label), "");
-    gtk_label_set_text (GTK_LABEL (self->waydroid_vendor_label), "");
     gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), "");
 
     set_widgets_sensitive (FALSE,
@@ -1559,10 +1477,6 @@ cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
-                                        waydroid_vendor_label);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
                                         waydroid_version_label);
 
   gtk_widget_class_bind_template_child (widget_class,
@@ -1613,7 +1527,6 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
   self->selected_app_name = NULL;
   self->selected_app_pkgname = NULL;
   self->waydroid_ip_output = NULL;
-  self->waydroid_vendor_output = NULL;
   self->waydroid_version_output = NULL;
   self->apps = NULL;
   self->waydroid_notification_active = FALSE;
@@ -1670,7 +1583,6 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       gtk_switch_set_state (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);
       gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);
       g_signal_handlers_unblock_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
-      gtk_label_set_text (GTK_LABEL (self->waydroid_vendor_label), "");
       gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), "");
 
       set_widgets_sensitive (FALSE,
@@ -1709,7 +1621,6 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
                            GTK_WIDGET (self->kill_app_button),
                            NULL);
 
-    gtk_label_set_text (GTK_LABEL (self->waydroid_vendor_label), "");
     gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), "");
   }
 }
