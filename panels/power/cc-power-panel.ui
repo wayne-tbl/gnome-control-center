@@ -270,18 +270,6 @@
                     </child>
                   </object>
                 </child>
-                <child>
-                  <object class="AdwActionRow" id="batman_waydroidsave_row">
-                    <property name="title" translatable="yes">Android save</property>
-                    <property name="subtitle" translatable="yes">Allow Batman to set the Android container to powersave mode</property>
-                    <property name="activatable_widget">batman_waydroidsave_switch</property>
-                    <child>
-                      <object class="GtkSwitch" id="batman_waydroidsave_switch">
-                        <property name="valign">center</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
               </object>
             </child>
           </object>

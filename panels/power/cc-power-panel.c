@@ -44,7 +44,6 @@ struct _CcPowerPanel
   AdwSwitchRow      *als_row;
   AdwDialog         *automatic_suspend_dialog;
   CcListRow         *automatic_suspend_row;
-  GtkSwitch         *batman_waydroidsave_switch;
   GtkSwitch         *batman_wifisave_switch;
   GtkSwitch         *batman_hybrissave_switch;
   GtkSwitch         *batman_btsave_switch;
@@ -1251,7 +1250,6 @@ cc_power_panel_class_init (CcPowerPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, als_row);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, automatic_suspend_dialog);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, automatic_suspend_row);
-  gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_waydroidsave_switch);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_wifisave_switch);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_hybrissave_switch);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_btsave_switch);
@@ -1348,10 +1346,6 @@ cc_power_panel_init (CcPowerPanel *self)
   g_signal_connect (self->batman_service_enabled_switch, "state-set", G_CALLBACK (batman_service_enabled_switch_state_set), NULL);
 
   read_batman_config ();
-
-  gtk_switch_set_state (GTK_SWITCH (self->batman_waydroidsave_switch), batman_config.waydroidsave);
-  gtk_switch_set_active (GTK_SWITCH (self->batman_waydroidsave_switch), batman_config.waydroidsave);
-  g_signal_connect (self->batman_waydroidsave_switch, "state-set", G_CALLBACK (waydroidsave_switch_state_set), NULL);
 
   gtk_switch_set_state (GTK_SWITCH (self->batman_wifisave_switch), batman_config.wifisave);
   gtk_switch_set_active (GTK_SWITCH (self->batman_wifisave_switch), batman_config.wifisave);

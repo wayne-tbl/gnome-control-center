@@ -19,7 +19,6 @@ typedef struct {
     gboolean btsave;
     gboolean hybrissave;
     gboolean wifisave;
-    gboolean waydroidsave;
 } BatmanConfig;
 
 extern BatmanConfig batman_config;
@@ -56,6 +55,3 @@ hybrissave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);
 
 gboolean
 wifisave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);
-
-gboolean
-waydroidsave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);

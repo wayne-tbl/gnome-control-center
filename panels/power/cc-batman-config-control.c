@@ -27,7 +27,6 @@ read_batman_config ()
         batman_config.btsave = g_key_file_get_boolean (keyfile, "Settings", "BTSAVE", NULL);
         batman_config.hybrissave = g_key_file_get_boolean (keyfile, "Settings", "HYBRIS", NULL);
         batman_config.wifisave = g_key_file_get_boolean (keyfile, "Settings", "WIFI", NULL);
-        batman_config.waydroidsave = g_key_file_get_boolean (keyfile, "Settings", "WAYDROID", NULL);
     }
 
     g_key_file_free(keyfile);
@@ -183,20 +182,6 @@ gboolean
 wifisave_switch_state_set (GtkSwitch *switch_widget, gboolean state, gpointer)
 {
     int ret = update_config_value ("WIFI", state ? "true" : "false");
-
-    gtk_switch_set_state (GTK_SWITCH (switch_widget), state);
-    gtk_switch_set_active (GTK_SWITCH (switch_widget), state);
-
-    if (ret == 0)
-        return TRUE;
-    else
-        return FALSE;
-}
-
-gboolean
-waydroidsave_switch_state_set (GtkSwitch *switch_widget, gboolean state, gpointer)
-{
-    int ret = update_config_value ("WAYDROID", state ? "true" : "false");
 
     gtk_switch_set_state (GTK_SWITCH (switch_widget), state);
     gtk_switch_set_active (GTK_SWITCH (switch_widget), state);
