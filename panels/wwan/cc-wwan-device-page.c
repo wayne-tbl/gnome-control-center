@@ -578,10 +578,6 @@ cc_wwan_device_page_constructed (GObject *object)
                           self->network_name_row, "secondary-label",
                           G_BINDING_DEFAULT | G_BINDING_SYNC_CREATE);
 
-  g_object_bind_property (self->device, "network-mode",
-                          self->network_mode_row, "secondary-label",
-                          G_BINDING_DEFAULT | G_BINDING_SYNC_CREATE);
-
   g_signal_connect_object (self->device, "notify::enabled-locks",
                            (GCallback)cc_wwan_locks_changed_cb,
                            self, G_CONNECT_SWAPPED);
