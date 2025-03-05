@@ -161,4 +161,6 @@ gchar        *cc_wwan_device_get_ims_sms_capable     (CcWwanDevice *self);
 
 const gchar  *cc_wwan_device_get_primary_port        (CcWwanDevice *self);
 
+MMModem      *cc_wwan_device_get_mm_modem            (CcWwanDevice *self);
+
 G_END_DECLS

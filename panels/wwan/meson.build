@@ -14,6 +14,7 @@ i18n.merge_file(
 
 ui_sources = files(
   'cc-wwan-apn-dialog.blp',
+  'cc-wwan-bands-dialog.blp',
   'cc-wwan-details-dialog.blp',
   'cc-wwan-device-page.blp',
   'cc-wwan-mode-dialog.blp',
@@ -45,6 +46,7 @@ sources = files(
   'cc-wwan-sim-lock-dialog.c',
   'cc-wwan-apn-dialog.c',
   'cc-wwan-mms-dialog.c',
+  'cc-wwan-bands-dialog.c',
   'cc-wwan-ims.c',
 )
 

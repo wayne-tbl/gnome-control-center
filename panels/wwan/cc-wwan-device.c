@@ -1576,3 +1576,11 @@ cc_wwan_device_get_primary_port (CcWwanDevice *self)
 
   return port_name;
 }
+
+MMModem *
+cc_wwan_device_get_mm_modem (CcWwanDevice *self)
+{
+  g_return_val_if_fail (CC_IS_WWAN_DEVICE (self), NULL);
+
+  return self->modem;
+}
