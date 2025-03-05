@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="CcWwanBandsDialog" parent="GtkDialog">
+    <property name="title" translatable="yes">Enabled Bands</property>
+    <property name="default-height">480</property>
+    <property name="default-width">360</property>
+    <property name="hide-on-close">True</property>
+    <property name="modal">True</property>
+
+    <child>
+      <object class="AdwPreferencesPage">
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title">2G</property>
+            <child>
+              <object class="GtkListBox" id="twog_band_list">
+                <property name="selection-mode">none</property>
+                <style>
+                  <class name="boxed-list"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title">3G</property>
+            <child>
+              <object class="GtkListBox" id="threeg_band_list">
+                <property name="selection-mode">none</property>
+                <style>
+                  <class name="boxed-list"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title">4G</property>
+            <child>
+              <object class="GtkListBox" id="fourg_band_list">
+                <property name="selection-mode">none</property>
+                <style>
+                  <class name="boxed-list"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title">5G</property>
+            <child>
+              <object class="GtkListBox" id="fiveg_band_list">
+                <property name="selection-mode">none</property>
+                <style>
+                  <class name="boxed-list"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+
+  </template>
+</interface>
