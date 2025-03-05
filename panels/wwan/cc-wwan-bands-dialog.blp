@@ -1,0 +1,60 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcWwanBandsDialog: Dialog {
+  title: _("Enabled Bands");
+  default-height: 480;
+  default-width: 360;
+  hide-on-close: true;
+  modal: true;
+
+  child: Adw.PreferencesPage {
+    Adw.PreferencesGroup {
+      title: "2G";
+
+      ListBox twog_band_list {
+        selection-mode: none;
+
+        styles [
+          "boxed-list",
+        ]
+      }
+    }
+
+    Adw.PreferencesGroup {
+      title: "3G";
+
+      ListBox threeg_band_list {
+        selection-mode: none;
+
+        styles [
+          "boxed-list",
+        ]
+      }
+    }
+
+    Adw.PreferencesGroup {
+      title: "4G";
+
+      ListBox fourg_band_list {
+        selection-mode: none;
+
+        styles [
+          "boxed-list",
+        ]
+      }
+    }
+
+    Adw.PreferencesGroup {
+      title: "5G";
+
+      ListBox fiveg_band_list {
+        selection-mode: none;
+
+        styles [
+          "boxed-list",
+        ]
+      }
+    }
+  };
+}
