@@ -40,6 +40,7 @@
 #include "cc-wwan-apn-dialog.h"
 #include "cc-wwan-device-page.h"
 #include "cc-wwan-mms-dialog.h"
+#include "cc-wwan-bands-dialog.h"
 #include "cc-wwan-resources.h"
 
 #include "shell/cc-application.h"
@@ -96,6 +97,8 @@ struct _CcWwanDevicePage
 
   CcListRow     *mms_settings_row;
   GtkWindow     *mms_dialog;
+  CcListRow     *enabled_bands_row;
+  GtkWindow     *bands_dialog;
   CcListRow     *stk_row;
 };
 
@@ -436,6 +439,13 @@ wwan_network_settings_activated_cb (CcWwanDevicePage *self,
 
       dialog = GTK_WIDGET (self->network_dialog);
     }
+  else if (row == self->enabled_bands_row)
+    {
+      if (!self->bands_dialog)
+        self->bands_dialog = cc_wwan_bands_dialog_new (top_level, self->device);
+      
+      dialog = GTK_WIDGET (self->bands_dialog);
+    }
   else
     {
       return;
@@ -601,6 +611,7 @@ cc_wwan_device_page_dispose (GObject *object)
 
   g_clear_pointer (&self->apn_dialog, gtk_window_destroy);
   g_clear_pointer (&self->mms_dialog, gtk_window_destroy);
+  g_clear_pointer (&self->bands_dialog, gtk_window_destroy);
   g_clear_pointer (&self->details_dialog, gtk_window_destroy);
   g_clear_pointer (&self->network_mode_dialog, gtk_window_destroy);
   g_clear_pointer (&self->network_dialog, gtk_window_destroy);
@@ -656,6 +667,7 @@ cc_wwan_device_page_class_init (CcWwanDevicePageClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, stk_row);
   gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, mms_settings_row);
+  gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, enabled_bands_row);
 }
 
 static void

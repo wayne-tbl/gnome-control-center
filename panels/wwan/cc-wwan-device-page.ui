@@ -114,6 +114,12 @@
                           </object>
                         </child>
                         <child>
+                          <object class="CcListRow" id="enabled_bands_row">
+                            <property name="show-arrow">True</property>
+                            <property name="title" translatable="yes">Enabled _Bands</property>
+                          </object>
+                        </child>
+                        <child>
                           <object class="CcListRow" id="network_name_row">
                             <property name="show-arrow">True</property>
                             <property name="title" translatable="yes">N_etwork</property>
