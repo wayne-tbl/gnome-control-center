@@ -44,11 +44,15 @@ struct _CcWwanMmsDialog
   gchar             *current_proxy;
   gchar             *current_center;
   gchar             *current_apn;
+  gchar             *current_username;
+  gchar             *current_password;
 
   GtkButton         *save_button;
   AdwEntryRow       *message_proxy_row;
   AdwEntryRow       *message_center_row;
   AdwEntryRow       *access_point_row;
+  AdwEntryRow       *username_row;
+  AdwEntryRow       *password_row;
 
   gint               pending_operations;
 };
@@ -219,6 +223,22 @@ on_properties_received (GObject      *source_object,
     g_free (self->current_apn);
     self->current_apn = g_strdup (str_value);
   }
+
+  value = g_variant_lookup_value (dict, "Username", G_VARIANT_TYPE_STRING);
+  if (value) {
+    str_value = g_variant_get_string (value, NULL);
+    gtk_editable_set_text (GTK_EDITABLE (self->username_row), str_value);
+    g_free (self->current_username);
+    self->current_username = g_strdup (str_value);
+  }
+
+  value = g_variant_lookup_value (dict, "Password", G_VARIANT_TYPE_STRING);
+  if (value) {
+    str_value = g_variant_get_string (value, NULL);
+    gtk_editable_set_text (GTK_EDITABLE (self->password_row), str_value);
+    g_free (self->current_password);
+    self->current_password = g_strdup (str_value);
+  }
 }
 
 static void
@@ -322,7 +342,7 @@ static void
 on_save_clicked (GtkButton       *button,
                  CcWwanMmsDialog *self)
 {
-  const char *proxy, *center, *apn;
+  const char *proxy, *center, *apn, *username, *password;
   gboolean changes_made = FALSE;
   GVariantBuilder builder;
 
@@ -332,6 +352,8 @@ on_save_clicked (GtkButton       *button,
   proxy = gtk_editable_get_text (GTK_EDITABLE (self->message_proxy_row));
   center = gtk_editable_get_text (GTK_EDITABLE (self->message_center_row));
   apn = gtk_editable_get_text (GTK_EDITABLE (self->access_point_row));
+  username = gtk_editable_get_text (GTK_EDITABLE (self->username_row));
+  password = gtk_editable_get_text (GTK_EDITABLE (self->password_row));
 
   g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{ss}"));
 
@@ -347,6 +369,16 @@ on_save_clicked (GtkButton       *button,
 
   if (g_strcmp0 (apn, self->current_apn) != 0) {
     g_variant_builder_add (&builder, "{ss}", "AccessPointName", apn);
+    changes_made = TRUE;
+  }
+
+  if (g_strcmp0 (username, self->current_username) != 0) {
+    g_variant_builder_add (&builder, "{ss}", "Username", username);
+    changes_made = TRUE;
+  }
+
+  if (g_strcmp0 (password, self->current_password) != 0) {
+    g_variant_builder_add (&builder, "{ss}", "Password", password);
     changes_made = TRUE;
   }
 
@@ -371,6 +403,8 @@ cc_wwan_mms_dialog_dispose (GObject *object)
   g_clear_pointer (&self->current_proxy, g_free);
   g_clear_pointer (&self->current_center, g_free);
   g_clear_pointer (&self->current_apn, g_free);
+  g_clear_pointer (&self->current_username, g_free);
+  g_clear_pointer (&self->current_password, g_free);
   g_clear_pointer (&self->port_name, g_free);
   g_clear_pointer (&self->mms_context_path, g_free);
 
@@ -388,6 +422,8 @@ cc_wwan_mms_dialog_finalize (GObject *object)
   g_clear_pointer (&self->current_proxy, g_free);
   g_clear_pointer (&self->current_center, g_free);
   g_clear_pointer (&self->current_apn, g_free);
+  g_clear_pointer (&self->current_username, g_free);
+  g_clear_pointer (&self->current_password, g_free);
   g_clear_pointer (&self->port_name, g_free);
   g_clear_pointer (&self->mms_context_path, g_free);
 
@@ -410,6 +446,8 @@ cc_wwan_mms_dialog_class_init (CcWwanMmsDialogClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcWwanMmsDialog, message_proxy_row);
   gtk_widget_class_bind_template_child (widget_class, CcWwanMmsDialog, message_center_row);
   gtk_widget_class_bind_template_child (widget_class, CcWwanMmsDialog, access_point_row);
+  gtk_widget_class_bind_template_child (widget_class, CcWwanMmsDialog, username_row);
+  gtk_widget_class_bind_template_child (widget_class, CcWwanMmsDialog, password_row);
 }
 
 static void
@@ -420,6 +458,8 @@ cc_wwan_mms_dialog_init (CcWwanMmsDialog *self)
   self->current_proxy = NULL;
   self->current_center = NULL;
   self->current_apn = NULL;
+  self->current_username = NULL;
+  self->current_password = NULL;
   self->mmsd_proxy = NULL;
   self->context_proxy = NULL;
   self->port_name = NULL;

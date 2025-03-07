@@ -42,13 +42,25 @@
             </child>
             <child>
               <object class="AdwEntryRow" id="message_center_row">
-                <property name="title" translatable="yes">Message Center</property>
+                <property name="title" translatable="yes">Message Center (MMSC)</property>
                 <property name="text"></property>
               </object>
             </child>
             <child>
               <object class="AdwEntryRow" id="access_point_row">
-                <property name="title" translatable="yes">Access Point Name</property>
+                <property name="title" translatable="yes">Access Point Name (APN)</property>
+                <property name="text"></property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwEntryRow" id="username_row">
+                <property name="title" translatable="yes">Username</property>
+                <property name="text"></property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwEntryRow" id="password_row">
+                <property name="title" translatable="yes">Password</property>
                 <property name="text"></property>
               </object>
             </child>
