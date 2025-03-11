@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <template class="CcWaydroidPanel" parent="CcPanel">
+  <template class="CcAndromedaPanel" parent="CcPanel">
 
     <property name="child">
       <object class="AdwToastOverlay" id="toast_overlay">
@@ -38,7 +38,7 @@
                                     <property name="subtitle" translatable="yes">Start Android Container</property>
                                     <property name="use-underline">true</property>
                                     <child>
-                                      <object class="GtkSwitch" id="waydroid_enabled_switch">
+                                      <object class="GtkSwitch" id="andromeda_enabled_switch">
                                         <property name="valign">center</property>
                                         <accessibility>
                                           <property name="label" translatable="yes">Enabled</property>
@@ -54,7 +54,7 @@
                                     <property name="subtitle" translatable="yes">Auto start the Android Container</property>
                                     <property name="use-underline">true</property>
                                     <child>
-                                      <object class="GtkSwitch" id="waydroid_autostart_switch">
+                                      <object class="GtkSwitch" id="andromeda_autostart_switch">
                                         <property name="valign">center</property>
                                         <accessibility>
                                           <property name="label" translatable="yes">Enabled</property>
@@ -70,7 +70,7 @@
                                     <property name="subtitle" translatable="yes">Enable shared folder between guest and host</property>
                                     <property name="use-underline">true</property>
                                     <child>
-                                      <object class="GtkSwitch" id="waydroid_shared_folder_switch">
+                                      <object class="GtkSwitch" id="andromeda_shared_folder_switch">
                                         <property name="valign">center</property>
                                         <accessibility>
                                           <property name="label" translatable="yes">Enabled</property>
@@ -86,7 +86,7 @@
                                     <property name="subtitle" translatable="yes">Allow access to NFC inside the container</property>
                                     <property name="use-underline">true</property>
                                     <child>
-                                      <object class="GtkSwitch" id="waydroid_nfc_switch">
+                                      <object class="GtkSwitch" id="andromeda_nfc_switch">
                                         <property name="valign">center</property>
                                         <accessibility>
                                           <property name="label" translatable="yes">Enabled</property>
@@ -102,7 +102,7 @@
                                     <property name="subtitle" translatable="yes">Enable notification passthrough from guest to host</property>
                                     <property name="use-underline">true</property>
                                     <child>
-                                      <object class="GtkSwitch" id="waydroid_notification_switch">
+                                      <object class="GtkSwitch" id="andromeda_notification_switch">
                                         <property name="valign">center</property>
                                         <accessibility>
                                           <property name="label" translatable="yes">Enabled</property>
@@ -119,7 +119,7 @@
                                     <property name="activatable">false</property>
                                     <property name="use-underline">false</property>
                                     <child>
-                                      <object class="GtkLabel" id="waydroid_ip_label">
+                                      <object class="GtkLabel" id="andromeda_ip_label">
                                         <property name="valign">center</property>
                                         <property name="ellipsize">end</property>
                                         <property name="selectable">true</property>
@@ -135,7 +135,7 @@
                                     <property name="activatable">false</property>
                                     <property name="use-underline">false</property>
                                     <child>
-                                      <object class="GtkLabel" id="waydroid_version_label">
+                                      <object class="GtkLabel" id="andromeda_version_label">
                                         <property name="valign">center</property>
                                         <property name="ellipsize">end</property>
                                         <property name="selectable">true</property>

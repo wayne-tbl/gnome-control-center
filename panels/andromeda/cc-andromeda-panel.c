@@ -4,32 +4,32 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#include "cc-waydroid-panel.h"
-#include "cc-waydroid-resources.h"
+#include "cc-andromeda-panel.h"
+#include "cc-andromeda-resources.h"
 #include "cc-util.h"
 
 #include "panels/nfc/cc-systemd-service.h"
 
-#define WAYDROID_CONTAINER_DBUS_NAME          "id.waydro.Container"
-#define WAYDROID_CONTAINER_DBUS_PATH          "/ContainerManager"
-#define WAYDROID_CONTAINER_DBUS_INTERFACE     "id.waydro.ContainerManager"
+#define ANDROMEDA_CONTAINER_DBUS_NAME          "io.furios.Andromeda.Container"
+#define ANDROMEDA_CONTAINER_DBUS_PATH          "/ContainerManager"
+#define ANDROMEDA_CONTAINER_DBUS_INTERFACE     "io.furios.Andromeda.ContainerManager"
 
-#define WAYDROID_SESSION_DBUS_NAME          "id.waydro.Session"
-#define WAYDROID_SESSION_DBUS_PATH          "/SessionManager"
-#define WAYDROID_SESSION_DBUS_INTERFACE     "id.waydro.SessionManager"
+#define ANDROMEDA_SESSION_DBUS_NAME          "io.furios.Andromeda.Session"
+#define ANDROMEDA_SESSION_DBUS_PATH          "/SessionManager"
+#define ANDROMEDA_SESSION_DBUS_INTERFACE     "io.furios.Andromeda.SessionManager"
 
-#define WAYDROID_NOTIFICATION_SERVER_SERVICE  "waydroid-notification-server.service"
+#define ANDROMEDA_NOTIFICATION_SERVER_SERVICE  "andromeda-notification-server.service"
 
-struct _CcWaydroidPanel {
+struct _CcAndromedaPanel {
   CcPanel            parent;
   AdwToastOverlay  *toast_overlay;
-  GtkWidget        *waydroid_enabled_switch;
-  GtkWidget        *waydroid_autostart_switch;
-  GtkWidget        *waydroid_shared_folder_switch;
-  GtkWidget        *waydroid_nfc_switch;
-  GtkWidget        *waydroid_notification_switch;
-  GtkWidget        *waydroid_ip_label;
-  GtkWidget        *waydroid_version_label;
+  GtkWidget        *andromeda_enabled_switch;
+  GtkWidget        *andromeda_autostart_switch;
+  GtkWidget        *andromeda_shared_folder_switch;
+  GtkWidget        *andromeda_nfc_switch;
+  GtkWidget        *andromeda_notification_switch;
+  GtkWidget        *andromeda_ip_label;
+  GtkWidget        *andromeda_version_label;
   AdwExpanderRow   *app_selector;
   GtkListBox       *app_list;
   GListStore       *app_list_store;
@@ -48,21 +48,21 @@ struct _CcWaydroidPanel {
   gchar            *selected_app_name;
   gchar            *selected_app_pkgname;
 
-  gchar            *waydroid_ip_output;
-  gchar            *waydroid_version_output;
+  gchar            *andromeda_ip_output;
+  gchar            *andromeda_version_output;
 
   gboolean         refreshing;
-  gboolean         waydroid_notification_active;
-  gboolean         waydroid_nfc_active;
-  gboolean         waydroid_shared_folder_enabled;
+  gboolean         andromeda_notification_active;
+  gboolean         andromeda_nfc_active;
+  gboolean         andromeda_shared_folder_enabled;
 };
 
-G_DEFINE_TYPE (CcWaydroidPanel, cc_waydroid_panel, CC_TYPE_PANEL)
+G_DEFINE_TYPE (CcAndromedaPanel, cc_andromeda_panel, CC_TYPE_PANEL)
 
 static void
-cc_waydroid_panel_finalize (GObject *object)
+cc_andromeda_panel_finalize (GObject *object)
 {
-  CcWaydroidPanel *self = CC_WAYDROID_PANEL (object);
+  CcAndromedaPanel *self = CC_ANDROMEDA_PANEL (object);
 
   g_list_free_full (self->app_widgets, g_object_unref);
 
@@ -70,20 +70,20 @@ cc_waydroid_panel_finalize (GObject *object)
     g_free (self->selected_app_name);
   if (self->selected_app_pkgname != NULL)
     g_free (self->selected_app_pkgname);
-  if (self->waydroid_ip_output != NULL)
-    g_free (self->waydroid_ip_output);
-  if (self->waydroid_version_output != NULL)
-    g_free (self->waydroid_version_output);
+  if (self->andromeda_ip_output != NULL)
+    g_free (self->andromeda_ip_output);
+  if (self->andromeda_version_output != NULL)
+    g_free (self->andromeda_version_output);
   if (self->apps != NULL)
     g_strfreev (self->apps);
 
   self->app_widgets = NULL;
 
-  G_OBJECT_CLASS (cc_waydroid_panel_parent_class)->finalize (object);
+  G_OBJECT_CLASS (cc_andromeda_panel_parent_class)->finalize (object);
 }
 
 static void
-show_toast (CcWaydroidPanel *self, const char *format, ...)
+show_toast (CcAndromedaPanel *self, const char *format, ...)
 {
   va_list args;
   char *message;
@@ -102,20 +102,20 @@ show_toast (CcWaydroidPanel *self, const char *format, ...)
 }
 
 static gchar *
-waydroid_get_state (void)
+andromeda_get_state (void)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
   GVariant *result;
   gchar *state = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_CONTAINER_DBUS_NAME,
-    WAYDROID_CONTAINER_DBUS_PATH,
-    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -127,7 +127,7 @@ waydroid_get_state (void)
   }
 
   result = g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "GetSession",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
@@ -163,26 +163,26 @@ waydroid_get_state (void)
     g_variant_unref (result);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 
   return state;
 }
 
 static gboolean
-waydroid_get_nfc_status (void)
+andromeda_get_nfc_status (void)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
   GVariant *result;
   gboolean nfc_status = FALSE;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_CONTAINER_DBUS_NAME,
-    WAYDROID_CONTAINER_DBUS_PATH,
-    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -194,7 +194,7 @@ waydroid_get_nfc_status (void)
   }
 
   result = g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "GetNfcStatus",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
@@ -211,24 +211,24 @@ waydroid_get_nfc_status (void)
     g_variant_unref (result);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 
   return nfc_status;
 }
 
 static void
-waydroid_toggle_nfc (void)
+andromeda_toggle_nfc (void)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_CONTAINER_DBUS_NAME,
-    WAYDROID_CONTAINER_DBUS_PATH,
-    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -240,7 +240,7 @@ waydroid_toggle_nfc (void)
   }
 
   g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "NfcToggle",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
@@ -254,24 +254,24 @@ waydroid_toggle_nfc (void)
     g_clear_error (&error);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 }
 
 static gchar *
-waydroid_get_ip (void)
+andromeda_get_ip (void)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
   GVariant *result;
   gchar *ip = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SESSION,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_SESSION_DBUS_NAME,
-    WAYDROID_SESSION_DBUS_PATH,
-    WAYDROID_SESSION_DBUS_INTERFACE,
+    ANDROMEDA_SESSION_DBUS_NAME,
+    ANDROMEDA_SESSION_DBUS_PATH,
+    ANDROMEDA_SESSION_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -283,7 +283,7 @@ waydroid_get_ip (void)
   }
 
   result = g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "IpAddress",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
@@ -300,26 +300,26 @@ waydroid_get_ip (void)
     g_variant_unref (result);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 
   return ip;
 }
 
 static gchar *
-waydroid_get_version (void)
+andromeda_get_version (void)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
   GVariant *result;
   gchar *version = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SESSION,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_SESSION_DBUS_NAME,
-    WAYDROID_SESSION_DBUS_PATH,
-    WAYDROID_SESSION_DBUS_INTERFACE,
+    ANDROMEDA_SESSION_DBUS_NAME,
+    ANDROMEDA_SESSION_DBUS_PATH,
+    ANDROMEDA_SESSION_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -331,7 +331,7 @@ waydroid_get_version (void)
   }
 
   result = g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "LineageVersion",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
@@ -348,24 +348,24 @@ waydroid_get_version (void)
     g_variant_unref (result);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 
   return version;
 }
 
 static void
-waydroid_mount_shared (void)
+andromeda_mount_shared (void)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_CONTAINER_DBUS_NAME,
-    WAYDROID_CONTAINER_DBUS_PATH,
-    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -377,7 +377,7 @@ waydroid_mount_shared (void)
   }
 
   g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "MountSharedFolder",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
@@ -391,22 +391,22 @@ waydroid_mount_shared (void)
     g_clear_error (&error);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 }
 
 static void
-waydroid_umount_shared (void)
+andromeda_umount_shared (void)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_CONTAINER_DBUS_NAME,
-    WAYDROID_CONTAINER_DBUS_PATH,
-    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -418,7 +418,7 @@ waydroid_umount_shared (void)
   }
 
   g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "UnmountSharedFolder",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
@@ -432,22 +432,22 @@ waydroid_umount_shared (void)
     g_clear_error (&error);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 }
 
 static void
-waydroid_remove_app (const gchar *package_name)
+andromeda_remove_app (const gchar *package_name)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SESSION,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_SESSION_DBUS_NAME,
-    WAYDROID_SESSION_DBUS_PATH,
-    WAYDROID_SESSION_DBUS_INTERFACE,
+    ANDROMEDA_SESSION_DBUS_NAME,
+    ANDROMEDA_SESSION_DBUS_PATH,
+    ANDROMEDA_SESSION_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -459,7 +459,7 @@ waydroid_remove_app (const gchar *package_name)
   }
 
   g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "RemoveApp",
     g_variant_new("(s)", package_name),
     G_DBUS_CALL_FLAGS_NONE,
@@ -473,22 +473,22 @@ waydroid_remove_app (const gchar *package_name)
     g_clear_error (&error);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 }
 
 static void
-waydroid_install_app (const gchar *package_path)
+andromeda_install_app (const gchar *package_path)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SESSION,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_SESSION_DBUS_NAME,
-    WAYDROID_SESSION_DBUS_PATH,
-    WAYDROID_SESSION_DBUS_INTERFACE,
+    ANDROMEDA_SESSION_DBUS_NAME,
+    ANDROMEDA_SESSION_DBUS_PATH,
+    ANDROMEDA_SESSION_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -500,7 +500,7 @@ waydroid_install_app (const gchar *package_path)
   }
 
   g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "InstallApp",
     g_variant_new("(s)", package_path),
     G_DBUS_CALL_FLAGS_NONE,
@@ -514,22 +514,22 @@ waydroid_install_app (const gchar *package_path)
     g_clear_error (&error);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 }
 
 static void
-waydroid_clear_app_data (const gchar *package_name)
+andromeda_clear_app_data (const gchar *package_name)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_CONTAINER_DBUS_NAME,
-    WAYDROID_CONTAINER_DBUS_PATH,
-    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -541,7 +541,7 @@ waydroid_clear_app_data (const gchar *package_name)
   }
 
   g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "ClearAppData",
     g_variant_new("(s)", package_name),
     G_DBUS_CALL_FLAGS_NONE,
@@ -555,22 +555,22 @@ waydroid_clear_app_data (const gchar *package_name)
     g_clear_error (&error);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 }
 
 static void
-waydroid_kill_app (const gchar *package_name)
+andromeda_kill_app (const gchar *package_name)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_CONTAINER_DBUS_NAME,
-    WAYDROID_CONTAINER_DBUS_PATH,
-    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -582,7 +582,7 @@ waydroid_kill_app (const gchar *package_name)
   }
 
   g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "KillApp",
     g_variant_new("(s)", package_name),
     G_DBUS_CALL_FLAGS_NONE,
@@ -596,24 +596,24 @@ waydroid_kill_app (const gchar *package_name)
     g_clear_error (&error);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 }
 
 static gchar *
-waydroid_name_to_package_name (const gchar *name)
+andromeda_name_to_package_name (const gchar *name)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
   GVariant *result;
   gchar *app_name = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SESSION,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_SESSION_DBUS_NAME,
-    WAYDROID_SESSION_DBUS_PATH,
-    WAYDROID_SESSION_DBUS_INTERFACE,
+    ANDROMEDA_SESSION_DBUS_NAME,
+    ANDROMEDA_SESSION_DBUS_PATH,
+    ANDROMEDA_SESSION_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -625,7 +625,7 @@ waydroid_name_to_package_name (const gchar *name)
   }
 
   result = g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "NameToPackageName",
     g_variant_new ("(s)", name),
     G_DBUS_CALL_FLAGS_NONE,
@@ -642,25 +642,25 @@ waydroid_name_to_package_name (const gchar *name)
     g_variant_unref (result);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
   return app_name;
 }
 
 static gchar **
-waydroid_get_all_names (void)
+andromeda_get_all_names (void)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
   GVariant *result;
   gchar **names = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SESSION,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_SESSION_DBUS_NAME,
-    WAYDROID_SESSION_DBUS_PATH,
-    WAYDROID_SESSION_DBUS_INTERFACE,
+    ANDROMEDA_SESSION_DBUS_NAME,
+    ANDROMEDA_SESSION_DBUS_PATH,
+    ANDROMEDA_SESSION_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -672,7 +672,7 @@ waydroid_get_all_names (void)
   }
 
   result = g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "GetAllNames",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
@@ -689,23 +689,23 @@ waydroid_get_all_names (void)
     g_variant_unref (result);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
   return names;
 }
 
 static void
-waydroid_enable_notification_server (gboolean enable)
+andromeda_enable_notification_server (gboolean enable)
 {
-  GDBusProxy *waydroid_proxy;
+  GDBusProxy *andromeda_proxy;
   GError *error = NULL;
 
-  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    WAYDROID_CONTAINER_DBUS_NAME,
-    WAYDROID_CONTAINER_DBUS_PATH,
-    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -717,7 +717,7 @@ waydroid_enable_notification_server (gboolean enable)
   }
 
   g_dbus_proxy_call_sync(
-    waydroid_proxy,
+    andromeda_proxy,
     "EnableNotificationServer",
     g_variant_new("(b)", enable),
     G_DBUS_CALL_FLAGS_NONE,
@@ -731,7 +731,7 @@ waydroid_enable_notification_server (gboolean enable)
     g_clear_error (&error);
   }
 
-  g_object_unref (waydroid_proxy);
+  g_object_unref (andromeda_proxy);
 }
 
 static int
@@ -778,30 +778,30 @@ is_mounted (const char *path)
 }
 
 static void
-cc_waydroid_panel_nfc (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+cc_andromeda_panel_nfc (GtkSwitch *widget, gboolean state, CcAndromedaPanel *self)
 {
-  waydroid_toggle_nfc ();
-  gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), state);
-  gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), state);
+  andromeda_toggle_nfc ();
+  gtk_switch_set_state (GTK_SWITCH (self->andromeda_nfc_switch), state);
+  gtk_switch_set_active (GTK_SWITCH (self->andromeda_nfc_switch), state);
 }
 
 static void
-cc_waydroid_panel_notification (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+cc_andromeda_panel_notification (GtkSwitch *widget, gboolean state, CcAndromedaPanel *self)
 {
-  waydroid_enable_notification_server (state);
-  gtk_switch_set_state (GTK_SWITCH (self->waydroid_notification_switch), state);
-  gtk_switch_set_active (GTK_SWITCH (self->waydroid_notification_switch), state);
+  andromeda_enable_notification_server (state);
+  gtk_switch_set_state (GTK_SWITCH (self->andromeda_notification_switch), state);
+  gtk_switch_set_active (GTK_SWITCH (self->andromeda_notification_switch), state);
 }
 
 static void
-cc_waydroid_panel_autostart (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+cc_andromeda_panel_autostart (GtkSwitch *widget, gboolean state, CcAndromedaPanel *self)
 {
   const gchar *home_dir = g_get_home_dir ();
   gchar *filepath = g_build_filename (home_dir, ".android_enable", NULL);
   GFile *file = g_file_new_for_path (filepath);
   GError *error = NULL;
 
-  g_signal_handlers_block_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
+  g_signal_handlers_block_by_func (self->andromeda_autostart_switch, cc_andromeda_panel_autostart, self);
 
   if (state) {
     GFileOutputStream *output_stream = g_file_create (file, G_FILE_CREATE_NONE, NULL, &error);
@@ -820,45 +820,45 @@ cc_waydroid_panel_autostart (GtkSwitch *widget, gboolean state, CcWaydroidPanel 
     }
   }
 
-  gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), state);
-  gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), state);
+  gtk_switch_set_state (GTK_SWITCH (self->andromeda_autostart_switch), state);
+  gtk_switch_set_active (GTK_SWITCH (self->andromeda_autostart_switch), state);
 
-  g_signal_handlers_unblock_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
+  g_signal_handlers_unblock_by_func (self->andromeda_autostart_switch, cc_andromeda_panel_autostart, self);
 
   g_object_unref (file);
   g_free (filepath);
 }
 
 static void
-cc_waydroid_panel_shared_folder (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+cc_andromeda_panel_shared_folder (GtkSwitch *widget, gboolean state, CcAndromedaPanel *self)
 {
   if (state) {
-    waydroid_mount_shared ();
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
+    andromeda_mount_shared ();
+    gtk_switch_set_state (GTK_SWITCH (self->andromeda_shared_folder_switch), TRUE);
+    gtk_switch_set_active (GTK_SWITCH (self->andromeda_shared_folder_switch), TRUE);
   } else {
-    waydroid_umount_shared ();
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
+    andromeda_umount_shared ();
+    gtk_switch_set_state (GTK_SWITCH (self->andromeda_shared_folder_switch), FALSE);
+    gtk_switch_set_active (GTK_SWITCH (self->andromeda_shared_folder_switch), FALSE);
   }
 }
 
 static gboolean
 update_ip_idle (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
-  gtk_label_set_text (GTK_LABEL (self->waydroid_ip_label), self->waydroid_ip_output);
+  gtk_label_set_text (GTK_LABEL (self->andromeda_ip_label), self->andromeda_ip_output);
 
   return G_SOURCE_REMOVE;
 }
 
 static gpointer
-update_waydroid_ip (gpointer user_data)
+update_andromeda_ip (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
-  self->waydroid_ip_output = waydroid_get_ip ();
+  self->andromeda_ip_output = andromeda_get_ip ();
 
   g_idle_add (update_ip_idle, self);
 
@@ -866,9 +866,9 @@ update_waydroid_ip (gpointer user_data)
 }
 
 static void
-update_waydroid_ip_threaded (CcWaydroidPanel *self)
+update_andromeda_ip_threaded (CcAndromedaPanel *self)
 {
-  g_thread_new ("update_waydroid_ip", update_waydroid_ip, self);
+  g_thread_new ("update_andromeda_ip", update_andromeda_ip, self);
 }
 
 static GtkWidget *
@@ -880,12 +880,12 @@ create_app_row (const gchar *app_name)
   gtk_widget_set_margin_start (box, 16);
   gtk_widget_set_margin_end (box, 16);
 
-  gchar *app_pkgname = waydroid_name_to_package_name (app_name);
+  gchar *app_pkgname = andromeda_name_to_package_name (app_name);
 
   GtkWidget *icon;
   if (app_pkgname != NULL) {
     const gchar *home_dir = g_get_home_dir ();
-    gchar *icon_path = g_strdup_printf ("%s/.local/share/waydroid/data/icons/%s.png", home_dir, app_pkgname);
+    gchar *icon_path = g_strdup_printf ("%s/.local/share/andromeda/data/icons/%s.png", home_dir, app_pkgname);
 
     if (g_file_test (icon_path, G_FILE_TEST_EXISTS))
       icon = gtk_image_new_from_file (icon_path);
@@ -911,7 +911,7 @@ create_app_row (const gchar *app_name)
 static void
 on_app_activated (GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
   GtkWidget *child = gtk_list_box_row_get_child (row);
   GtkWidget *label = gtk_widget_get_first_child (child);
@@ -924,7 +924,7 @@ on_app_activated (GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
     const gchar *app_name = gtk_label_get_text (GTK_LABEL (label));
 
     self->selected_app_name = g_strdup (app_name);
-    self->selected_app_pkgname = waydroid_name_to_package_name (app_name);
+    self->selected_app_pkgname = andromeda_name_to_package_name (app_name);
 
     g_debug ("Selected app: %s", self->selected_app_name);
     g_debug ("Package name: %s", self->selected_app_pkgname);
@@ -942,7 +942,7 @@ qsort_g_strcmp0 (const void *a, const void *b)
 static gboolean
 set_refresh_sensitive (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
   gtk_widget_set_sensitive (GTK_WIDGET (self->refresh_app_list_button), !self->refreshing);
   gtk_widget_set_sensitive (GTK_WIDGET (self->app_selector), !self->refreshing);
   return G_SOURCE_REMOVE;
@@ -951,7 +951,7 @@ set_refresh_sensitive (gpointer user_data)
 static gboolean
 update_app_list_idle (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
   AdwExpanderRow *expander_row = ADW_EXPANDER_ROW (self->app_selector);
   GtkListBox *list_box = self->app_list;
 
@@ -997,11 +997,11 @@ update_app_list_idle (gpointer user_data)
 static gpointer
 update_app_list (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
   self->refreshing = TRUE;
   g_idle_add (set_refresh_sensitive, self);
-  self->apps = waydroid_get_all_names ();
+  self->apps = andromeda_get_all_names ();
   if (self->apps == NULL) {
     g_debug ("Failed to get app names");
     self->refreshing = FALSE;
@@ -1015,13 +1015,13 @@ update_app_list (gpointer user_data)
 }
 
 static void
-update_app_list_threaded (CcWaydroidPanel *self)
+update_app_list_threaded (CcAndromedaPanel *self)
 {
   g_thread_new ("update_app_list", update_app_list, self);
 }
 
 static void
-set_widgets_state (CcWaydroidPanel *self, gboolean state)
+set_widgets_state (CcAndromedaPanel *self, gboolean state)
 {
  gtk_widget_set_sensitive (GTK_WIDGET (self->app_selector), state);
  gtk_widget_set_sensitive (GTK_WIDGET (self->remove_app_button), state);
@@ -1034,7 +1034,7 @@ set_widgets_state (CcWaydroidPanel *self, gboolean state)
 }
 
 static gboolean
-close_bottom_sheet_and_refresh (CcWaydroidPanel *self)
+close_bottom_sheet_and_refresh (CcAndromedaPanel *self)
 {
   set_widgets_state (self, TRUE);
   adw_bottom_sheet_set_open (self->bottom_sheet, FALSE);
@@ -1042,7 +1042,7 @@ close_bottom_sheet_and_refresh (CcWaydroidPanel *self)
 }
 
 static void
-show_confirmation_alert_dialog (CcWaydroidPanel *self,
+show_confirmation_alert_dialog (CcAndromedaPanel *self,
                                 const gchar *title,
                                 const gchar *description,
                                 const gchar *confirm_text,
@@ -1065,7 +1065,7 @@ show_confirmation_alert_dialog (CcWaydroidPanel *self,
 }
 
 static void
-on_remove_app_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel *self)
+on_remove_app_confirm (AdwAlertDialog *dialog, gchar *response, CcAndromedaPanel *self)
 {
   if (g_strcmp0 (response, "confirm") == 0) {
     gchar *pkgname = self->selected_app_pkgname;
@@ -1073,7 +1073,7 @@ on_remove_app_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel 
       set_widgets_state (self, FALSE);
 
       gchar *stripped_pkgname = g_strstrip (pkgname);
-      waydroid_remove_app (stripped_pkgname);
+      andromeda_remove_app (stripped_pkgname);
 
       g_timeout_add_seconds (5, (GSourceFunc) close_bottom_sheet_and_refresh, self);
       update_app_list_threaded (self);
@@ -1082,7 +1082,7 @@ on_remove_app_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel 
 }
 
 static void
-cc_waydroid_panel_uninstall_app (GtkWidget *widget, CcWaydroidPanel *self)
+cc_andromeda_panel_uninstall_app (GtkWidget *widget, CcAndromedaPanel *self)
 {
   if (self->selected_app_pkgname != NULL) {
     gchar *title = g_strdup_printf (("Uninstall %s?"), self->selected_app_name);
@@ -1102,15 +1102,15 @@ cc_waydroid_panel_uninstall_app (GtkWidget *widget, CcWaydroidPanel *self)
 }
 
 static gpointer
-cc_waydroid_panel_launch_app (gpointer user_data)
+cc_andromeda_panel_launch_app (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
   if (self->selected_app_pkgname != NULL && g_strstrip (self->selected_app_pkgname)[0] != '\0') {
     g_debug ("Launching Android application: %s", self->selected_app_pkgname);
 
     const gchar *home_dir = g_get_home_dir ();
-    gchar *desktop_file_path = g_strdup_printf ("%s/.local/share/applications/waydroid.%s.desktop", home_dir, g_strstrip (self->selected_app_pkgname));
+    gchar *desktop_file_path = g_strdup_printf ("%s/.local/share/applications/android.%s.desktop", home_dir, g_strstrip (self->selected_app_pkgname));
     gchar *launch_command = g_strdup_printf ("dex \"%s\"", desktop_file_path);
 
     g_spawn_command_line_async (launch_command, NULL);
@@ -1123,10 +1123,10 @@ cc_waydroid_panel_launch_app (gpointer user_data)
 }
 
 static void
-cc_waydroid_panel_launch_app_threaded (GtkWidget *widget, CcWaydroidPanel *self)
+cc_andromeda_panel_launch_app_threaded (GtkWidget *widget, CcAndromedaPanel *self)
 {
   if (self->selected_app_pkgname != NULL)
-    g_thread_new ("cc_waydroid_panel_launch_app", cc_waydroid_panel_launch_app, self);
+    g_thread_new ("cc_andromeda_panel_launch_app", cc_andromeda_panel_launch_app, self);
   else
     show_toast (self, "No app selected");
 }
@@ -1134,19 +1134,19 @@ cc_waydroid_panel_launch_app_threaded (GtkWidget *widget, CcWaydroidPanel *self)
 static gboolean
 update_version_idle (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
-  gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), self->waydroid_version_output);
+  gtk_label_set_text (GTK_LABEL (self->andromeda_version_label), self->andromeda_version_output);
 
   return G_SOURCE_REMOVE;
 }
 
 static gpointer
-update_waydroid_version (gpointer user_data)
+update_andromeda_version (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
-  self->waydroid_version_output = waydroid_get_version ();
+  self->andromeda_version_output = andromeda_get_version ();
 
   g_idle_add (update_version_idle, self);
 
@@ -1154,30 +1154,30 @@ update_waydroid_version (gpointer user_data)
 }
 
 static void
-update_waydroid_version_threaded (CcWaydroidPanel *self)
+update_andromeda_version_threaded (CcAndromedaPanel *self)
 {
-  g_thread_new ("update_waydroid_version", update_waydroid_version, self);
+  g_thread_new ("update_andromeda_version", update_andromeda_version, self);
 }
 
 static gboolean
 check_nfc_idle (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
-  g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
-  gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), self->waydroid_nfc_active);
-  gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), self->waydroid_nfc_active);
-  g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+  g_signal_handlers_block_by_func (self->andromeda_nfc_switch, cc_andromeda_panel_nfc, self);
+  gtk_switch_set_state (GTK_SWITCH (self->andromeda_nfc_switch), self->andromeda_nfc_active);
+  gtk_switch_set_active (GTK_SWITCH (self->andromeda_nfc_switch), self->andromeda_nfc_active);
+  g_signal_handlers_unblock_by_func (self->andromeda_nfc_switch, cc_andromeda_panel_nfc, self);
 
   return G_SOURCE_REMOVE;
 }
 
 static gpointer
-check_waydroid_nfc (gpointer user_data)
+check_andromeda_nfc (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
-  self->waydroid_nfc_active = waydroid_get_nfc_status ();
+  self->andromeda_nfc_active = andromeda_get_nfc_status ();
 
   g_idle_add (check_nfc_idle, self);
 
@@ -1185,30 +1185,29 @@ check_waydroid_nfc (gpointer user_data)
 }
 
 static void
-check_waydroid_nfc_threaded (CcWaydroidPanel *self)
+check_andromeda_nfc_threaded (CcAndromedaPanel *self)
 {
-  g_thread_new ("check_waydroid_nfc", check_waydroid_nfc, self);
+  g_thread_new ("check_andromeda_nfc", check_andromeda_nfc, self);
 }
 
 static gboolean
 check_notification_idle (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
-  g_signal_handlers_block_by_func (self->waydroid_notification_switch, cc_waydroid_panel_notification, self);
-  gtk_switch_set_state (GTK_SWITCH (self->waydroid_notification_switch), self->waydroid_notification_active);
-  gtk_switch_set_active (GTK_SWITCH (self->waydroid_notification_switch), self->waydroid_notification_active);
-  g_signal_handlers_unblock_by_func (self->waydroid_notification_switch, cc_waydroid_panel_notification, self);
+  g_signal_handlers_block_by_func (self->andromeda_notification_switch, cc_andromeda_panel_notification, self);
+  gtk_switch_set_state (GTK_SWITCH (self->andromeda_notification_switch), self->andromeda_notification_active);
+  gtk_switch_set_active (GTK_SWITCH (self->andromeda_notification_switch), self->andromeda_notification_active);
+  g_signal_handlers_unblock_by_func (self->andromeda_notification_switch, cc_andromeda_panel_notification, self);
 
   return G_SOURCE_REMOVE;
 }
 
 static gpointer
-check_waydroid_notification (gpointer user_data)
+check_andromeda_notification (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-
-  self->waydroid_notification_active = cc_is_service_active (WAYDROID_NOTIFICATION_SERVER_SERVICE, G_BUS_TYPE_SYSTEM);
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
+  self->andromeda_notification_active = cc_is_service_active (ANDROMEDA_NOTIFICATION_SERVER_SERVICE, G_BUS_TYPE_SYSTEM);
 
   g_idle_add (check_notification_idle, self);
 
@@ -1216,32 +1215,32 @@ check_waydroid_notification (gpointer user_data)
 }
 
 static void
-check_waydroid_notification_threaded (CcWaydroidPanel *self)
+check_andromeda_notification_threaded (CcAndromedaPanel *self)
 {
-  g_thread_new ("check_waydroid_notification", check_waydroid_notification, self);
+  g_thread_new ("check_andromeda_notification", check_andromeda_notification, self);
 }
 
 static gboolean
 check_shared_folder_idle (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
-  g_signal_handlers_block_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
-  gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), self->waydroid_shared_folder_enabled);
-  gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), self->waydroid_shared_folder_enabled);
-  g_signal_handlers_unblock_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
+  g_signal_handlers_block_by_func (self->andromeda_shared_folder_switch, cc_andromeda_panel_shared_folder, self);
+  gtk_switch_set_state (GTK_SWITCH (self->andromeda_shared_folder_switch), self->andromeda_shared_folder_enabled);
+  gtk_switch_set_active (GTK_SWITCH (self->andromeda_shared_folder_switch), self->andromeda_shared_folder_enabled);
+  g_signal_handlers_unblock_by_func (self->andromeda_shared_folder_switch, cc_andromeda_panel_shared_folder, self);
 
   return G_SOURCE_REMOVE;
 }
 
 static gpointer
-check_waydroid_shared_folder (gpointer user_data)
+check_andromeda_shared_folder (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
   const gchar *home_dir = g_get_home_dir ();
   gchar *android_dir_path = g_strdup_printf ("%s/Android", home_dir);
-  self->waydroid_shared_folder_enabled = is_mounted (android_dir_path);
+  self->andromeda_shared_folder_enabled = is_mounted (android_dir_path);
   g_free (android_dir_path);
 
   g_idle_add (check_shared_folder_idle, self);
@@ -1250,32 +1249,32 @@ check_waydroid_shared_folder (gpointer user_data)
 }
 
 static void
-check_waydroid_shared_folder_threaded (CcWaydroidPanel *self)
+check_andromeda_shared_folder_threaded (CcAndromedaPanel *self)
 {
-  g_thread_new ("check_waydroid_shared_folder", check_waydroid_shared_folder, self);
+  g_thread_new ("check_andromeda_shared_folder", check_andromeda_shared_folder, self);
 }
 
 static void
-update_waydroid_info (CcWaydroidPanel *self)
+update_andromeda_info (CcAndromedaPanel *self)
 {
-  update_waydroid_ip_threaded (self);
-  update_waydroid_version_threaded (self);
+  update_andromeda_ip_threaded (self);
+  update_andromeda_version_threaded (self);
   update_app_list_threaded (self);
-  check_waydroid_notification_threaded (self);
-  check_waydroid_nfc_threaded (self);
-  check_waydroid_shared_folder_threaded (self);
+  check_andromeda_notification_threaded (self);
+  check_andromeda_nfc_threaded (self);
+  check_andromeda_shared_folder_threaded (self);
 }
 
 static gboolean
-update_waydroid_info_idle (gpointer user_data)
+update_andromeda_info_idle (gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-  update_waydroid_info (self);
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
+  update_andromeda_info (self);
   return G_SOURCE_REMOVE;
 }
 
 static void
-on_clear_app_data_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel *self)
+on_clear_app_data_confirm (AdwAlertDialog *dialog, gchar *response, CcAndromedaPanel *self)
 {
   if (g_strcmp0 (response, "confirm") == 0) {
     gchar *pkgname = self->selected_app_pkgname;
@@ -1283,7 +1282,7 @@ on_clear_app_data_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPa
       set_widgets_state (self, FALSE);
 
       gchar *stripped_pkgname = g_strstrip (pkgname);
-      waydroid_clear_app_data (stripped_pkgname);
+      andromeda_clear_app_data (stripped_pkgname);
 
       g_timeout_add_seconds (2, (GSourceFunc) close_bottom_sheet_and_refresh, self);
     }
@@ -1291,7 +1290,7 @@ on_clear_app_data_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPa
 }
 
 static void
-on_kill_app_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel *self)
+on_kill_app_confirm (AdwAlertDialog *dialog, gchar *response, CcAndromedaPanel *self)
 {
   if (g_strcmp0 (response, "confirm") == 0) {
     gchar *pkgname = self->selected_app_pkgname;
@@ -1299,7 +1298,7 @@ on_kill_app_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel *s
       set_widgets_state (self, FALSE);
 
       gchar *stripped_pkgname = g_strstrip (pkgname);
-      waydroid_kill_app (stripped_pkgname);
+      andromeda_kill_app (stripped_pkgname);
 
       g_timeout_add_seconds (2, (GSourceFunc) close_bottom_sheet_and_refresh, self);
     }
@@ -1307,17 +1306,17 @@ on_kill_app_confirm (AdwAlertDialog *dialog, gchar *response, CcWaydroidPanel *s
 }
 
 static void
-cc_waydroid_refresh_button (GtkButton *button, gpointer user_data)
+cc_andromeda_refresh_button (GtkButton *button, gpointer user_data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-  g_idle_add (update_waydroid_info_idle, self);
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
+  g_idle_add (update_andromeda_info_idle, self);
 }
 
 static void
-install_app (CcWaydroidPanel *self, GFile *file)
+install_app (CcAndromedaPanel *self, GFile *file)
 {
   gchar *file_path = g_file_get_path (file);
-  waydroid_install_app (file_path);
+  andromeda_install_app (file_path);
 
   g_free (file_path);
 
@@ -1325,7 +1324,7 @@ install_app (CcWaydroidPanel *self, GFile *file)
 }
 
 static void
-on_file_chosen (GtkFileChooserNative *native, gint response_id, CcWaydroidPanel *self)
+on_file_chosen (GtkFileChooserNative *native, gint response_id, CcAndromedaPanel *self)
 {
   if (response_id == GTK_RESPONSE_ACCEPT) {
     GFile *file = gtk_file_chooser_get_file (GTK_FILE_CHOOSER (native));
@@ -1339,7 +1338,7 @@ on_file_chosen (GtkFileChooserNative *native, gint response_id, CcWaydroidPanel 
 }
 
 static void
-cc_waydroid_panel_install_app (GtkWidget *widget, CcWaydroidPanel *self)
+cc_andromeda_panel_install_app (GtkWidget *widget, CcAndromedaPanel *self)
 {
   GtkFileChooserNative *native = gtk_file_chooser_native_new ("Choose an APK",
                                                               GTK_WINDOW (gtk_widget_get_root (widget)),
@@ -1358,10 +1357,10 @@ cc_waydroid_panel_install_app (GtkWidget *widget, CcWaydroidPanel *self)
 }
 
 static void
-cc_waydroid_panel_open_store (GtkButton *button, gpointer user_data)
+cc_andromeda_panel_open_store (GtkButton *button, gpointer user_data)
 {
   const gchar *home_dir = g_get_home_dir ();
-  gchar *desktop_file_path = g_strdup_printf ("%s/.local/share/applications/waydroid.org.fdroid.fdroid.desktop", home_dir);
+  gchar *desktop_file_path = g_strdup_printf ("%s/.local/share/applications/android.org.fdroid.fdroid.desktop", home_dir);
   gchar *launch_command = g_strdup_printf ("dex \"%s\"", desktop_file_path);
 
   g_spawn_command_line_async (launch_command, NULL);
@@ -1371,7 +1370,7 @@ cc_waydroid_panel_open_store (GtkButton *button, gpointer user_data)
 }
 
 static void
-cc_waydroid_panel_clear_app_data (GtkWidget *widget, CcWaydroidPanel *self)
+cc_andromeda_panel_clear_app_data (GtkWidget *widget, CcAndromedaPanel *self)
 {
   if (self->selected_app_pkgname != NULL) {
     gchar *title = g_strdup_printf (("Clear data for %s?"), self->selected_app_name);
@@ -1390,7 +1389,7 @@ cc_waydroid_panel_clear_app_data (GtkWidget *widget, CcWaydroidPanel *self)
 }
 
 static void
-cc_waydroid_panel_kill_app (GtkWidget *widget, CcWaydroidPanel *self)
+cc_andromeda_panel_kill_app (GtkWidget *widget, CcAndromedaPanel *self)
 {
   if (self->selected_app_pkgname != NULL) {
     gchar *title = g_strdup_printf (("Kill %s?"), self->selected_app_name);
@@ -1410,10 +1409,10 @@ cc_waydroid_panel_kill_app (GtkWidget *widget, CcWaydroidPanel *self)
 }
 
 static void
-cc_waydroid_factory_reset_threaded (GtkWidget *widget, CcWaydroidPanel *self)
+cc_andromeda_factory_reset_threaded (GtkWidget *widget, CcAndromedaPanel *self)
 {
   GError *error = NULL;
-  gchar *command = "rm -rf $HOME/.local/share/waydroid";
+  gchar *command = "rm -rf $HOME/.local/share/andromeda";
   gchar *home_env = g_strdup_printf ("HOME=%s", g_get_home_dir ());
   gchar *argv[] = {"pkexec", "env", home_env, "/bin/sh", "-c", command, NULL};
 
@@ -1444,18 +1443,18 @@ set_widgets_sensitive (gboolean sensitive, ...)
 static gboolean
 enable_idle (gpointer data)
 {
-  CcWaydroidPanel *self = (CcWaydroidPanel *) data;
+  CcAndromedaPanel *self = (CcAndromedaPanel *) data;
 
   set_widgets_sensitive (TRUE,
-                         GTK_WIDGET (self->waydroid_enabled_switch),
+                         GTK_WIDGET (self->andromeda_enabled_switch),
                          GTK_WIDGET (self->launch_app_button),
                          GTK_WIDGET (self->remove_app_button),
                          GTK_WIDGET (self->install_app_button),
                          GTK_WIDGET (self->app_selector),
                          GTK_WIDGET (self->store_button),
                          GTK_WIDGET (self->refresh_app_list_button),
-                         GTK_WIDGET (self->waydroid_nfc_switch),
-                         GTK_WIDGET (self->waydroid_notification_switch),
+                         GTK_WIDGET (self->andromeda_nfc_switch),
+                         GTK_WIDGET (self->andromeda_notification_switch),
                          GTK_WIDGET (self->clear_app_data_button),
                          GTK_WIDGET (self->kill_app_button),
                          NULL);
@@ -1464,26 +1463,26 @@ enable_idle (gpointer data)
                          GTK_WIDGET (self->factory_reset_button),
                          NULL);
 
-  g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_launch_app_threaded), self);
-  g_signal_connect (G_OBJECT (self->remove_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_uninstall_app), self);
-  g_signal_connect (G_OBJECT (self->install_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_install_app), self);
-  g_signal_connect (G_OBJECT (self->store_button), "clicked", G_CALLBACK (cc_waydroid_panel_open_store), self);
-  g_signal_connect (self->refresh_app_list_button, "clicked", G_CALLBACK (cc_waydroid_refresh_button), self);
-  g_signal_connect (G_OBJECT (self->clear_app_data_button), "clicked", G_CALLBACK (cc_waydroid_panel_clear_app_data), self);
-  g_signal_connect (G_OBJECT (self->kill_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_kill_app), self);
+  g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_launch_app_threaded), self);
+  g_signal_connect (G_OBJECT (self->remove_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_uninstall_app), self);
+  g_signal_connect (G_OBJECT (self->install_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_install_app), self);
+  g_signal_connect (G_OBJECT (self->store_button), "clicked", G_CALLBACK (cc_andromeda_panel_open_store), self);
+  g_signal_connect (self->refresh_app_list_button, "clicked", G_CALLBACK (cc_andromeda_refresh_button), self);
+  g_signal_connect (G_OBJECT (self->clear_app_data_button), "clicked", G_CALLBACK (cc_andromeda_panel_clear_app_data), self);
+  g_signal_connect (G_OBJECT (self->kill_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_kill_app), self);
 
-  g_idle_add (update_waydroid_info_idle, self);
+  g_idle_add (update_andromeda_info_idle, self);
 
   return G_SOURCE_REMOVE;
 }
 
 static gboolean
-cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+cc_andromeda_panel_enable_andromeda (GtkSwitch *widget, gboolean state, CcAndromedaPanel *self)
 {
   GError *error = NULL;
 
   if (state) {
-    gchar *argv[] = { "waydroid", "session", "start", NULL };
+    gchar *argv[] = { "andromeda", "session", "start", NULL };
     GPid child_pid;
     gint stdout_fd;
 
@@ -1496,11 +1495,11 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
       return FALSE;
     }
 
-    gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_enabled_switch), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->andromeda_enabled_switch), FALSE);
 
     g_timeout_add_seconds (10, enable_idle, self);
   } else {
-    gchar *argv[] = { "waydroid", "session", "stop", NULL };
+    gchar *argv[] = { "andromeda", "session", "stop", NULL };
     gint exit_status = 0;
 
     if (!g_spawn_sync (NULL, argv, NULL,
@@ -1510,8 +1509,8 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
       g_error_free (error);
     }
 
-    gtk_label_set_text (GTK_LABEL (self->waydroid_ip_label), "");
-    gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), "");
+    gtk_label_set_text (GTK_LABEL (self->andromeda_ip_label), "");
+    gtk_label_set_text (GTK_LABEL (self->andromeda_version_label), "");
 
     set_widgets_sensitive (FALSE,
                            GTK_WIDGET (self->launch_app_button),
@@ -1520,8 +1519,8 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
                            GTK_WIDGET (self->app_selector),
                            GTK_WIDGET (self->store_button),
                            GTK_WIDGET (self->refresh_app_list_button),
-                           GTK_WIDGET (self->waydroid_nfc_switch),
-                           GTK_WIDGET (self->waydroid_notification_switch),
+                           GTK_WIDGET (self->andromeda_nfc_switch),
+                           GTK_WIDGET (self->andromeda_notification_switch),
                            GTK_WIDGET (self->clear_app_data_button),
                            GTK_WIDGET (self->kill_app_button),
                            NULL);
@@ -1537,161 +1536,161 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
 }
 
 static void
-cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
+cc_andromeda_panel_class_init (CcAndromedaPanelClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
-  object_class->finalize = cc_waydroid_panel_finalize;
+  object_class->finalize = cc_andromeda_panel_finalize;
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/org/gnome/control-center/waydroid/cc-waydroid-panel.ui");
+                                               "/org/gnome/control-center/andromeda/cc-andromeda-panel.ui");
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         toast_overlay);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         bottom_sheet);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        waydroid_enabled_switch);
+                                        CcAndromedaPanel,
+                                        andromeda_enabled_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        waydroid_autostart_switch);
+                                        CcAndromedaPanel,
+                                        andromeda_autostart_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        waydroid_shared_folder_switch);
+                                        CcAndromedaPanel,
+                                        andromeda_shared_folder_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        waydroid_nfc_switch);
+                                        CcAndromedaPanel,
+                                        andromeda_nfc_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        waydroid_notification_switch);
+                                        CcAndromedaPanel,
+                                        andromeda_notification_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        waydroid_ip_label);
+                                        CcAndromedaPanel,
+                                        andromeda_ip_label);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        waydroid_version_label);
+                                        CcAndromedaPanel,
+                                        andromeda_version_label);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         app_selector);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         launch_app_button);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         remove_app_button);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         install_app_button);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         store_button);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         refresh_app_list_button);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         factory_reset_button);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         clear_app_data_button);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
+                                        CcAndromedaPanel,
                                         kill_app_button);
 }
 
 static void
-cc_waydroid_panel_init (CcWaydroidPanel *self)
+cc_andromeda_panel_init (CcAndromedaPanel *self)
 {
-  g_resources_register (cc_waydroid_get_resource ());
+  g_resources_register (cc_andromeda_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
   self->app_list_store = g_list_store_new (G_TYPE_APP_INFO);
 
   self->selected_app_name = NULL;
   self->selected_app_pkgname = NULL;
-  self->waydroid_ip_output = NULL;
-  self->waydroid_version_output = NULL;
+  self->andromeda_ip_output = NULL;
+  self->andromeda_version_output = NULL;
   self->apps = NULL;
-  self->waydroid_notification_active = FALSE;
-  self->waydroid_nfc_active = FALSE;
-  self->waydroid_shared_folder_enabled = FALSE;
+  self->andromeda_notification_active = FALSE;
+  self->andromeda_nfc_active = FALSE;
+  self->andromeda_shared_folder_enabled = FALSE;
   self->refreshing = FALSE;
 
-  if (g_file_test ("/usr/bin/waydroid", G_FILE_TEST_EXISTS)) {
-    g_signal_connect (G_OBJECT (self->waydroid_enabled_switch), "state-set", G_CALLBACK (cc_waydroid_panel_enable_waydroid), self);
-    g_signal_connect (G_OBJECT (self->waydroid_autostart_switch), "state-set", G_CALLBACK (cc_waydroid_panel_autostart), self);
-    g_signal_connect (G_OBJECT (self->waydroid_shared_folder_switch), "state-set", G_CALLBACK (cc_waydroid_panel_shared_folder), self);
-    g_signal_connect (G_OBJECT (self->waydroid_nfc_switch), "state-set", G_CALLBACK (cc_waydroid_panel_nfc), self);
-    g_signal_connect (G_OBJECT (self->waydroid_notification_switch), "state-set", G_CALLBACK (cc_waydroid_panel_notification), self);
-    g_signal_connect (G_OBJECT (self->factory_reset_button), "clicked", G_CALLBACK (cc_waydroid_factory_reset_threaded), self);
+  if (g_file_test ("/usr/bin/andromeda", G_FILE_TEST_EXISTS)) {
+    g_signal_connect (G_OBJECT (self->andromeda_enabled_switch), "state-set", G_CALLBACK (cc_andromeda_panel_enable_andromeda), self);
+    g_signal_connect (G_OBJECT (self->andromeda_autostart_switch), "state-set", G_CALLBACK (cc_andromeda_panel_autostart), self);
+    g_signal_connect (G_OBJECT (self->andromeda_shared_folder_switch), "state-set", G_CALLBACK (cc_andromeda_panel_shared_folder), self);
+    g_signal_connect (G_OBJECT (self->andromeda_nfc_switch), "state-set", G_CALLBACK (cc_andromeda_panel_nfc), self);
+    g_signal_connect (G_OBJECT (self->andromeda_notification_switch), "state-set", G_CALLBACK (cc_andromeda_panel_notification), self);
+    g_signal_connect (G_OBJECT (self->factory_reset_button), "clicked", G_CALLBACK (cc_andromeda_factory_reset_threaded), self);
 
     gchar *file_path = g_build_filename (g_get_home_dir (), ".android_enable", NULL);
     if (g_file_test (file_path, G_FILE_TEST_EXISTS)) {
-      g_signal_handlers_block_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
-      gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
-      gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
-      g_signal_handlers_unblock_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
+      g_signal_handlers_block_by_func (self->andromeda_autostart_switch, cc_andromeda_panel_autostart, self);
+      gtk_switch_set_state (GTK_SWITCH (self->andromeda_autostart_switch), TRUE);
+      gtk_switch_set_active (GTK_SWITCH (self->andromeda_autostart_switch), TRUE);
+      g_signal_handlers_unblock_by_func (self->andromeda_autostart_switch, cc_andromeda_panel_autostart, self);
     } else {
-      g_signal_handlers_block_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
-      gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
-      gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
-      g_signal_handlers_unblock_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
+      g_signal_handlers_block_by_func (self->andromeda_autostart_switch, cc_andromeda_panel_autostart, self);
+      gtk_switch_set_state (GTK_SWITCH (self->andromeda_autostart_switch), FALSE);
+      gtk_switch_set_active (GTK_SWITCH (self->andromeda_autostart_switch), FALSE);
+      g_signal_handlers_unblock_by_func (self->andromeda_autostart_switch, cc_andromeda_panel_autostart, self);
     }
 
     g_free (file_path);
 
-    gchar *current_state = waydroid_get_state ();
+    gchar *current_state = andromeda_get_state ();
 
     if (current_state != NULL && g_strcmp0 (current_state, "RUNNING") == 0) {
-      g_signal_handlers_block_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
-      gtk_switch_set_state (GTK_SWITCH (self->waydroid_enabled_switch), TRUE);
-      gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), TRUE);
-      g_signal_handlers_unblock_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
+      g_signal_handlers_block_by_func (self->andromeda_enabled_switch, cc_andromeda_panel_enable_andromeda, self);
+      gtk_switch_set_state (GTK_SWITCH (self->andromeda_enabled_switch), TRUE);
+      gtk_switch_set_active (GTK_SWITCH (self->andromeda_enabled_switch), TRUE);
+      g_signal_handlers_unblock_by_func (self->andromeda_enabled_switch, cc_andromeda_panel_enable_andromeda, self);
 
       set_widgets_sensitive (FALSE,
                              GTK_WIDGET (self->factory_reset_button),
                              NULL);
 
-      g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_launch_app_threaded), self);
-      g_signal_connect (G_OBJECT (self->remove_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_uninstall_app), self);
-      g_signal_connect (G_OBJECT (self->install_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_install_app), self);
-      g_signal_connect (G_OBJECT (self->store_button), "clicked", G_CALLBACK (cc_waydroid_panel_open_store), self);
-      g_signal_connect (self->refresh_app_list_button, "clicked", G_CALLBACK (cc_waydroid_refresh_button), self);
-      g_signal_connect (G_OBJECT (self->clear_app_data_button), "clicked", G_CALLBACK (cc_waydroid_panel_clear_app_data), self);
-      g_signal_connect (G_OBJECT (self->kill_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_kill_app), self);
+      g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_launch_app_threaded), self);
+      g_signal_connect (G_OBJECT (self->remove_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_uninstall_app), self);
+      g_signal_connect (G_OBJECT (self->install_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_install_app), self);
+      g_signal_connect (G_OBJECT (self->store_button), "clicked", G_CALLBACK (cc_andromeda_panel_open_store), self);
+      g_signal_connect (self->refresh_app_list_button, "clicked", G_CALLBACK (cc_andromeda_refresh_button), self);
+      g_signal_connect (G_OBJECT (self->clear_app_data_button), "clicked", G_CALLBACK (cc_andromeda_panel_clear_app_data), self);
+      g_signal_connect (G_OBJECT (self->kill_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_kill_app), self);
 
-      g_idle_add (update_waydroid_info_idle, self);
+      g_idle_add (update_andromeda_info_idle, self);
     } else {
-      g_signal_handlers_block_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
-      gtk_switch_set_state (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);
-      gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);
-      g_signal_handlers_unblock_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
-      gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), "");
+      g_signal_handlers_block_by_func (self->andromeda_enabled_switch, cc_andromeda_panel_enable_andromeda, self);
+      gtk_switch_set_state (GTK_SWITCH (self->andromeda_enabled_switch), FALSE);
+      gtk_switch_set_active (GTK_SWITCH (self->andromeda_enabled_switch), FALSE);
+      g_signal_handlers_unblock_by_func (self->andromeda_enabled_switch, cc_andromeda_panel_enable_andromeda, self);
+      gtk_label_set_text (GTK_LABEL (self->andromeda_version_label), "");
 
       set_widgets_sensitive (FALSE,
-                             GTK_WIDGET (self->waydroid_nfc_switch),
-                             GTK_WIDGET (self->waydroid_notification_switch),
+                             GTK_WIDGET (self->andromeda_nfc_switch),
+                             GTK_WIDGET (self->andromeda_notification_switch),
                              GTK_WIDGET (self->launch_app_button),
                              GTK_WIDGET (self->remove_app_button),
                              GTK_WIDGET (self->install_app_button),
@@ -1705,15 +1704,15 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
 
     g_free (current_state);
   } else {
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);
+    gtk_switch_set_state (GTK_SWITCH (self->andromeda_enabled_switch), FALSE);
+    gtk_switch_set_active (GTK_SWITCH (self->andromeda_enabled_switch), FALSE);
 
     set_widgets_sensitive (FALSE,
-                           GTK_WIDGET (self->waydroid_enabled_switch),
-                           GTK_WIDGET (self->waydroid_autostart_switch),
-                           GTK_WIDGET (self->waydroid_shared_folder_switch),
-                           GTK_WIDGET (self->waydroid_nfc_switch),
-                           GTK_WIDGET (self->waydroid_notification_switch),
+                           GTK_WIDGET (self->andromeda_enabled_switch),
+                           GTK_WIDGET (self->andromeda_autostart_switch),
+                           GTK_WIDGET (self->andromeda_shared_folder_switch),
+                           GTK_WIDGET (self->andromeda_nfc_switch),
+                           GTK_WIDGET (self->andromeda_notification_switch),
                            GTK_WIDGET (self->launch_app_button),
                            GTK_WIDGET (self->remove_app_button),
                            GTK_WIDGET (self->install_app_button),
@@ -1725,12 +1724,12 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
                            GTK_WIDGET (self->kill_app_button),
                            NULL);
 
-    gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), "");
+    gtk_label_set_text (GTK_LABEL (self->andromeda_version_label), "");
   }
 }
 
-CcWaydroidPanel *
-cc_waydroid_panel_new (void)
+CcAndromedaPanel *
+cc_andromeda_panel_new (void)
 {
-  return CC_WAYDROID_PANEL (g_object_new (CC_TYPE_WAYDROID_PANEL, NULL));
+  return CC_ANDROMEDA_PANEL (g_object_new (CC_TYPE_ANDROMEDA_PANEL, NULL));
 }

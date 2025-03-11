@@ -11,9 +11,9 @@
 
 G_BEGIN_DECLS
 
-#define CC_TYPE_WAYDROID_PANEL (cc_waydroid_panel_get_type ())
-G_DECLARE_FINAL_TYPE (CcWaydroidPanel, cc_waydroid_panel, CC, WAYDROID_PANEL, CcPanel)
+#define CC_TYPE_ANDROMEDA_PANEL (cc_andromeda_panel_get_type ())
+G_DECLARE_FINAL_TYPE (CcAndromedaPanel, cc_andromeda_panel, CC, ANDROMEDA_PANEL, CcPanel)
 
-CcWaydroidPanel *cc_waydroid_panel_new (void);
+CcAndromedaPanel *cc_andromeda_panel_new (void);
 
 G_END_DECLS
