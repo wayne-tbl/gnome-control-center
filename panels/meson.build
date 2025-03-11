@@ -1,6 +1,7 @@
 subdir('common')
 
 panels = [
+  'andromeda',
   'applications',
   'assistant',
   'background',
@@ -24,7 +25,6 @@ panels = [
   'system',
   'universal-access',
   'usb',
-  'waydroid',
  'wwan',
 ]
 

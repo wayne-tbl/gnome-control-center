@@ -11,11 +11,11 @@ i18n.merge_file(
 )
 
 sources = files(
-  'cc-waydroid-panel.c',
+  'cc-andromeda-panel.c',
 )
 
 resource_data = files(
-  'cc-waydroid-panel.ui'
+  'cc-andromeda-panel.ui'
 )
 
 sources += gnome.compile_resources(
