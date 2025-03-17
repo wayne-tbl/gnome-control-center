@@ -11,49 +11,82 @@
               <object class="AdwHeaderBar"></object>
             </child>
             <property name="content">
-              <object class="GtkScrolledWindow">
-                <property name="hscrollbar-policy">never</property>
-                <property name="min-content-height">400</property>
-                <property name="vexpand">true</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="orientation">vertical</property>
-                    <property name="spacing">24</property>
-                    <property name="margin-top">24</property>
-                    <property name="margin-bottom">24</property>
-                    <property name="margin-start">24</property>
-                    <property name="margin-end">24</property>
+              <object class="AdwBottomSheet" id="bottom_sheet">
+                <property name="can-open">True</property>
+                <property name="modal">True</property>
+                <property name="open">False</property>
+
+                <property name="content">
+                  <object class="AdwClamp">
                     <child>
-                      <object class="GtkOverlay" id="fingerprint_overlay">
-                        <property name="halign">center</property>
+                      <object class="GtkScrolledWindow">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="min-content-height">400</property>
+                        <property name="vexpand">true</property>
                         <child>
-                          <object class="GtkImage" id="fingerprint_image">
-                            <property name="pixel-size">340</property>
-                            <property name="icon-name">fingerprint-detection-symbolic</property>
-                          </object>
-                        </child>
-                        <child type="overlay">
-                          <object class="GtkProgressBar" id="enroll_progress">
-                            <property name="visible">false</property>
-                            <property name="valign">end</property>
-                            <style>
-                              <class name="osd"/>
-                            </style>
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">24</property>
+                            <property name="margin-top">24</property>
+                            <property name="margin-bottom">24</property>
+                            <property name="margin-start">24</property>
+                            <property name="margin-end">24</property>
+                            <child>
+                              <object class="AdwPreferencesGroup">
+                                <property name="title" translatable="yes">Registered Fingerprints</property>
+
+                                <child>
+                                  <object class="GtkListBox" id="finger_list">
+                                    <style>
+                                      <class name="boxed-list"/>
+                                    </style>
+                                    <property name="selection-mode">none</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>
                     </child>
+                    </object>
+                </property>
+
+                <property name="sheet">
+                  <object class="GtkStack" id="enroll_stack">
+                    <property name="transition-type">slide-left-right</property>
+                    <property name="transition-duration">300</property>
                     <child>
-                      <object class="AdwPreferencesGroup">
+                      <object class="GtkScrolledWindow" id="select_finger_step">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="min-content-height">400</property>
+                        <property name="vexpand">true</property>
+                        <property name="propagate-natural-height">true</property>
                         <child>
-                          <object class="AdwExpanderRow" id="finger_select_row">
-                            <property name="title" translatable="yes">Select Finger</property>
-                            <property name="subtitle" translatable="yes">Expand to see available fingers</property>
-                            <property name="expanded">false</property>
-                            <property name="enable-expansion">true</property>
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">12</property>
+                            <property name="margin-top">40</property>
+                            <property name="margin-bottom">24</property>
+                            <property name="margin-start">24</property>
+                            <property name="margin-end">24</property>
+
                             <child>
-                              <object class="GtkListBox" id="finger_list">
+                              <object class="GtkLabel" id="title">
+                                <style>
+                                  <class name="title-2" />
+                                </style>
+                                <property name="valign">start</property>
+                                <property name="label" translatable="yes">Register New Finger</property>
+                                <property name="justify">center</property>
+                                <property name="wrap">True</property>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="GtkListBox" id="unenrolled_finger_list">
                                 <property name="selection-mode">none</property>
+                                <property name="margin-top">8</property>
                                 <style>
                                   <class name="boxed-list"/>
                                 </style>
@@ -61,77 +94,69 @@
                             </child>
                           </object>
                         </child>
-                        <child>
-                          <object class="AdwActionRow">
-                            <property name="title" translatable="yes">Manage Fingers</property>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="spacing">12</property>
-                                <child>
-                                  <object class="GtkButton" id="remove_finger_button">
-                                    <property name="label" translatable="yes">Remove</property>
-                                    <property name="valign">center</property>
-                                    <style>
-                                      <class name="destructive-action"/>
-                                    </style>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkButton" id="enroll_finger_button">
-                                    <property name="label" translatable="yes">Enroll</property>
-                                    <property name="valign">center</property>
-                                    <style>
-                                      <class name="suggested-action"/>
-                                    </style>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwActionRow">
-                            <property name="title" translatable="yes">Test Fingerprint</property>
-                            <child>
-                              <object class="GtkButton" id="identify_finger_button">
-                                <property name="label" translatable="yes">Identify</property>
-                                <property name="valign">center</property>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkBox">
-                        <property name="homogeneous">true</property>
-                        <style>
-                          <class name="linked"/>
-                        </style>
+                      <object class="GtkScrolledWindow" id="enroll_step">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="min-content-height">400</property>
+                        <property name="vexpand">true</property>
+                        <property name="propagate-natural-height">true</property>
                         <child>
-                          <object class="GtkToggleButton" id="show_enrolled_list">
-                            <property name="label" translatable="yes">Enrolled</property>
-                            <property name="active">true</property>
-                            <property name="hexpand">true</property>
-                            <style>
-                              <class name="flat"/>
-                            </style>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkToggleButton" id="show_unenrolled_list">
-                            <property name="label" translatable="yes">Unenrolled</property>
-                            <property name="group">show_enrolled_list</property>
-                            <property name="hexpand">true</property>
-                            <style>
-                              <class name="flat"/>
-                            </style>
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">12</property>
+                            <property name="margin-top">40</property>
+                            <property name="margin-bottom">24</property>
+                            <property name="margin-start">24</property>
+                            <property name="margin-end">24</property>
+
+                            <child>
+                              <object class="GtkLabel" id="enroll_finger_title">
+                                <style>
+                                  <class name="title-2" />
+                                </style>
+                                <property name="valign">start</property>
+                                <property name="label" translatable="yes">Registering Fingerprint</property>
+                                <property name="justify">center</property>
+                                <property name="wrap">True</property>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="valign">start</property>
+                                <property name="label" translatable="yes">Repeatedly tap your finger against the power button.</property>
+                                <property name="wrap">True</property>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="GtkOverlay" id="fingerprint_overlay">
+                                <property name="halign">center</property>
+                                <child>
+                                  <object class="GtkImage" id="fingerprint_image">
+                                    <property name="pixel-size">256</property>
+                                    <property name="icon-name">fingerprint-detection-symbolic</property>
+                                  </object>
+                                </child>
+                                <child type="overlay">
+                                  <object class="GtkProgressBar" id="enroll_progress">
+                                    <property name="visible">false</property>
+                                    <property name="valign">end</property>
+                                    <style>
+                                      <class name="osd"/>
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>
                     </child>
                   </object>
-                </child>
+                </property>
               </object>
             </property>
           </object>
