@@ -196,15 +196,19 @@ refresh_fingerprint_list (CcFingerprintPanel *self, gboolean show_enrolled, GtkL
 
   gtk_list_box_remove_all (target_list);
 
-  g_list_free_full (self->finger_widgets, g_object_unref);
-  self->finger_widgets = NULL;
+  if (show_enrolled) {
+    g_list_free_full (self->finger_widgets, g_object_unref);
+    self->finger_widgets = NULL;
+  }
 
   for (int i = 0; all_fingers[i] != NULL; i++) {
     gboolean is_enrolled = g_strv_contains ((const gchar *const *) enrolled_fingers, all_fingers[i]);
     if ((show_enrolled && is_enrolled) || (!show_enrolled && !is_enrolled)) {
       GtkWidget *row = create_finger_row (all_fingers[i], is_enrolled);
       gtk_list_box_append (target_list, row);
-      self->finger_widgets = g_list_append (self->finger_widgets, g_object_ref (row));
+      if (show_enrolled) {
+        self->finger_widgets = g_list_append (self->finger_widgets, g_object_ref (row));
+      }
     }
   }
 
@@ -413,6 +417,49 @@ cc_fingerprint_panel_start_worker (CcFingerprintPanel *self)
   g_thread_new (NULL, fingerprint_worker_thread, self);
 }
 
+static gboolean
+cc_fingerprint_panel_delayed_decay_highlight (gpointer user_data)
+{
+  CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
+
+  GList *entry;
+  GtkWidget *row;
+
+  for (entry = self->finger_widgets; entry; entry = entry->next) {
+    row = entry->data;
+
+    GtkWidget *parent_row = gtk_widget_get_parent (row);
+    gtk_widget_remove_css_class (parent_row, "identified");
+  }
+
+  return FALSE;
+}
+
+static void
+cc_fingerprint_panel_highlight_finger (CcFingerprintPanel *self, gchar *finger)
+{
+  GList *entry;
+  GtkWidget *row;
+
+  for (entry = self->finger_widgets; entry; entry = entry->next) {
+    row = entry->data;
+    GtkWidget *label = gtk_widget_get_first_child (row);
+
+    while (label && !GTK_IS_LABEL (label)) {
+      label = gtk_widget_get_next_sibling (label);
+    }
+
+    if (!GTK_IS_LABEL (label)) continue;
+
+    if (!g_strcmp0 (gtk_label_get_text (GTK_LABEL (label)), finger)) {
+      GtkWidget *parent_row = gtk_widget_get_parent (row);
+      gtk_widget_add_css_class (parent_row, "identified");
+      g_timeout_add (50, cc_fingerprint_panel_delayed_decay_highlight, self);
+      return;
+    }
+  }
+}
+
 static void
 handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVariant *parameters, gpointer user_data)
 {
@@ -435,7 +482,7 @@ handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVaria
     g_variant_get (parameters, "(s)", &info);
     g_debug ("%s received: %s", signal_name, info);
     self->identification_done = TRUE;
-    show_toast (self, "Identified finger: %s", info);
+    cc_fingerprint_panel_highlight_finger (self, g_strdup (info));
     g_free (info);
   } else if (g_strcmp0 (signal_name, "StateChanged") == 0) {
     g_variant_get (parameters, "(s)", &info);
@@ -667,8 +714,16 @@ cc_fingerprint_panel_class_init (CcFingerprintPanelClass *klass)
 static void
 cc_fingerprint_panel_init (CcFingerprintPanel *self)
 {
+  g_autoptr(GtkCssProvider) provider = NULL;
+
   g_resources_register (cc_fingerprint_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
+
+  provider = gtk_css_provider_new ();
+  gtk_css_provider_load_from_resource (provider, "/org/gnome/control-center/fingerprint/fingerprint.css");
+  gtk_style_context_add_provider_for_display (gdk_display_get_default (),
+                                              GTK_STYLE_PROVIDER (provider),
+                                              GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
   self->finger_widgets = NULL;
   self->selected_finger = NULL;

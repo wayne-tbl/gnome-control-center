@@ -37,6 +37,7 @@
 
                                 <child>
                                   <object class="GtkListBox" id="finger_list">
+                                    <property name="name">finger_list</property>
                                     <style>
                                       <class name="boxed-list"/>
                                     </style>
@@ -138,6 +139,7 @@
                                   <object class="GtkImage" id="fingerprint_image">
                                     <property name="pixel-size">256</property>
                                     <property name="icon-name">fingerprint-detection-symbolic</property>
+                                    <property name="margin-bottom">24</property>
                                   </object>
                                 </child>
                                 <child type="overlay">
