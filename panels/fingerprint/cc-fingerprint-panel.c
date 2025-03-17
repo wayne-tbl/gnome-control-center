@@ -470,7 +470,7 @@ cc_fingerprint_panel_highlight_finger (CcFingerprintPanel *self, gchar *finger)
     if (!g_strcmp0 (gtk_label_get_text (GTK_LABEL (label)), finger)) {
       GtkWidget *parent_row = gtk_widget_get_parent (row);
       gtk_widget_add_css_class (parent_row, "identified");
-      g_timeout_add (50, cc_fingerprint_panel_delayed_decay_highlight, self);
+      g_timeout_add (150, cc_fingerprint_panel_delayed_decay_highlight, self);
       return;
     }
   }
