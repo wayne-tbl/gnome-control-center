@@ -28,6 +28,7 @@ struct _CcFingerprintPanel {
   gboolean           finger_canceled;
   gboolean           awaiting_cancel;
   gboolean           wants_remove;
+  gboolean           wants_death;
   gboolean           sensitive;
   GList             *finger_widgets;
   gchar             *selected_finger;
@@ -44,6 +45,11 @@ static void
 cc_fingerprint_panel_finalize (GObject *object)
 {
   CcFingerprintPanel *self = CC_FINGERPRINT_PANEL (object);
+
+  self->wants_death = TRUE;
+  while (self->wants_death) {
+    g_usleep (500 * 100);
+  }
 
   g_list_free_full (self->finger_widgets, g_object_unref);
   g_free (self->selected_finger);
@@ -275,9 +281,11 @@ fingerprint_worker_thread (gpointer user_data)
   g_signal_connect (proxy, "g-signal", G_CALLBACK (handle_signal), self);
 
   while (1) {
-    while (self->awaiting_cancel) {
+    while (self->awaiting_cancel && !self->wants_death) {
       g_usleep (500 * 100);
     }
+
+    if (self->wants_death) break;
 
     // Let things settle for a moment...
     g_usleep (1000 * 100);
@@ -321,8 +329,10 @@ fingerprint_worker_thread (gpointer user_data)
 
       g_variant_unref(result);
 
-      while (!self->identification_done && !self->enrolling && !self->wants_remove)
+      while (!self->identification_done && !self->enrolling && !self->wants_remove && !self->wants_death)
         g_usleep (500 * 100);
+
+      if (self->wants_death) break;
 
       if (self->enrolling || self->wants_remove) {
         self->awaiting_cancel = TRUE;
@@ -345,6 +355,8 @@ fingerprint_worker_thread (gpointer user_data)
         }
       }
     } else {
+      if (self->wants_death) break;
+
       self->enrollment_done = FALSE;
       self->finger_canceled = FALSE;
       g_debug ("Enrolling %s", self->selected_finger);
@@ -367,8 +379,10 @@ fingerprint_worker_thread (gpointer user_data)
 
         g_variant_unref (result);
 
-        while (!self->enrollment_done && !self->finger_canceled)
+        while (!self->enrollment_done && !self->finger_canceled && !self->wants_death)
           g_usleep (500 * 100);
+
+        if (self->wants_death) break;
 
         if (self->finger_canceled && !self->enrollment_done) {
           if (self->enrolling && !self->enrollment_done) {
@@ -403,10 +417,12 @@ fingerprint_worker_thread (gpointer user_data)
       }
     }
 
-    g_usleep (500 * 100);
+    if (!self->wants_death)
+      g_usleep (500 * 100);
   }
 
   g_object_unref (proxy);
+  self->wants_death = FALSE;
 
   return NULL;
 }
@@ -728,6 +744,7 @@ cc_fingerprint_panel_init (CcFingerprintPanel *self)
   self->finger_widgets = NULL;
   self->selected_finger = NULL;
   self->enrolling = FALSE;
+  self->wants_death = FALSE;
 
   if (ping_fpd ()) {
     g_signal_connect (self->finger_list, "row-activated", G_CALLBACK (on_finger_activated), self);
