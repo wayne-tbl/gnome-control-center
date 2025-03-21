@@ -258,7 +258,8 @@ fingerprint_worker_thread (gpointer user_data)
 {
   CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
   GError *error = NULL;
-  GVariant *result;
+  GVariant *result, *result_child;
+  gint32 identify_result;
   GDBusProxy *proxy;
 
   proxy = g_dbus_proxy_new_for_bus_sync(
@@ -327,14 +328,20 @@ fingerprint_worker_thread (gpointer user_data)
         g_clear_error (&error);
       }
 
-      g_variant_unref(result);
+      result_child = g_variant_get_child_value (result, 0);
+      if (result_child) {
+          identify_result = g_variant_get_int32 (result_child);  // This will be 0 if everything went well
+          g_variant_unref (result_child);
+      }
+
+      g_variant_unref (result);
 
       while (!self->identification_done && !self->enrolling && !self->wants_remove && !self->wants_death)
         g_usleep (500 * 100);
 
       if (self->wants_death) break;
 
-      if (self->enrolling || self->wants_remove) {
+      if (!identify_result && (self->enrolling || self->wants_remove)) {
         self->awaiting_cancel = TRUE;
 
         result = g_dbus_proxy_call_sync(
