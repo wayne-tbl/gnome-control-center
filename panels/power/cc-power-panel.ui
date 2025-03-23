@@ -291,6 +291,149 @@
                             </child>
                           </object>
                         </child>
+                        <child>
+                          <object class="AdwPreferencesGroup" id="batman_section">
+                            <property name="title" translatable="yes">Batman Power Management</property>
+                            <child>
+                              <object class="AdwExpanderRow" id="batman_expander_row">
+                                <property name="title" translatable="yes">Batman Power Saving Options</property>
+                                <property name="subtitle" translatable="yes">Advanced power management options</property>
+                                <property name="expanded">False</property>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_service_row">
+                                    <property name="title" translatable="yes">_Batman service</property>
+                                    <property name="subtitle" translatable="yes">Start/stop Batman daemon.</property>
+                                    <property name="use_underline">True</property>
+                                    <property name="activatable_widget">batman_service_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_service_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_service_enabled_row">
+                                    <property name="title" translatable="yes">Auto-start Batman</property>
+                                    <property name="subtitle" translatable="yes">Start Batman daemon automatically on boot</property>
+                                    <property name="activatable_widget">batman_service_enabled_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_service_enabled_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_powersave_row">
+                                    <property name="title" translatable="yes">Powersave</property>
+                                    <property name="subtitle" translatable="yes">Allow Batman to set the CPU to powersave mode when discharging</property>
+                                    <property name="activatable_widget">batman_powersave_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_powersave_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_chargesave_row">
+                                    <property name="title" translatable="yes">Charge save</property>
+                                    <property name="subtitle" translatable="yes">Allow Batman to set the CPU to powersave mode when charging</property>
+                                    <property name="activatable_widget">batman_chargesave_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_chargesave_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_offline_row">
+                                    <property name="title" translatable="yes">Offlining</property>
+                                    <property name="subtitle" translatable="yes">Allow Batman to turn off CPU cores</property>
+                                    <property name="activatable_widget">batman_offline_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_offline_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_gpusave_row">
+                                    <property name="title" translatable="yes">GPU save</property>
+                                    <property name="subtitle" translatable="yes">Allow Batman to set the GPU to powersave mode</property>
+                                    <property name="activatable_widget">batman_gpusave_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_gpusave_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_bussave_row">
+                                    <property name="title" translatable="yes">Bus save</property>
+                                    <property name="subtitle" translatable="yes">Allow Batman to set devfreq bus nodes to powersave mode</property>
+                                    <property name="activatable_widget">batman_bussave_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_bussave_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_btsave_row">
+                                    <property name="title" translatable="yes">Bluetooth save</property>
+                                    <property name="subtitle" translatable="yes">Allow Batman to turn off Bluetooth according to device usage</property>
+                                    <property name="activatable_widget">batman_btsave_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_btsave_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_hybrissave_row">
+                                    <property name="title" translatable="yes">Hybris save</property>
+                                    <property name="subtitle" translatable="yes">Allow Batman to set hardware services to powersave</property>
+                                    <property name="activatable_widget">batman_hybrissave_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_hybrissave_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow" id="batman_wifi_row">
+                                    <property name="title" translatable="yes">WiFi save</property>
+                                    <property name="subtitle" translatable="yes">Allow Batman to set the WiFi chip to powersave mode</property>
+                                    <property name="activatable_widget">batman_wifisave_switch</property>
+                                    <child>
+                                      <object class="GtkSwitch" id="batman_wifisave_switch">
+                                        <property name="valign">center</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
                       </object>
                     </property>
                   </object>
