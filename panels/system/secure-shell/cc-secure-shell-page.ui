@@ -15,7 +15,7 @@
                 <child>
                   <object class="AdwPreferencesGroup">
                     <child>
-                      <object class="GtkLabel">
+                      <object class="GtkLabel" id="ssh_status_label">
                         <property name="halign">center</property>
                         <property name="wrap">True</property>
                         <property name="lines">2</property>
