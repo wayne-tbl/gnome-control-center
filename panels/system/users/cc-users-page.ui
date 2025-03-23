@@ -31,6 +31,7 @@
                 <property name="title" translatable="yes">_Add User</property>
                 <property name="end-icon-name">go-next-symbolic</property>
                 <property name="use_underline">True</property>
+                <property name="visible">False</property>
                 <signal name="activated" handler="add_user" object="CcUsersPage" swapped="yes"/>
               </object>
             </child>
