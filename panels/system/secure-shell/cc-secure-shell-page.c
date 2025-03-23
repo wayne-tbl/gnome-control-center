@@ -39,6 +39,8 @@ struct _CcSecureShellPage {
   AdwSwitchRow    *secure_shell_row;
   AdwToastOverlay *toast_overlay;
 
+  GtkLabel        *ssh_status_label;
+
   GCancellable *cancellable;
 };
 
@@ -86,6 +88,8 @@ cc_secure_shell_page_class_init (CcSecureShellPageClass * klass)
 
   gtk_widget_class_bind_template_callback (widget_class, on_copy_ssh_command_button_clicked);
   gtk_widget_class_bind_template_callback (widget_class, secure_shell_row_activate);
+
+  gtk_widget_class_bind_template_child (widget_class, CcSecureShellPage, ssh_status_label);
 }
 
 static void
@@ -98,14 +102,20 @@ cc_secure_shell_page_init (CcSecureShellPage *self)
 
   self->cancellable = g_cancellable_new ();
 
-  cc_secure_shell_get_enabled (self->secure_shell_row);
-  g_signal_connect_object (self->secure_shell_row,
-                           "notify::active",
-                           G_CALLBACK (secure_shell_row_activate),
-                           self,
-                           G_CONNECT_SWAPPED);
+  if (g_file_test ("/usr/sbin/sshd", G_FILE_TEST_EXISTS)) {
+    cc_secure_shell_get_enabled (self->secure_shell_row);
+    g_signal_connect_object (self->secure_shell_row,
+                             "notify::active",
+                             G_CALLBACK (secure_shell_row_activate),
+                             self,
+                             G_CONNECT_SWAPPED);
 
-  hostname = cc_hostname_get_static_hostname (cc_hostname_get_default ());
-  command = g_strdup_printf ("ssh %s", hostname);
-  adw_action_row_set_subtitle (self->hostname_row, command);
+    hostname = cc_hostname_get_static_hostname (cc_hostname_get_default ());
+    command = g_strdup_printf ("ssh %s", hostname);
+    adw_action_row_set_subtitle (self->hostname_row, command);
+  } else {
+    gtk_label_set_text (self->ssh_status_label, _("SSH server not installed"));
+    gtk_widget_set_sensitive (GTK_WIDGET (self->hostname_row), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->secure_shell_row), FALSE);
+  }
 }
