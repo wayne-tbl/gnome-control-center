@@ -655,15 +655,30 @@ cc_night_light_page_init (CcNightLightPage *self)
 
   gtk_widget_init_template (GTK_WIDGET (self));
 
+  gtk_widget_set_visible (GTK_WIDGET (self->stack_to), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->stack_from), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->spinbutton_to_hours), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->spinbutton_to_minutes), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->to_spinbuttons_box), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->spinbutton_from_minutes), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->spinbutton_from_hours), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->from_spinbuttons_box), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->button_to_pm), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->button_from_pm), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->button_to_am), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->button_from_am), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->box_manual), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->schedule_type_row), FALSE);
+
   self->cancellable = g_cancellable_new ();
   self->settings_display = g_settings_new (DISPLAY_SCHEMA);
 
   g_signal_connect_object (self->settings_display, "changed", G_CALLBACK (dialog_settings_changed_cb), self, G_CONNECT_SWAPPED);
 
   self->settings_location = g_settings_new (LOCATION_SCHEMA);
-  g_settings_bind (self->settings_location, "enabled",
+/*  g_settings_bind (self->settings_location, "enabled",
                    self->schedule_type_row, "visible",
-                   G_SETTINGS_BIND_DEFAULT);
+                   G_SETTINGS_BIND_DEFAULT);*/
   g_signal_connect_object (self->settings_location, "changed::enabled", G_CALLBACK (dialog_update_state), self, G_CONNECT_SWAPPED);
 
   g_settings_bind (self->settings_display, "night-light-enabled",
