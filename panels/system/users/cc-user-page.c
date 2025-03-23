@@ -752,10 +752,10 @@ cc_user_page_set_user (CcUserPage  *self,
                                      _("Enabled") : _("Disabled"));
 #endif
 
-    g_signal_handlers_block_by_func (self->auto_login_switch, autologin_changed, self);
+/*    g_signal_handlers_block_by_func (self->auto_login_switch, autologin_changed, self);
     gtk_widget_set_visible (GTK_WIDGET (self->auto_login_row), get_autologin_possible (user));
     gtk_switch_set_active (self->auto_login_switch, act_user_get_automatic_login (user));
-    g_signal_handlers_unblock_by_func (self->auto_login_switch, autologin_changed, self);
+    g_signal_handlers_unblock_by_func (self->auto_login_switch, autologin_changed, self);*/
 
     cc_list_row_set_secondary_label (self->password_row, get_password_mode_text (user));
     user_language = get_user_language (user);
