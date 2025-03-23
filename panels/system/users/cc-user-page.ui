@@ -199,6 +199,7 @@
                         <property name="visible" bind-source="CcUserPage" bind-property="is-current-user" bind-flags="invert-boolean"/>
                         <property name="sensitive" bind-source="CcUserPage" bind-property="editable" bind-flags="sync-create"/>
                         <property name="title" translatable="yes">_Remove User…</property>
+                        <property name="visible">False</property>
                         <property name="use-underline">True</property>
                         <signal name="activated" handler="remove_user" object="CcUserPage" swapped="yes"/>
                         <style>
