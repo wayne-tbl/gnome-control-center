@@ -32,7 +32,8 @@ sources = files(
   'cc-battery-row.c',
   'cc-power-panel.c',
   'cc-power-profile-row.c',
-  'cc-power-profile-info-row.c'
+  'cc-power-profile-info-row.c',
+  'cc-batman-config-control.c',
 )
 
 sources += gnome.compile_resources(
