@@ -127,7 +127,7 @@ static CcPanelLoaderVtable default_panels[] =
 #ifdef BUILD_WACOM
   PANEL_TYPE("wacom",            cc_wacom_panel_get_type,                cc_wacom_panel_static_init_func),
 #endif
-  PANEL_TYPE("wellbeing",        cc_wellbeing_panel_get_type,            NULL),
+//  PANEL_TYPE("wellbeing",        cc_wellbeing_panel_get_type,            NULL),
 #ifdef BUILD_WWAN
   PANEL_TYPE("wwan",             cc_wwan_panel_get_type,                 cc_wwan_panel_static_init_func),
 #endif
