@@ -5,6 +5,7 @@
       <object class="AdwBanner" id="banner">
         <property name="title" translatable="yes">Error — some settings cannot be unlocked</property>
         <property name="revealed">True</property>
+        <property name="visible">False</property>
         <property name="button-style">suggested</property>
         <signal name="button-clicked" handler="banner_button_clicked_cb" swapped="yes"/>
       </object>
