@@ -259,6 +259,127 @@ template $CcPowerPanel: $CcPanel {
                 title: _("Disabling automatic suspend will result in higher power consumption. It is recommended to keep automatic suspend enabled.");
               }
             }
+
+            Adw.PreferencesGroup batman_section {
+              title: _("Batman Power Management");
+
+              Adw.ExpanderRow batman_expander_row {
+                title: _("Batman Power Saving Options");
+                subtitle: _("Advanced power management options");
+                expanded: false;
+
+                Adw.ActionRow batman_service_row {
+                  title: _("_Batman service");
+                  subtitle: _("Start/stop Batman daemon.");
+                  use-underline: true;
+                  activatable-widget: batman_service_switch;
+
+                  [suffix]
+                  Switch batman_service_switch {
+                    valign: center;
+                  }
+                }
+
+                Adw.ActionRow batman_service_enabled_row {
+                  title: _("Auto-start Batman");
+                  subtitle: _("Start Batman daemon automatically on boot");
+                  activatable-widget: batman_service_enabled_switch;
+
+                  [suffix]
+                  Switch batman_service_enabled_switch {
+                    valign: center;
+                  }
+                }
+
+                Adw.ActionRow batman_powersave_row {
+                  title: _("Powersave");
+                  subtitle: _("Allow Batman to set the CPU to powersave mode when discharging");
+                  activatable-widget: batman_powersave_switch;
+
+                  [suffix]
+                  Switch batman_powersave_switch {
+                    valign: center;
+                  }
+                }
+
+                Adw.ActionRow batman_chargesave_row {
+                  title: _("Charge save");
+                  subtitle: _("Allow Batman to set the CPU to powersave mode when charging");
+                  activatable-widget: batman_chargesave_switch;
+
+                  [suffix]
+                  Switch batman_chargesave_switch {
+                    valign: center;
+                  }
+                }
+
+                Adw.ActionRow batman_offline_row {
+                  title: _("Offlining");
+                  subtitle: _("Allow Batman to turn off CPU cores");
+                  activatable-widget: batman_offline_switch;
+
+                  [suffix]
+                  Switch batman_offline_switch {
+                    valign: center;
+                  }
+                }
+
+                Adw.ActionRow batman_gpusave_row {
+                  title: _("GPU save");
+                  subtitle: _("Allow Batman to set the GPU to powersave mode");
+                  activatable-widget: batman_gpusave_switch;
+
+                  [suffix]
+                  Switch batman_gpusave_switch {
+                    valign: center;
+                  }
+                }
+
+                Adw.ActionRow batman_bussave_row {
+                  title: _("Bus save");
+                  subtitle: _("Allow Batman to set devfreq bus nodes to powersave mode");
+                  activatable-widget: batman_bussave_switch;
+
+                  [suffix]
+                  Switch batman_bussave_switch {
+                    valign: center;
+                  }
+                }
+
+                Adw.ActionRow batman_btsave_row {
+                  title: _("Bluetooth save");
+                  subtitle: _("Allow Batman to turn off Bluetooth according to device usage");
+                  activatable-widget: batman_btsave_switch;
+
+                  [suffix]
+                  Switch batman_btsave_switch {
+                    valign: center;
+                  }
+                }
+
+                Adw.ActionRow batman_hybrissave_row {
+                  title: _("Hybris save");
+                  subtitle: _("Allow Batman to set hardware services to powersave");
+                  activatable-widget: batman_hybrissave_switch;
+
+                  [suffix]
+                  Switch batman_hybrissave_switch {
+                    valign: center;
+                  }
+                }
+
+                Adw.ActionRow batman_wifi_row {
+                  title: _("WiFi save");
+                  subtitle: _("Allow Batman to set the WiFi chip to powersave mode");
+                  activatable-widget: batman_wifisave_switch;
+
+                  [suffix]
+                  Switch batman_wifisave_switch {
+                    valign: center;
+                  }
+                }
+              }
+            }
           };
         }
       };
