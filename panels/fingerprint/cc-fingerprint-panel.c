@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ * Copyright (C) 2025 Jesus Higueras <jesus@furilabs.com>
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -10,18 +11,26 @@
 
 #include <glib/gi18n.h>
 #include <adwaita.h>
+#include <biomd/biomd_enums.h>
 
-#define FPD_DBUS_NAME         "org.droidian.fingerprint"
-#define FPD_DBUS_PATH         "/org/droidian/fingerprint"
-#define FPD_DBUS_INTERFACE    "org.droidian.fingerprint"
+#define BIOMD_DBUS_NAME          "io.FuriOS.Biomd"
+#define BIOMD_DBUS_FINGERPRINT_PATH   "/io/FuriOS/Biomd/Fingerprint"
+#define BIOMD_DBUS_FINGERPRINT_INTERFACE  "io.FuriOS.Biomd.Fingerprint"
 
 struct _CcFingerprintPanel {
   CcPanel            parent;
+
   AdwToastOverlay   *toast_overlay;
   GtkPicture        *fingerprint_image;
   GtkProgressBar    *enroll_progress;
   GtkListBox        *finger_list;
   GtkListBox        *unenrolled_finger_list;
+  AdwBottomSheet    *bottom_sheet;
+  GtkStack          *enroll_stack;
+  GtkScrolledWindow *select_finger_step;
+  GtkScrolledWindow *enroll_step;
+  AdwAlertDialog    *delete_dialog;
+
   gboolean           enrolling;
   gboolean           enrollment_done;
   gboolean           identification_done;
@@ -30,32 +39,15 @@ struct _CcFingerprintPanel {
   gboolean           wants_remove;
   gboolean           wants_death;
   gboolean           sensitive;
+  gboolean           initialized;
   GList             *finger_widgets;
   gchar             *selected_finger;
-  AdwBottomSheet    *bottom_sheet;
-  GtkStack          *enroll_stack;
-  GtkScrolledWindow *select_finger_step;
-  GtkScrolledWindow *enroll_step;
-  AdwAlertDialog    *delete_dialog;
+
+  GDBusProxy        *fingerprint_proxy;
+  GDBusProxy        *props_proxy;
 };
 
 G_DEFINE_TYPE (CcFingerprintPanel, cc_fingerprint_panel, CC_TYPE_PANEL)
-
-static void
-cc_fingerprint_panel_finalize (GObject *object)
-{
-  CcFingerprintPanel *self = CC_FINGERPRINT_PANEL (object);
-
-  self->wants_death = TRUE;
-  while (self->wants_death) {
-    g_usleep (500 * 100);
-  }
-
-  g_list_free_full (self->finger_widgets, g_object_unref);
-  g_free (self->selected_finger);
-
-  G_OBJECT_CLASS (cc_fingerprint_panel_parent_class)->finalize (object);
-}
 
 static void
 show_toast (CcFingerprintPanel *self, const char *format, ...)
@@ -74,38 +66,27 @@ show_toast (CcFingerprintPanel *self, const char *format, ...)
   adw_toast_overlay_dismiss_all (self->toast_overlay);
   adw_toast_overlay_add_toast (self->toast_overlay, toast);
 
+  g_debug ("Toast: %s", message);
+
   g_free (message);
 }
 
 static gchar **
-get_enrolled_fingers (void)
+get_enrolled_fingers (CcFingerprintPanel *self)
 {
-  GDBusProxy *fpd_proxy;
   GError *error = NULL;
   GVariant *result;
-  gchar **fpd_fingers = NULL;
+  gchar **enrolled_fingers = NULL;
 
-  fpd_proxy = g_dbus_proxy_new_for_bus_sync(
-    G_BUS_TYPE_SYSTEM,
-    G_DBUS_PROXY_FLAGS_NONE,
-    NULL,
-    FPD_DBUS_NAME,
-    FPD_DBUS_PATH,
-    FPD_DBUS_INTERFACE,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_debug ("Error creating proxy: %s\n", error->message);
-    g_clear_error (&error);
+  if (!self->props_proxy) {
+    g_debug ("Properties proxy not available");
     return NULL;
   }
 
   result = g_dbus_proxy_call_sync(
-    fpd_proxy,
-    "GetAll",
-    NULL,
+    self->props_proxy,
+    "Get",
+    g_variant_new ("(ss)", BIOMD_DBUS_FINGERPRINT_INTERFACE, "EnrolledFingers"),
     G_DBUS_CALL_FLAGS_NONE,
     -1,
     NULL,
@@ -113,20 +94,238 @@ get_enrolled_fingers (void)
   );
 
   if (error) {
-    g_debug ("Error calling GetAll: %s\n", error->message);
+    g_debug ("Error calling Get for EnrolledFingers: %s", error->message);
     g_clear_error (&error);
-    g_object_unref (fpd_proxy);
     return NULL;
   } else {
-    GVariant *fpd_list;
-    fpd_list = g_variant_get_child_value (result, 0);
-    fpd_fingers = g_variant_dup_strv (fpd_list, NULL);
-    g_variant_unref (fpd_list);
+    GVariant *enrolled_variant;
+    g_variant_get (result, "(v)", &enrolled_variant);
+    enrolled_fingers = g_variant_dup_strv (enrolled_variant, NULL);
+    g_variant_unref (enrolled_variant);
     g_variant_unref (result);
   }
 
-  g_object_unref (fpd_proxy);
-  return fpd_fingers;
+  return enrolled_fingers;
+}
+
+static gchar **
+get_valid_finger_names (CcFingerprintPanel *self)
+{
+  GError *error = NULL;
+  GVariant *result;
+  gchar **valid_fingers = NULL;
+
+  if (!self->props_proxy) {
+    g_debug ("Properties proxy not available");
+    return NULL;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    self->props_proxy,
+    "Get",
+    g_variant_new ("(ss)", BIOMD_DBUS_FINGERPRINT_INTERFACE, "ValidFingerNames"),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling Get for ValidFingerNames: %s", error->message);
+    g_clear_error (&error);
+    return NULL;
+  } else {
+    GVariant *valid_variant;
+    g_variant_get (result, "(v)", &valid_variant);
+    valid_fingers = g_variant_dup_strv (valid_variant, NULL);
+    g_variant_unref (valid_variant);
+    g_variant_unref (result);
+  }
+
+  return valid_fingers;
+}
+
+static gint32
+get_fingerprint_state (CcFingerprintPanel *self, GError **error)
+{
+  GVariant *result;
+  gint32 state = STATE_IDLE;
+
+  if (!self->props_proxy) {
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED,
+                 "Properties proxy not available");
+    return state;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    self->props_proxy,
+    "Get",
+    g_variant_new("(ss)", BIOMD_DBUS_FINGERPRINT_INTERFACE, "State"),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    error
+  );
+
+  if (result) {
+    GVariant *state_variant;
+    g_variant_get (result, "(v)", &state_variant);
+    state = g_variant_get_int32 (state_variant);
+    g_variant_unref (state_variant);
+    g_variant_unref (result);
+  }
+
+  return state;
+}
+
+static gboolean
+fingerprint_enroll (CcFingerprintPanel *self, const gchar *finger_name, GError **error)
+{
+  GVariant *result;
+  gboolean success = FALSE;
+
+  if (!self->fingerprint_proxy) {
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED,
+                 "Fingerprint proxy not available");
+    return FALSE;
+  }
+
+  g_debug ("Enrolling %s", finger_name);
+
+  result = g_dbus_proxy_call_sync(
+    self->fingerprint_proxy,
+    "Enroll",
+    g_variant_new ("(s)", finger_name),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    error
+  );
+
+  if (result) {
+    g_variant_get (result, "(b)", &success);
+    g_variant_unref (result);
+  }
+
+  return success;
+}
+
+static gboolean
+fingerprint_identify (CcFingerprintPanel *self, GError **error)
+{
+  GVariant *result;
+  gboolean success = FALSE;
+
+  if (!self->fingerprint_proxy) {
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED,
+                 "Fingerprint proxy not available");
+    return FALSE;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    self->fingerprint_proxy,
+    "Identify",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    error
+  );
+
+  if (result) {
+    g_variant_get (result, "(b)", &success);
+    g_variant_unref (result);
+  }
+
+  return success;
+}
+
+static gboolean
+fingerprint_remove_finger (CcFingerprintPanel *self, const gchar *finger_name, GError **error)
+{
+  GVariant *result;
+  gboolean success = FALSE;
+
+  if (!self->fingerprint_proxy) {
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED,
+                 "Fingerprint proxy not available");
+    return FALSE;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    self->fingerprint_proxy,
+    "RemoveFinger",
+    g_variant_new ("(s)", finger_name),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    error
+  );
+
+  if (result) {
+    g_variant_get (result, "(b)", &success);
+    g_variant_unref (result);
+  }
+
+  return success;
+}
+
+static gboolean
+fingerprint_stop_enroll (CcFingerprintPanel *self, GError **error)
+{
+  GVariant *result;
+
+  if (!self->fingerprint_proxy) {
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED,
+                 "Fingerprint proxy not available");
+    return FALSE;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    self->fingerprint_proxy,
+    "StopEnroll",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    error
+  );
+
+  if (result) {
+    g_variant_unref (result);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static gboolean
+fingerprint_stop_identify (CcFingerprintPanel *self, GError **error)
+{
+  GVariant *result;
+
+  if (!self->fingerprint_proxy) {
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED,
+                 "Fingerprint proxy not available");
+    return FALSE;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    self->fingerprint_proxy,
+    "StopIdentify",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    error
+  );
+
+  if (result) {
+    g_variant_unref (result);
+    return TRUE;
+  }
+
+  return FALSE;
 }
 
 static GtkWidget *
@@ -184,21 +383,15 @@ create_register_finger_row ()
 static void
 refresh_fingerprint_list (CcFingerprintPanel *self, gboolean show_enrolled, GtkListBox *target_list)
 {
-  gchar *all_fingers[] = {
-    "right-index-finger",
-    "left-index-finger",
-    "right-thumb",
-    "right-middle-finger",
-    "right-ring-finger",
-    "right-little-finger",
-    "left-thumb",
-    "left-middle-finger",
-    "left-ring-finger",
-    "left-little-finger",
-    NULL
-  };
+  gchar **valid_finger_names = get_valid_finger_names (self);
+  gchar **enrolled_fingers = get_enrolled_fingers (self);
 
-  gchar **enrolled_fingers = get_enrolled_fingers ();
+  if (!valid_finger_names) {
+    g_debug ("Failed to get valid finger names");
+    if (enrolled_fingers)
+      g_strfreev (enrolled_fingers);
+    return;
+  }
 
   gtk_list_box_remove_all (target_list);
 
@@ -207,10 +400,10 @@ refresh_fingerprint_list (CcFingerprintPanel *self, gboolean show_enrolled, GtkL
     self->finger_widgets = NULL;
   }
 
-  for (int i = 0; all_fingers[i] != NULL; i++) {
-    gboolean is_enrolled = g_strv_contains ((const gchar *const *) enrolled_fingers, all_fingers[i]);
+  for (int i = 0; valid_finger_names[i] != NULL; i++) {
+    gboolean is_enrolled = enrolled_fingers && g_strv_contains ((const gchar *const *) enrolled_fingers, valid_finger_names[i]);
     if ((show_enrolled && is_enrolled) || (!show_enrolled && !is_enrolled)) {
-      GtkWidget *row = create_finger_row (all_fingers[i], is_enrolled);
+      GtkWidget *row = create_finger_row (valid_finger_names[i], is_enrolled);
       gtk_list_box_append (target_list, row);
       if (show_enrolled) {
         self->finger_widgets = g_list_append (self->finger_widgets, g_object_ref (row));
@@ -224,19 +417,21 @@ refresh_fingerprint_list (CcFingerprintPanel *self, gboolean show_enrolled, GtkL
     gtk_list_box_append (target_list, row);
   }
 
-  g_strfreev (enrolled_fingers);
+  g_strfreev (valid_finger_names);
+  if (enrolled_fingers)
+    g_strfreev (enrolled_fingers);
 }
 
 static void
 cc_fingerprint_panel_remove_finger (AdwDialog *dialog, gchar *response, CcFingerprintPanel *self)
 {
-  if (g_strcmp0 (response, "remove")) return;
+  if (g_strcmp0 (response, "remove"))
+    return;
 
-  if (self->selected_finger != NULL) {
+  if (self->selected_finger != NULL)
     self->wants_remove = TRUE;
-  } else {
+  else
     show_toast (self, "Please select a finger to remove");
-  }
 }
 
 static void
@@ -258,179 +453,137 @@ fingerprint_worker_thread (gpointer user_data)
 {
   CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
   GError *error = NULL;
-  GVariant *result, *result_child;
-  gint32 identify_result;
-  GDBusProxy *proxy;
-
-  proxy = g_dbus_proxy_new_for_bus_sync(
-    G_BUS_TYPE_SYSTEM,
-    G_DBUS_PROXY_FLAGS_NONE,
-    NULL,
-    FPD_DBUS_NAME,
-    FPD_DBUS_PATH,
-    FPD_DBUS_INTERFACE,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_warning ("Error creating proxy: %s\n", error->message);
-    g_clear_error (&error);
-    return NULL;
-  }
-
-  g_signal_connect (proxy, "g-signal", G_CALLBACK (handle_signal), self);
+  gboolean operation_success;
+  gint32 current_state = STATE_IDLE;
 
   while (1) {
-    while (self->awaiting_cancel && !self->wants_death) {
-      g_usleep (500 * 100);
+    if (self->wants_death)
+      break;
+
+    current_state = get_fingerprint_state (self, &error);
+
+    if (error) {
+      g_warning ("Error getting State property: %s\n", error->message);
+      g_clear_error (&error);
     }
 
-    if (self->wants_death) break;
-
-    // Let things settle for a moment...
-    g_usleep (1000 * 100);
-
     if (self->wants_remove) {
-      result = g_dbus_proxy_call_sync(
-        proxy,
-        "Remove",
-        g_variant_new ("(s)", self->selected_finger),
-        G_DBUS_CALL_FLAGS_NONE,
-        -1,
-        NULL,
-        &error
-      );
-
-      if (error) {
-        g_debug ("Error calling Remove: %s\n", error->message);
-        g_clear_error (&error);
-      }
-
-      g_variant_unref (result);
-      self->wants_remove = FALSE;
-      g_timeout_add (200, cc_fingerprint_panel_delayed_refresh, self);
-    } else if (!self->enrolling) {
-      self->identification_done = FALSE;
-
-      result = g_dbus_proxy_call_sync(
-        proxy,
-        "Identify",
-        NULL,
-        G_DBUS_CALL_FLAGS_NONE,
-        -1,
-        NULL,
-        &error
-      );
-
-      if (error) {
-        g_warning ("Error calling Identify: %s\n", error->message);
-        g_clear_error (&error);
-      }
-
-      result_child = g_variant_get_child_value (result, 0);
-      if (result_child) {
-          identify_result = g_variant_get_int32 (result_child);  // This will be 0 if everything went well
-          g_variant_unref (result_child);
-      }
-
-      g_variant_unref (result);
-
-      while (!self->identification_done && !self->enrolling && !self->wants_remove && !self->wants_death)
-        g_usleep (500 * 100);
-
-      if (self->wants_death) break;
-
-      if (!identify_result && (self->enrolling || self->wants_remove)) {
+      if (current_state == STATE_IDENTIFYING) {
+        g_debug ("Stopping identification before finger removal");
         self->awaiting_cancel = TRUE;
-
-        result = g_dbus_proxy_call_sync(
-          proxy,
-          "Abort",
-          NULL,
-          G_DBUS_CALL_FLAGS_NONE,
-          -1,
-          NULL,
-          &error
-        );
-
-        g_variant_unref (result);
-
+        operation_success = fingerprint_stop_identify (self, &error);
         if (error) {
-          g_warning ("Error calling Abort: %s\n", error->message);
+          g_warning ("Error stopping identification: %s\n", error->message);
+          g_clear_error (&error);
+        }
+
+        g_usleep (300 * 1000);
+
+        current_state = get_fingerprint_state (self, &error);
+        if (error) {
+          g_warning ("Error getting state: %s\n", error->message);
           g_clear_error (&error);
         }
       }
-    } else {
-      if (self->wants_death) break;
 
-      self->enrollment_done = FALSE;
-      self->finger_canceled = FALSE;
-      g_debug ("Enrolling %s", self->selected_finger);
+      if (current_state == STATE_IDLE && self->selected_finger != NULL) {
+        g_debug ("Removing finger: %s", self->selected_finger);
+        operation_success = fingerprint_remove_finger (self, self->selected_finger, &error);
 
-      if (self->selected_finger != NULL) {
-        result = g_dbus_proxy_call_sync(
-          proxy,
-          "Enroll",
-          g_variant_new ("(s)", self->selected_finger),
-          G_DBUS_CALL_FLAGS_NONE,
-          -1,
-          NULL,
-          &error
-        );
+        if (error) {
+          g_debug ("Error calling RemoveFinger: %s", error->message);
+          g_clear_error (&error);
+        }
+
+        self->enrollment_done = TRUE;
+      } else if (current_state != STATE_IDLE) {
+        g_debug ("Cannot remove finger: device not in idle state (current state: %d)", current_state);
+      }
+
+      self->wants_remove = FALSE;
+    } else if (self->enrolling && current_state != STATE_ENROLLING) {
+      if (current_state == STATE_IDENTIFYING) {
+        g_debug ("Stopping identification before enrollment");
+        self->awaiting_cancel = TRUE;
+        operation_success = fingerprint_stop_identify (self, &error);
+        if (error) {
+          g_warning ("Error stopping identification: %s\n", error->message);
+          g_clear_error (&error);
+        }
+
+        g_usleep (300 * 1000);
+
+        current_state = get_fingerprint_state (self, &error);
+        if (error) {
+          g_warning ("Error getting state: %s\n", error->message);
+          g_clear_error (&error);
+        }
+      }
+
+      if (current_state == STATE_IDLE && self->selected_finger != NULL) {
+        self->enrollment_done = FALSE;
+        self->finger_canceled = FALSE;
+        g_debug ("Enrolling %s", self->selected_finger);
+
+        operation_success = fingerprint_enroll (self, self->selected_finger, &error);
 
         if (error) {
           g_warning ("Error calling Enroll: %s\n", error->message);
           g_clear_error (&error);
+          self->enrolling = FALSE;
+        } else if (!operation_success) {
+          self->enrolling = FALSE;
+          g_debug ("Enrollment failed to start");
         }
-
-        g_variant_unref (result);
-
-        while (!self->enrollment_done && !self->finger_canceled && !self->wants_death)
-          g_usleep (500 * 100);
-
-        if (self->wants_death) break;
-
-        if (self->finger_canceled && !self->enrollment_done) {
-          if (self->enrolling && !self->enrollment_done) {
-            // This means we got canceled by the user, not an error.
-            // Need to abort the operation.
-            self->awaiting_cancel = TRUE;
-
-            result = g_dbus_proxy_call_sync(
-              proxy,
-              "Abort",
-              NULL,
-              G_DBUS_CALL_FLAGS_NONE,
-              -1,
-              NULL,
-              &error
-            );
-
-            g_variant_unref (result);
-
-            if (error) {
-              g_warning ("Error calling Abort: %s\n", error->message);
-              g_clear_error (&error);
-            }
-          }
-        } else {
-          g_timeout_add (200, cc_fingerprint_panel_delayed_refresh, self);
-        }
-
+      } else if (current_state != STATE_IDLE) {
+        g_debug ("Cannot start enrollment: device not in idle state (current state: %d)", current_state);
         self->enrolling = FALSE;
-        self->finger_canceled = FALSE;
-        adw_bottom_sheet_set_open (self->bottom_sheet, FALSE);
+      }
+    } else if (self->finger_canceled && current_state != STATE_IDLE) {
+      if (current_state == STATE_ENROLLING) {
+        g_debug ("Stopping enrollment due to cancellation");
+        operation_success = fingerprint_stop_enroll (self, &error);
+      } else if (current_state == STATE_IDENTIFYING) {
+        g_debug ("Stopping identification due to cancellation");
+        operation_success = fingerprint_stop_identify (self, &error);
+      }
+
+      if (error) {
+        g_warning ("Error canceling operation: %s\n", error->message);
+        g_clear_error (&error);
+      }
+
+      self->finger_canceled = FALSE;
+    } else if (!self->enrolling && current_state == STATE_IDLE && !self->finger_canceled && !self->enrollment_done) {
+      self->identification_done = FALSE;
+      g_debug ("Starting identification");
+      operation_success = fingerprint_identify (self, &error);
+
+      if (error) {
+        g_debug ("Identification error: %s", error->message);
+        g_clear_error (&error);
+      } else if (operation_success) {
+        g_debug ("Identification started successfully");
+      } else {
+        g_debug ("Identification failed to start");
       }
     }
 
-    if (!self->wants_death)
-      g_usleep (500 * 100);
+    if (self->enrolling) {
+      while (!self->enrollment_done && !self->finger_canceled && !self->wants_death) {
+        g_usleep (100 * 1000);
+      }
+
+      if (!self->finger_canceled && self->enrollment_done) {
+        self->enrolling = FALSE;
+        adw_bottom_sheet_set_open (self->bottom_sheet, FALSE);
+      }
+    } else {
+      g_usleep (500 * 1000);
+    }
   }
 
-  g_object_unref (proxy);
   self->wants_death = FALSE;
-
   return NULL;
 }
 
@@ -472,7 +625,8 @@ cc_fingerprint_panel_highlight_finger (CcFingerprintPanel *self, gchar *finger)
       label = gtk_widget_get_next_sibling (label);
     }
 
-    if (!GTK_IS_LABEL (label)) continue;
+    if (!GTK_IS_LABEL (label))
+      continue;
 
     if (!g_strcmp0 (gtk_label_get_text (GTK_LABEL (label)), finger)) {
       GtkWidget *parent_row = gtk_widget_get_parent (row);
@@ -488,9 +642,12 @@ handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVaria
 {
   CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
   gint progress;
-  gchar *info;
+  gchar *finger_name;
+  gint32 state_code, error_code, acquisition_code;
+  GError *error = NULL;
+  gboolean operation_success;
 
-  if (g_strcmp0 (signal_name, "EnrollProgressChanged") == 0) {
+  if (g_strcmp0 (signal_name, "EnrollmentProgressChanged") == 0) {
     g_variant_get (parameters, "(i)", &progress);
 
     gtk_widget_set_visible (GTK_WIDGET (self->enroll_progress), TRUE);
@@ -501,67 +658,144 @@ handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVaria
       self->enrollment_done = TRUE;
       adw_bottom_sheet_set_open (self->bottom_sheet, FALSE);
     }
+  } else if (g_strcmp0 (signal_name, "EnrolledFingersChanged") == 0) {
+    g_debug ("EnrolledFingersChanged signal received");
+    g_timeout_add (100, cc_fingerprint_panel_delayed_refresh, self);
+
+    if (self->enrolling) {
+      self->enrolling = FALSE;
+      self->enrollment_done = TRUE;
+    }
+
+    self->identification_done = FALSE;
+
+    gint32 current_state = get_fingerprint_state (self, &error);
+
+    if (error) {
+      g_warning ("Error getting State property: %s\n", error->message);
+      g_clear_error (&error);
+    } else if (current_state == STATE_IDLE) {
+      g_debug ("Starting identification after EnrolledFingersChanged");
+      operation_success = fingerprint_identify (self, &error);
+
+      if (error) {
+        g_debug ("Identification error after EnrolledFingersChanged: %s", error->message);
+        g_clear_error (&error);
+      } else if (operation_success) {
+        g_debug ("Identification started successfully after EnrolledFingersChanged");
+      } else {
+        g_debug ("Identification failed to start after EnrolledFingersChanged");
+      }
+    } else {
+      g_debug ("Not starting identification: device not in idle state (current state: %d)", current_state);
+    }
   } else if (g_strcmp0 (signal_name, "Identified") == 0) {
-    g_variant_get (parameters, "(s)", &info);
-    g_debug ("%s received: %s", signal_name, info);
+    g_variant_get (parameters, "(s)", &finger_name);
+    g_debug ("%s received: %s", signal_name, finger_name);
     self->identification_done = TRUE;
-    cc_fingerprint_panel_highlight_finger (self, g_strdup (info));
-    g_free (info);
+    cc_fingerprint_panel_highlight_finger (self, g_strdup (finger_name));
+    g_free (finger_name);
   } else if (g_strcmp0 (signal_name, "StateChanged") == 0) {
-    g_variant_get (parameters, "(s)", &info);
-    g_debug ("%s received: %s", signal_name, info);
-    g_free (info);
-  } else if (g_strcmp0 (signal_name, "ErrorInfo") == 0) {
-    g_variant_get (parameters, "(s)", &info);
-    g_debug ("%s received: %s", signal_name, info);
+    g_variant_get (parameters, "(i)", &state_code);
 
-    if (g_strcmp0 (info, "ERROR_NO_SPACE") == 0)
-      show_toast (self, "No space available for new fingerprints");
-    else if (g_strcmp0 (info, "ERROR_HW_UNAVAILABLE") == 0)
-      show_toast (self, "Fingerprint hardware is unavailable");
-    else if (g_strcmp0 (info, "ERROR_UNABLE_TO_PROCESS") == 0)
-      show_toast (self, "Unable to process fingerprint");
-    else if (g_strcmp0 (info, "ERROR_TIMEOUT") == 0)
-      show_toast (self, "Fingerprint operation timed out");
-    else if (g_strcmp0 (info, "ERROR_CANCELED") == 0) {
-      if (self->awaiting_cancel) {
-        self->awaiting_cancel = FALSE;
-        g_free (info);
-        return;
-      }
+    const gchar *state_str;
+    switch ((BiometricState)state_code) {
+      case STATE_IDLE:
+        state_str = "IDLE";
+        self->enrollment_done = FALSE;
+        self->identification_done = FALSE;
+        break;
+      case STATE_ENROLLING:
+        state_str = "ENROLLING";
+        break;
+      case STATE_IDENTIFYING:
+        state_str = "IDENTIFYING";
+        break;
+      default:
+        state_str = "UNKNOWN";
+        break;
+    }
 
-      // If we're trying to identify we might have just timed out. Restart the identification loop.
-      if (!self->enrolling && !self->identification_done) {
-        self->identification_done = TRUE;
-        g_free (info);
-        return;
-      }
-      show_toast (self, "Fingerprint operation was canceled");
-    } else if (g_strcmp0 (info, "ERROR_UNABLE_TO_REMOVE") == 0)
-      show_toast (self, "Unable to remove the fingerprint");
-    else if (g_strcmp0 (info, "FINGER_NOT_RECOGNIZED") == 0)
-      show_toast (self, "Fingerprint is not recognized");
-    else
-      show_toast (self, "An error occurred with the fingerprint reader");
+    g_debug ("%s received: %s", signal_name, state_str);
+  } else if (g_strcmp0 (signal_name, "ErrorInfoChanged") == 0) {
+    g_variant_get (parameters, "(i)", &error_code);
+
+    switch ((BiometricError)error_code) {
+      case ERROR_NO_SPACE:
+        show_toast (self, "No space available for new fingerprints");
+        break;
+      case ERROR_HW_UNAVAILABLE:
+        show_toast (self, "Fingerprint hardware is unavailable");
+        break;
+      case ERROR_UNABLE_TO_PROCESS:
+        show_toast (self, "Unable to process fingerprint");
+        break;
+      case ERROR_TIMEOUT:
+        show_toast (self, "Fingerprint operation timed out");
+        break;
+      case ERROR_CANCELED:
+        if (self->awaiting_cancel) {
+          self->awaiting_cancel = FALSE;
+          return;
+        }
+
+        if ((self->enrolling || self->wants_remove) && !self->identification_done) {
+          g_debug ("Ignoring cancel event during state transition");
+          self->identification_done = TRUE;
+          return;
+        }
+
+        if (!self->enrolling && !self->identification_done) {
+          self->identification_done = TRUE;
+          return;
+        }
+
+        show_toast (self, "Fingerprint operation was canceled");
+        break;
+      case ERROR_REMOVE:
+        show_toast (self, "Unable to remove the fingerprint");
+        break;
+      case ERROR_LOCKOUT:
+        show_toast (self, "Too many attempts, fingerprint sensor locked");
+        break;
+      case ERROR_GENERAL:
+        show_toast (self, "An error occurred with the fingerprint reader");
+        break;
+      case ERROR_FINGER_NOT_RECOGNIZED:
+        g_debug ("Finger is not recognized");
+        break;
+      case ERROR_NONE:
+      default:
+        break;
+    }
 
     self->enrolling = FALSE;
-    self->finger_canceled = TRUE;
-    g_free (info);
-  } else if (g_strcmp0 (signal_name, "AcquisitionInfo") == 0) {
-    g_variant_get (parameters, "(s)", &info);
-    g_debug ("%s received: %s", signal_name, info);
-    if (g_strcmp0 (info, "FPACQUIRED_PARTIAL") == 0)
-      show_toast (self, "Partial fingerprint detected. Please try again");
-    else if (g_strcmp0 (info, "FPACQUIRED_IMAGER_DIRTY") == 0)
-      show_toast (self, "The sensor is dirty. Please clean and try again");
-    else if (g_strcmp0 (info, "FPACQUIRED_TOO_FAST") == 0)
-      show_toast (self, "Finger moved too fast. Please try again");
-    else if (g_strcmp0 (info, "FPACQUIRED_TOO_SLOW") == 0)
-      show_toast (self, "Finger moved too slow. Please try again");
-    else if (g_strcmp0 (info, "FPACQUIRED_INSUFFICIENT") == 0)
-      show_toast (self, "Couldn't process fingerprint. Please try again");
+    if ((BiometricError)error_code != ERROR_FINGER_NOT_RECOGNIZED)
+        self->finger_canceled = TRUE;
+  } else if (g_strcmp0 (signal_name, "AcquisitionInfoChanged") == 0) {
+    g_variant_get (parameters, "(i)", &acquisition_code);
 
-    g_free (info);
+    switch ((BiometricAcquisition)acquisition_code) {
+      case ACQUISITION_PARTIAL:
+        show_toast (self, "Partial fingerprint detected");
+        break;
+      case ACQUISITION_IMAGER_DIRTY:
+        show_toast (self, "The sensor is dirty");
+        break;
+      case ACQUISITION_TOO_FAST:
+        show_toast (self, "Finger moved too fast");
+        break;
+      case ACQUISITION_TOO_SLOW:
+        show_toast (self, "Finger moved too slow");
+        break;
+      case ACQUISITION_INSUFFICIENT:
+        show_toast (self, "Couldn't process fingerprint");
+        break;
+      case ACQUISITION_NONE:
+      case ACQUISITION_GOOD:
+      default:
+        break;
+    }
   }
 }
 
@@ -577,7 +811,8 @@ on_finger_activated (GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
     label = gtk_widget_get_next_sibling (label);
   }
 
-  if (!GTK_IS_LABEL (label)) return;
+  if (!GTK_IS_LABEL (label))
+    return;
 
   if (g_strcmp0 (gtk_widget_get_name (child), "register-finger")) {
     const gchar *finger_name = gtk_label_get_text (GTK_LABEL (label));
@@ -634,19 +869,65 @@ on_unenrolled_finger_activated (GtkListBox *box, GtkListBoxRow *row, gpointer us
 }
 
 static gboolean
-ping_fpd (void)
+init_dbus_proxies (CcFingerprintPanel *self)
+{
+  GError *error = NULL;
+
+  self->fingerprint_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    BIOMD_DBUS_NAME,
+    BIOMD_DBUS_FINGERPRINT_PATH,
+    BIOMD_DBUS_FINGERPRINT_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_warning ("Error creating fingerprint proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return FALSE;
+  }
+
+  self->props_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    BIOMD_DBUS_NAME,
+    BIOMD_DBUS_FINGERPRINT_PATH,
+    "org.freedesktop.DBus.Properties",
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_warning ("Error creating properties proxy: %s\n", error->message);
+    g_clear_error (&error);
+    g_clear_object (&self->fingerprint_proxy);
+    return FALSE;
+  }
+
+  g_signal_connect (self->fingerprint_proxy, "g-signal", G_CALLBACK (handle_signal), self);
+
+  return TRUE;
+}
+
+static gboolean
+ping_biomd (void)
 {
   GDBusProxy *proxy;
   GError *error = NULL;
   GVariant *result;
+  gboolean ping_result = FALSE;
 
   proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    FPD_DBUS_NAME,
-    FPD_DBUS_PATH,
-    "org.freedesktop.DBus.Peer",
+    BIOMD_DBUS_NAME,
+    "/io/FuriOS/Biomd",
+    "io.FuriOS.Biomd",
     NULL,
     &error
   );
@@ -667,23 +948,52 @@ ping_fpd (void)
     &error
   );
 
-  g_object_unref (proxy);
-
   if (error) {
     g_warning ("Error calling Ping: %s\n", error->message);
     g_clear_error (&error);
-    return FALSE;
+  } else {
+    g_variant_get (result, "(b)", &ping_result);
+    g_variant_unref (result);
   }
 
-  g_variant_unref (result);
-  return TRUE;
+  g_object_unref (proxy);
+
+  return ping_result;
+}
+
+static void
+cc_fingerprint_panel_finalize (GObject *object)
+{
+  CcFingerprintPanel *self = CC_FINGERPRINT_PANEL (object);
+
+  if (self->initialized) {
+    self->wants_death = TRUE;
+    while (self->wants_death) {
+      g_usleep (500 * 100);
+    }
+
+    fingerprint_stop_identify (self, NULL);
+
+    g_list_free_full (self->finger_widgets, g_object_unref);
+    g_free (self->selected_finger);
+
+    g_clear_object (&self->fingerprint_proxy);
+    g_clear_object (&self->props_proxy);
+  }
+
+  G_OBJECT_CLASS (cc_fingerprint_panel_parent_class)->finalize (object);
 }
 
 static void
 cc_fingerprint_on_bottom_sheet_open_changed (GtkWidget *container, GParamSpec *pspec, CcFingerprintPanel *self)
 {
   if (!adw_bottom_sheet_get_open (self->bottom_sheet)) {
-    self->finger_canceled = TRUE;
+    if (self->enrolling) {
+      if (!self->enrollment_done)
+        self->finger_canceled = TRUE;
+
+      self->enrolling = FALSE;
+    }
   }
 }
 
@@ -751,19 +1061,25 @@ cc_fingerprint_panel_init (CcFingerprintPanel *self)
   self->finger_widgets = NULL;
   self->selected_finger = NULL;
   self->enrolling = FALSE;
+  self->enrollment_done = FALSE;
+  self->awaiting_cancel = FALSE;
   self->wants_death = FALSE;
+  self->initialized = FALSE;
 
-  if (ping_fpd ()) {
-    g_signal_connect (self->finger_list, "row-activated", G_CALLBACK (on_finger_activated), self);
-    g_signal_connect (self->unenrolled_finger_list, "row-activated", G_CALLBACK (on_unenrolled_finger_activated), self);
-    g_signal_connect (self->bottom_sheet, "notify::open", G_CALLBACK (cc_fingerprint_on_bottom_sheet_open_changed), self);
+  if (ping_biomd ()) {
+    if (init_dbus_proxies (self)) {
+      g_signal_connect (self->finger_list, "row-activated", G_CALLBACK (on_finger_activated), self);
+      g_signal_connect (self->unenrolled_finger_list, "row-activated", G_CALLBACK (on_unenrolled_finger_activated), self);
+      g_signal_connect (self->bottom_sheet, "notify::open", G_CALLBACK (cc_fingerprint_on_bottom_sheet_open_changed), self);
 
-    gtk_list_box_set_selection_mode (self->finger_list, GTK_SELECTION_NONE);
-    gtk_list_box_set_selection_mode (self->unenrolled_finger_list, GTK_SELECTION_NONE);
+      gtk_list_box_set_selection_mode (self->finger_list, GTK_SELECTION_NONE);
+      gtk_list_box_set_selection_mode (self->unenrolled_finger_list, GTK_SELECTION_NONE);
 
-    refresh_fingerprint_list (self, TRUE, self->finger_list);
-    refresh_fingerprint_list (self, FALSE, self->unenrolled_finger_list);
-    cc_fingerprint_panel_start_worker (self);
+      refresh_fingerprint_list (self, TRUE, self->finger_list);
+      refresh_fingerprint_list (self, FALSE, self->unenrolled_finger_list);
+      cc_fingerprint_panel_start_worker (self);
+      self->initialized = TRUE;
+    }
   }
 }
 
