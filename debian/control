@@ -2,6 +2,7 @@ Source: gnome-control-center
 Section: gnome
 Priority: optional
 Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+XS-FuriOS-Force-Staging: true
 Uploaders: Amin Bandali <bandali@ubuntu.com>,
            Jeremy Bícha <jbicha@ubuntu.com>,
            Laurent Bigonville <bigon@debian.org>,
