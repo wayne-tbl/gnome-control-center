@@ -67,11 +67,13 @@
                   <object class="AdwSwitchRow" id="purge_temp_row">
                     <property name="title" translatable="yes">Automatically Delete Temporary _Files</property>
                     <property name="use-underline">true</property>
+                    <property name="visible">False</property>
                   </object>
                 </child>
                 <child>
                   <object class="CcNumberRow" id="purge_after_row">
                     <property name="title" translatable="yes">Automatic Deletion _Period</property>
+                    <property name="visible">False</property>
                     <property name="use-underline">true</property>
                     <property name="values">[1, 2, 3, 4, 5, 6, 7, 14, 30]</property>
                     <property name="value-type">days</property>
@@ -102,6 +104,7 @@
                   <object class="AdwButtonRow">
                     <property name="title" translatable="yes">_Delete Temporary Files…</property>
                     <property name="use-underline">True</property>
+                    <property name="visible">False</property>
                     <signal name="activated" handler="adw_dialog_present" object="delete_temp_files_dialog"/>
                     <style>
                       <class name="destructive-action"/>
