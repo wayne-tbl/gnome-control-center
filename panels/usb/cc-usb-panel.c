@@ -409,14 +409,6 @@ cc_usb_panel_init (CcUsbPanel *self)
   g_resources_register (cc_usb_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  gboolean mtp_supported = g_file_test ("/usr/lib/droidian/device/mtp-supported", G_FILE_TEST_EXISTS);
-
-  if (!mtp_supported) {
-    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_mtp), FALSE);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_rndis), FALSE);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_none), FALSE);
-  }
-
   char *current_state = usb_get_current_state ();
   if (current_state) {
     g_signal_connect (G_OBJECT (self->usb_state_mtp), "toggled", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
