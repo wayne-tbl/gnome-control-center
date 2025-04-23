@@ -1084,7 +1084,7 @@ ap_activated (NetDeviceWifi *self, GtkListBoxRow *row)
                 if (connection != NULL) {
                         nm_client_activate_connection_async (self->client,
                                                              connection,
-                                                             self->ap_device, NULL, self->cancellable,
+                                                             self->device, NULL, self->cancellable,
                                                              connection_activate_cb, self);
                 } else {
                         GBytes *ssid;
