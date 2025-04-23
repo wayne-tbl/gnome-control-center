@@ -408,7 +408,7 @@ device_off_switch_changed_cb (NetDeviceWifi *self)
                 return;
 
         active = adw_switch_row_get_active (self->device_enable_row);
-        if (active) {
+        if (1)
                 nm_client_dbus_set_property (self->client,
                                              NM_DBUS_PATH,
                                              NM_DBUS_INTERFACE,
@@ -417,7 +417,7 @@ device_off_switch_changed_cb (NetDeviceWifi *self)
                                              -1,
                                              NULL, NULL, NULL);
 
-        } else {
+        if (!active) {
                 nm_device_disconnect_async (self->device, self->cancellable, NULL, NULL);
                 disable_scan_timeout (self);
         }
