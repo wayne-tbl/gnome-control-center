@@ -11,7 +11,7 @@ panels = [
   'background',
   'color',
   'display',
-  'droidian-encryption',
+  'crypted',
   'fingerprint',
   'gps',
   'mouse',

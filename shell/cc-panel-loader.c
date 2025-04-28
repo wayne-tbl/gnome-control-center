@@ -49,7 +49,7 @@ extern GType cc_wifi_panel_get_type (void);
 #endif /* BUILD_NETWORK */
 extern GType cc_nfc_panel_get_type (void);
 extern GType cc_gps_panel_get_type (void);
-extern GType cc_droidian_encryption_panel_get_type (void);
+extern GType cc_crypted_panel_get_type (void);
 extern GType cc_notifications_panel_get_type (void);
 extern GType cc_online_accounts_panel_get_type (void);
 extern GType cc_power_panel_get_type (void);
@@ -110,7 +110,7 @@ static CcPanelLoaderVtable default_panels[] =
 #endif
   PANEL_TYPE("nfc",              cc_nfc_panel_get_type,                  NULL),
   PANEL_TYPE("gps",              cc_gps_panel_get_type,                  NULL),
-  PANEL_TYPE("droidian-encryption", cc_droidian_encryption_panel_get_type, NULL),
+  PANEL_TYPE("crypted",          cc_crypted_panel_get_type,              NULL),
   PANEL_TYPE("notifications",    cc_notifications_panel_get_type,        NULL),
   PANEL_TYPE("online-accounts",  cc_online_accounts_panel_get_type,      NULL),
   PANEL_TYPE("power",            cc_power_panel_get_type,                NULL),

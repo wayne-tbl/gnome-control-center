@@ -1,4 +1,4 @@
 install_data(
-  'scalable/org.gnome.Settings-droidian-encryption-symbolic.svg',
+  'scalable/org.gnome.Settings-crypted-symbolic.svg',
   install_dir: join_paths(control_center_icondir, 'hicolor', 'scalable', 'apps')
 )

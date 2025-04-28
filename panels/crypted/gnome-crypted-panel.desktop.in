@@ -1,9 +1,9 @@
 [Desktop Entry]
 Name=Encryption
-Comment=Configure encryption settings
-Exec=gnome-control-center droidian-encryption
+Comment=Configure crypted encryption settings
+Exec=gnome-control-center crypted
 # Translators: Do NOT translate or transliterate this text (this is an icon file name)!
-Icon=org.gnome.Settings-droidian-encryption-symbolic
+Icon=org.gnome.Settings-crypted-symbolic
 Terminal=false
 Type=Application
 NoDisplay=true

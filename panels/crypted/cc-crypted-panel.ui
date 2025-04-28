@@ -2,7 +2,7 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
 
-  <template class="CcDroidianEncryptionPanel" parent="CcPanel">
+  <template class="CcCryptedPanel" parent="CcPanel">
 
     <property name="child">
       <object class="AdwToolbarView">
@@ -24,7 +24,7 @@
               <object class="AdwStatusPage" id="encryption_unknown_page">
                 <property name="icon-name">dialog-question-symbolic</property>
                 <property name="title" translatable="yes">Unknown status</property>
-                <property name="description" translatable="yes">Unable to determine encryption statuus</property>
+                <property name="description" translatable="yes">Unable to determine encryption status</property>
               </object>
             </child>
             <child>
@@ -64,7 +64,7 @@
                         <property name="subtitle">Once enabled, you will not be able to disable encryption</property>
                         <child type="suffix">
                           <object class="GtkButton" id="encryption_start_button">
-                            <property name="icon-name">emblem-ok-symbolic</property>
+                            <property name="icon-name">object-select-symbolic</property>
                             <property name="valign">center</property>
                             <style>
                               <class name="suggested-action"/>

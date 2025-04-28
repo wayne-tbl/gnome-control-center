@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2023 Eugenio "g7" Paolantonio <me@medesimo.eu>
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -11,8 +12,7 @@
 
 G_BEGIN_DECLS
 
-typedef enum
-{
+typedef enum {
   ENCRYPTION_SERVICE_STATUS_UNKNOWN = 0,
   ENCRYPTION_SERVICE_STATUS_UNSUPPORTED,
   ENCRYPTION_SERVICE_STATUS_UNCONFIGURED,
@@ -23,9 +23,9 @@ typedef enum
   ENCRYPTION_SERVICE_STATUS_FAILED,
 } EncryptionServiceStatus;
 
-#define CC_TYPE_DROIDIAN_ENCRYPTION_PANEL (cc_droidian_encryption_panel_get_type ())
-G_DECLARE_FINAL_TYPE (CcDroidianEncryptionPanel, cc_droidian_encryption_panel, CC, DROIDIAN_ENCRYPTION_PANEL, CcPanel)
+#define CC_TYPE_CRYPTED_PANEL (cc_crypted_panel_get_type ())
+G_DECLARE_FINAL_TYPE (CcCryptedPanel, cc_crypted_panel, CC, CRYPTED_PANEL, CcPanel)
 
-CcDroidianEncryptionPanel *cc_droidian_encryption_panel_new (void);
+CcCryptedPanel *cc_crypted_panel_new (void);
 
 G_END_DECLS

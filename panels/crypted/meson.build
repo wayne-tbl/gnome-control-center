@@ -11,17 +11,17 @@ i18n.merge_file(
 )
 
 sources = files(
-  'cc-droidian-encryption-panel.c'
+  'cc-crypted-panel.c'
 )
 
 resource_data = files(
-  'cc-droidian-encryption-panel.ui'
+  'cc-crypted-panel.ui'
 )
 
 sources += gnome.compile_resources(
   'cc-' + cappletname + '-resources',
   cappletname + '.gresource.xml',
-  c_name: 'cc_droidian_encryption',
+  c_name: 'cc_crypted',
   dependencies: resource_data,
   export: true
 )
