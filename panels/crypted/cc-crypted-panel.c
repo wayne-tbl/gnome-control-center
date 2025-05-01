@@ -17,6 +17,8 @@
 struct _CcCryptedPanel {
   CcPanel            parent;
 
+  AdwToastOverlay    *toast_overlay;
+
   GCancellable       *cancellable;
 
   GDBusProxy              *encryption_service;
@@ -33,6 +35,11 @@ struct _CcCryptedPanel {
   AdwPasswordEntryRow *passphrase_confirm_entry;
   GtkButton           *encryption_start_button;
   gboolean             passphrases_match;
+
+  AdwPasswordEntryRow *current_password_entry;
+  AdwPasswordEntryRow *new_password_entry;
+  GtkButton           *password_change_button;
+  gboolean             password_fields_filled;
 
   AdwStatusPage      *encryption_unknown_page;
   AdwStatusPage      *encryption_unsupported_page;
@@ -53,6 +60,25 @@ static const char* status_text[] = {
   "Encrypted",
   "Failed"
 };
+
+static void
+show_toast (CcCryptedPanel *self, const char *format, ...)
+{
+  va_list args;
+  char *message;
+  AdwToast *toast;
+
+  va_start (args, format);
+  message = g_strdup_vprintf (format, args);
+  va_end (args);
+
+  toast = adw_toast_new (message);
+  adw_toast_set_timeout (toast, 3);
+
+  adw_toast_overlay_add_toast (self->toast_overlay, toast);
+
+  g_free (message);
+}
 
 static void
 select_page (CcCryptedPanel *self,
@@ -88,6 +114,18 @@ select_page (CcCryptedPanel *self,
     gtk_label_set_text (GTK_LABEL (self->encryption_status),
                         (status < G_N_ELEMENTS (status_text)) ? status_text[status] : "Unknown");
     gtk_widget_set_sensitive (GTK_WIDGET (self->enable_switch), FALSE);
+
+    /* Show password change fields when encryption is fully enabled */
+    if (status == ENCRYPTION_SERVICE_STATUS_ENCRYPTED) {
+      gtk_widget_set_visible (GTK_WIDGET (self->current_password_entry), TRUE);
+      gtk_widget_set_visible (GTK_WIDGET (self->new_password_entry), TRUE);
+      gtk_widget_set_visible (GTK_WIDGET (self->password_change_button), TRUE);
+    } else {
+      gtk_widget_set_visible (GTK_WIDGET (self->current_password_entry), FALSE);
+      gtk_widget_set_visible (GTK_WIDGET (self->new_password_entry), FALSE);
+      gtk_widget_set_visible (GTK_WIDGET (self->password_change_button), FALSE);
+    }
+
     gtk_stack_set_visible_child (self->stack, GTK_WIDGET (self->encryption_status_page));
     break;
   }
@@ -226,6 +264,77 @@ on_passphrase_changed (CcCryptedPanel *self,
 }
 
 static void
+on_change_passphrase_changed (CcCryptedPanel *self,
+                              GtkEditable    *editable)
+{
+  gboolean fields_filled = FALSE;
+  const char* current_password_text;
+  const char* new_password_text;
+
+  g_return_if_fail (CC_IS_CRYPTED_PANEL (self));
+
+  current_password_text = gtk_editable_get_text (GTK_EDITABLE (self->current_password_entry));
+  new_password_text = gtk_editable_get_text (GTK_EDITABLE (self->new_password_entry));
+
+  fields_filled = (strlen (current_password_text) > 0 && strlen (new_password_text) > 0);
+
+  if (fields_filled != self->password_fields_filled) {
+      self->password_fields_filled = fields_filled;
+      gtk_widget_set_sensitive (GTK_WIDGET (self->password_change_button), fields_filled);
+  }
+}
+
+static void
+on_service_change_password_call_done (GDBusProxy     *proxy,
+                                      GAsyncResult   *res,
+                                      CcCryptedPanel *self)
+{
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GVariant) result = NULL;
+  gboolean success = FALSE;
+
+  g_return_if_fail (CC_IS_CRYPTED_PANEL (self));
+
+  result = g_dbus_proxy_call_finish (proxy, res, &error);
+
+  if (result == NULL) {
+      g_warning ("Failure while calling ChangePassword(): %s", error->message);
+      show_toast (self, "Failed to change the password");
+  } else {
+      g_variant_get (result, "(b)", &success);
+      if (success) {
+          /* Clear the password fields */
+          gtk_editable_set_text (GTK_EDITABLE (self->current_password_entry), "");
+          gtk_editable_set_text (GTK_EDITABLE (self->new_password_entry), "");
+          /* Schedule refresh */
+          service_refresh_status (self);
+          show_toast (self, "Password changed successfully");
+      } else {
+          g_warning ("Password change was unsuccessful");
+          show_toast (self, "Failed to change the password");
+      }
+  }
+}
+
+static void
+on_password_change_button_clicked (CcCryptedPanel *self,
+                                   GtkButton      *button)
+{
+  g_return_if_fail (CC_IS_CRYPTED_PANEL (self));
+
+  g_dbus_proxy_call (self->encryption_service,
+                     "ChangePassword",
+                     g_variant_new ("(ss)",
+                                    gtk_editable_get_text (GTK_EDITABLE (self->current_password_entry)),
+                                    gtk_editable_get_text (GTK_EDITABLE (self->new_password_entry))),
+                     G_DBUS_CALL_FLAGS_NONE,
+                     -1,
+                     self->cancellable,
+                     (GAsyncReadyCallback) on_service_change_password_call_done,
+                     self);
+}
+
+static void
 on_service_properties_changed (GDBusProxy         *proxy,
                                GVariant           *changed_properties,
                                const gchar* const *invalidated_properties,
@@ -313,7 +422,16 @@ cc_crypted_panel_constructed (GObject *obj)
   g_signal_connect_object (self->encryption_start_button, "clicked", G_CALLBACK (on_encryption_start_button_clicked),
                            self, G_CONNECT_SWAPPED);
 
+  /* Connect password change signals */
+  g_signal_connect_object (self->current_password_entry, "changed", G_CALLBACK (on_change_passphrase_changed),
+                           self, G_CONNECT_SWAPPED);
+  g_signal_connect_object (self->new_password_entry, "changed", G_CALLBACK (on_change_passphrase_changed),
+                           self, G_CONNECT_SWAPPED);
+  g_signal_connect_object (self->password_change_button, "clicked", G_CALLBACK (on_password_change_button_clicked),
+                           self, G_CONNECT_SWAPPED);
+
   gtk_widget_set_sensitive (GTK_WIDGET (self->encryption_start_button), FALSE);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->password_change_button), FALSE);
 }
 
 static void
@@ -352,6 +470,10 @@ cc_crypted_panel_class_init (CcCryptedPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class,
                                         CcCryptedPanel,
                                         stack);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcCryptedPanel,
+                                        toast_overlay);
 
   /* Status pages */
   gtk_widget_class_bind_template_child (widget_class,
@@ -395,6 +517,19 @@ cc_crypted_panel_class_init (CcCryptedPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class,
                                         CcCryptedPanel,
                                         encryption_start_button);
+
+  /* Password change fields */
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcCryptedPanel,
+                                        current_password_entry);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcCryptedPanel,
+                                        new_password_entry);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcCryptedPanel,
+                                        password_change_button);
 }
 
 static void
@@ -409,6 +544,7 @@ cc_crypted_panel_init (CcCryptedPanel *self)
   self->encryption_service_status = ENCRYPTION_SERVICE_STATUS_UNKNOWN;
   self->encryption_service_timeout = 0;
   self->passphrases_match = FALSE;
+  self->password_fields_filled = FALSE;
 
   g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
                             G_DBUS_PROXY_FLAGS_NONE,
