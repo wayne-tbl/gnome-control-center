@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
+ * Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -31,6 +31,9 @@ struct _CcUsbPanel {
   GtkWidget        *power_role_sink;
   GtkWidget        *power_role_source;
   char             *path;
+
+  GDBusProxy       *usbconfig_proxy;
+  GDBusProxy       *powerconfig_proxy;
 };
 
 G_DEFINE_TYPE (CcUsbPanel, cc_usb_panel, CC_TYPE_PANEL)
@@ -38,34 +41,26 @@ G_DEFINE_TYPE (CcUsbPanel, cc_usb_panel, CC_TYPE_PANEL)
 static void
 cc_usb_panel_finalize (GObject *object)
 {
+  CcUsbPanel *self = CC_USB_PANEL (object);
+
+  g_free (self->path);
+
+  g_clear_object (&self->usbconfig_proxy);
+  g_clear_object (&self->powerconfig_proxy);
+
   G_OBJECT_CLASS (cc_usb_panel_parent_class)->finalize (object);
 }
 
 static void
-usb_set_mode (const char *mode)
+usb_set_mode (CcUsbPanel *self, const char *mode)
 {
-  GDBusProxy *usbconfig_proxy;
-  GError *error = NULL;
-
-  usbconfig_proxy = g_dbus_proxy_new_for_bus_sync(
-    G_BUS_TYPE_SYSTEM,
-    G_DBUS_PROXY_FLAGS_NONE,
-    NULL,
-    USBCONFIG_DBUS_NAME,
-    USBCONFIG_DBUS_PATH,
-    USBCONFIG_DBUS_INTERFACE,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_debug ("Error creating proxy: %s\n", error->message);
-    g_clear_error (&error);
+  if (!self->usbconfig_proxy) {
+    g_debug ("USB config proxy not initialized");
     return;
   }
 
   g_dbus_proxy_call(
-    usbconfig_proxy,
+    self->usbconfig_proxy,
     "SetUSBMode",
     g_variant_new("(s)", mode),
     G_DBUS_CALL_FLAGS_NONE,
@@ -74,37 +69,22 @@ usb_set_mode (const char *mode)
     NULL,
     NULL
   );
-
-  g_object_unref (usbconfig_proxy);
 }
 
 static char *
-usb_get_current_state (void)
+usb_get_current_state (CcUsbPanel *self)
 {
-  GDBusProxy *usbconfig_proxy;
   GError *error = NULL;
   GVariant *result;
   char *current_state = NULL;
 
-  usbconfig_proxy = g_dbus_proxy_new_for_bus_sync(
-    G_BUS_TYPE_SYSTEM,
-    G_DBUS_PROXY_FLAGS_NONE,
-    NULL,
-    USBCONFIG_DBUS_NAME,
-    USBCONFIG_DBUS_PATH,
-    USBCONFIG_DBUS_INTERFACE,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_debug ("Error creating proxy: %s\n", error->message);
-    g_clear_error (&error);
+  if (!self->usbconfig_proxy) {
+    g_debug ("USB config proxy not initialized");
     return NULL;
   }
 
   result = g_dbus_proxy_call_sync(
-    usbconfig_proxy,
+    self->usbconfig_proxy,
     "org.freedesktop.DBus.Properties.Get",
     g_variant_new ("(ss)", USBCONFIG_DBUS_INTERFACE, "CurrentState"),
     G_DBUS_CALL_FLAGS_NONE,
@@ -116,7 +96,6 @@ usb_get_current_state (void)
   if (error) {
     g_debug ("Error calling method: %s\n", error->message);
     g_clear_error (&error);
-    g_object_unref (usbconfig_proxy);
     return NULL;
   }
 
@@ -128,35 +107,58 @@ usb_get_current_state (void)
     g_variant_unref (result);
   }
 
-  g_object_unref (usbconfig_proxy);
   return current_state;
 }
 
-static void
-powerconfig_set (const char *method, const char *mode)
+static char *
+usb_get_mounted_file (CcUsbPanel *self)
 {
-  GDBusProxy *powerconfig_proxy;
   GError *error = NULL;
+  GVariant *result;
+  char *mounted_file = NULL;
 
-  powerconfig_proxy = g_dbus_proxy_new_for_bus_sync(
-    G_BUS_TYPE_SYSTEM,
-    G_DBUS_PROXY_FLAGS_NONE,
-    NULL,
-    POWERCONFIG_DBUS_NAME,
-    POWERCONFIG_DBUS_PATH,
-    POWERCONFIG_DBUS_INTERFACE,
+  if (!self->usbconfig_proxy) {
+    g_debug ("USB config proxy not initialized");
+    return NULL;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    self->usbconfig_proxy,
+    "org.freedesktop.DBus.Properties.Get",
+    g_variant_new ("(ss)", USBCONFIG_DBUS_INTERFACE, "MountedFile"),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
     NULL,
     &error
   );
 
   if (error) {
-    g_debug ("Error creating proxy: %s\n", error->message);
+    g_debug ("Error calling method: %s\n", error->message);
     g_clear_error (&error);
+    return NULL;
+  }
+
+  if (result) {
+    GVariant *file_variant;
+    g_variant_get (result, "(v)", &file_variant);
+    mounted_file = g_strdup (g_variant_get_string (file_variant, NULL));
+    g_variant_unref (file_variant);
+    g_variant_unref (result);
+  }
+
+  return mounted_file;
+}
+
+static void
+powerconfig_set (CcUsbPanel *self, const char *method, const char *mode)
+{
+  if (!self->powerconfig_proxy) {
+    g_debug ("Power config proxy not initialized");
     return;
   }
 
   g_dbus_proxy_call(
-    powerconfig_proxy,
+    self->powerconfig_proxy,
     method,
     g_variant_new("(s)", mode),
     G_DBUS_CALL_FLAGS_NONE,
@@ -165,37 +167,22 @@ powerconfig_set (const char *method, const char *mode)
     NULL,
     NULL
   );
-
-  g_object_unref (powerconfig_proxy);
 }
 
 static char *
-powerconfig_get (const char *prop)
+powerconfig_get (CcUsbPanel *self, const char *prop)
 {
-  GDBusProxy *powerconfig_proxy;
   GError *error = NULL;
   GVariant *result;
   char *power_role = NULL;
 
-  powerconfig_proxy = g_dbus_proxy_new_for_bus_sync(
-    G_BUS_TYPE_SYSTEM,
-    G_DBUS_PROXY_FLAGS_NONE,
-    NULL,
-    POWERCONFIG_DBUS_NAME,
-    POWERCONFIG_DBUS_PATH,
-    POWERCONFIG_DBUS_INTERFACE,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_debug ("Error creating proxy: %s\n", error->message);
-    g_clear_error (&error);
+  if (!self->powerconfig_proxy) {
+    g_debug ("Power config proxy not initialized");
     return NULL;
   }
 
   result = g_dbus_proxy_call_sync(
-    powerconfig_proxy,
+    self->powerconfig_proxy,
     "org.freedesktop.DBus.Properties.Get",
     g_variant_new ("(ss)", POWERCONFIG_DBUS_INTERFACE, prop),
     G_DBUS_CALL_FLAGS_NONE,
@@ -207,7 +194,6 @@ powerconfig_get (const char *prop)
   if (error) {
     g_debug ("Error calling method: %s\n", error->message);
     g_clear_error (&error);
-    g_object_unref (powerconfig_proxy);
     return NULL;
   }
 
@@ -219,7 +205,6 @@ powerconfig_get (const char *prop)
     g_variant_unref (result);
   }
 
-  g_object_unref (powerconfig_proxy);
   return power_role;
 }
 
@@ -279,7 +264,7 @@ cc_usb_panel_usb_state_changed (GtkCheckButton *button, CcUsbPanel *self)
   }
 
   g_debug ("Selected USB state: %s", selected_mode);
-  usb_set_mode (selected_mode);
+  usb_set_mode (self, selected_mode);
   cc_usb_panel_enable_mtp (self, mtp_enabled);
 }
 
@@ -296,21 +281,51 @@ cc_usb_panel_power_role_changed (GtkCheckButton *button, CcUsbPanel *self)
     return;
 
   g_debug ("Selected USB Power Role: %s", selected_role);
-  powerconfig_set ("SetPowerRole", selected_role);
-  powerconfig_set ("SetPreferredRole", selected_role);
+  powerconfig_set (self, "SetPowerRole", selected_role);
+  powerconfig_set (self, "SetPreferredRole", selected_role);
 }
 
 static void
 cc_usb_panel_enable_cdrom (GtkSwitch *widget, gboolean state, CcUsbPanel *self)
 {
-  if (state) {
+  if (!self->usbconfig_proxy) {
+    g_debug ("USB config proxy not initialized");
+    return;
+  }
+
+  if (state && self->path) {
     g_debug ("Mounting cdrom: %s", self->path);
-    gchar *argv[] = {"pkexec", "isodrive", self->path, "-cdrom", NULL};
-    g_spawn_async (NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, NULL, NULL);
+
+    /* MountFile
+     * - path: ISO file path
+     * - cdrom: TRUE
+     * - readonly: TRUE
+     * - force_configfs: FALSE
+     * - force_usbgadget: FALSE
+     */
+    g_dbus_proxy_call(
+      self->usbconfig_proxy,
+      "MountFile",
+      g_variant_new("(sbbbb)", self->path, TRUE, TRUE, FALSE, FALSE),
+      G_DBUS_CALL_FLAGS_NONE,
+      -1,
+      NULL,
+      NULL,
+      NULL
+    );
   } else {
     g_debug ("Unmounting cdrom");
-    gchar *argv[] = {"pkexec", "isodrive", "umount", NULL};
-    g_spawn_async (NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, NULL, NULL);
+
+    g_dbus_proxy_call(
+      self->usbconfig_proxy,
+      "UnmountFile",
+      NULL,
+      G_DBUS_CALL_FLAGS_NONE,
+      -1,
+      NULL,
+      NULL,
+      NULL
+    );
   }
 
   gtk_switch_set_state (GTK_SWITCH (self->cdrom_enabled_switch), state);
@@ -406,10 +421,44 @@ cc_usb_panel_class_init (CcUsbPanelClass *klass)
 static void
 cc_usb_panel_init (CcUsbPanel *self)
 {
+  GError *error = NULL;
+
   g_resources_register (cc_usb_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  char *current_state = usb_get_current_state ();
+  self->usbconfig_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    USBCONFIG_DBUS_NAME,
+    USBCONFIG_DBUS_PATH,
+    USBCONFIG_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating USB config proxy: %s\n", error->message);
+    g_clear_error (&error);
+  }
+
+  self->powerconfig_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    POWERCONFIG_DBUS_NAME,
+    POWERCONFIG_DBUS_PATH,
+    POWERCONFIG_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating power config proxy: %s\n", error->message);
+    g_clear_error (&error);
+  }
+
+  char *current_state = usb_get_current_state (self);
   if (current_state) {
     g_signal_connect (G_OBJECT (self->usb_state_mtp), "toggled", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
     g_signal_connect (G_OBJECT (self->usb_state_rndis), "toggled", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
@@ -438,7 +487,7 @@ cc_usb_panel_init (CcUsbPanel *self)
     gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_none), FALSE);
   }
 
-  char *preferred_role = powerconfig_get ("PreferredRole");
+  char *preferred_role = powerconfig_get (self, "PreferredRole");
 
   if (preferred_role) {
     g_signal_connect (G_OBJECT (self->power_role_sink), "toggled", G_CALLBACK (cc_usb_panel_power_role_changed), self);
@@ -462,37 +511,29 @@ cc_usb_panel_init (CcUsbPanel *self)
     gtk_widget_set_sensitive (GTK_WIDGET (self->power_role_source), FALSE);
   }
 
-  gtk_widget_set_sensitive (GTK_WIDGET (self->cdrom_enabled_switch), FALSE);
-  if (g_file_test ("/usr/bin/isodrive", G_FILE_TEST_EXISTS)) {
+  if (self->usbconfig_proxy) {
     g_signal_connect (G_OBJECT (self->cdrom_enabled_switch), "state-set", G_CALLBACK (cc_usb_panel_enable_cdrom), self);
     g_signal_connect (G_OBJECT (self->iso_selection_switch), "clicked", G_CALLBACK (cc_usb_panel_select_iso), self);
-    if (g_file_test ("/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/cdrom", G_FILE_TEST_EXISTS)) {
-      gchar *content = NULL;
-      if (g_file_get_contents ("/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/cdrom", &content, NULL, NULL)) {
-        int cdrom_status = atoi (content);
-        g_free (content);
-        if (cdrom_status == 1) {
-          g_signal_handlers_block_by_func (self->cdrom_enabled_switch, cc_usb_panel_enable_cdrom, self);
-          gtk_switch_set_state (GTK_SWITCH (self->cdrom_enabled_switch), TRUE);
-          gtk_switch_set_active (GTK_SWITCH (self->cdrom_enabled_switch), TRUE);
-          gtk_widget_set_sensitive (GTK_WIDGET (self->cdrom_enabled_switch), TRUE);
-          g_signal_handlers_unblock_by_func (self->cdrom_enabled_switch, cc_usb_panel_enable_cdrom, self);
-          if (g_file_test ("/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/file", G_FILE_TEST_EXISTS)) {
-            gchar *content = NULL;
-            if (g_file_get_contents ("/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/file", &content, NULL, NULL)) {
-              g_strchomp (content);
-              char *basename = g_path_get_basename (content);
-              gtk_label_set_text (GTK_LABEL (self->iso_label), basename);
-              self->path = g_strdup (basename);
-              g_free (content);
-              g_free (basename);
-            }
-          }
-        }
-      }
+
+    char *mounted_file = usb_get_mounted_file (self);
+    if (mounted_file && strlen (mounted_file) > 0) {
+      g_signal_handlers_block_by_func (self->cdrom_enabled_switch, cc_usb_panel_enable_cdrom, self);
+      gtk_switch_set_state (GTK_SWITCH (self->cdrom_enabled_switch), TRUE);
+      gtk_switch_set_active (GTK_SWITCH (self->cdrom_enabled_switch), TRUE);
+      gtk_widget_set_sensitive (GTK_WIDGET (self->cdrom_enabled_switch), TRUE);
+      char *basename = g_path_get_basename (mounted_file);
+      gtk_label_set_text (GTK_LABEL (self->iso_label), basename);
+      self->path = g_strdup (mounted_file);
+      g_free (basename);
+      g_signal_handlers_unblock_by_func (self->cdrom_enabled_switch, cc_usb_panel_enable_cdrom, self);
+      g_free (mounted_file);
+    } else {
+      gtk_widget_set_sensitive (GTK_WIDGET (self->cdrom_enabled_switch), FALSE);
     }
-  } else
+  } else {
+    gtk_widget_set_sensitive (GTK_WIDGET (self->cdrom_enabled_switch), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->iso_selection_switch), FALSE);
+  }
 }
 
 CcUsbPanel *
