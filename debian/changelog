@@ -24,9 +24,6 @@ gnome-control-center (1:48.1-1ubuntu0.1) plucky; urgency=medium
       - Install additional assets used by unity-control-center
     * debian/ubuntu-logo-icon.png, debian/source/include-binaries,
       debian/gnome-control-center-data.install: Include an Ubuntu logo
-    * debian/gnome-control-center-data.links:
-      - Link audio-speaker-center* to audio-speaker-mono* so that an
-        icon is shown in the test speaker panel. (LP: #1704002)
     + debian/rules: Enable whoospie integration
     + debian/rules: set SSHD_SOCKET=ssh.socket via CPPFLAGS in debian/rules.
     + debian/rules: Enable malcontent support
