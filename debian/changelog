@@ -11,7 +11,6 @@ gnome-control-center (1:48.1-1ubuntu0.1) plucky; urgency=medium
       - Build-Depend on libwhoopsie-preferences-dev
       - Depend on language-selector-gnome & whoopsie-preferences
       - Depend on libgtk-4-media-gstreamer for Mouse & Touchpad art
-        (LP: #2011849)
       - Don't depend on desktop-base
       - Recommend ibus
       - Don't recommend libnss-myhostname since we use systemd-resolved
