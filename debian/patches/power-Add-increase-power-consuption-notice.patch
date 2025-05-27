@@ -1,0 +1,115 @@
+From: Felipe Borges <felipeborges@gnome.org>
+Date: Wed, 5 Mar 2025 10:33:27 +0100
+Subject: [PATCH] power: Add increase power consuption notice for automatic
+ suspend
+
+Don't show when automatic suspend is enabled for battery AND ac.
+
+Use the same style as power-profile-info-row.
+
+Fixes #3353
+
+Origin: backport, https://gitlab.gnome.org/GNOME/gnome-control-center/-/commit/4f7f7a1282701f5575ecc77bfa7c3514a8e9c6fd.patch
+Bug: https://gitlab.gnome.org/GNOME/gnome-control-center/-/issues/3353
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/2102343
+Reviewed-by: Bin Li <binli@ubuntu.com>
+Last-Update: 2025-04-10
+---
+ panels/power/cc-power-panel.c  | 14 ++++++++++++++
+ panels/power/cc-power-panel.ui | 16 ++++++++++++++--
+ 2 files changed, 28 insertions(+), 2 deletions(-)
+
+diff --git a/panels/power/cc-power-panel.c b/panels/power/cc-power-panel.c
+index fa36c5d..fa71ffd 100644
+--- a/panels/power/cc-power-panel.c
++++ b/panels/power/cc-power-panel.c
+@@ -61,6 +61,7 @@ struct _CcPowerPanel
+   GtkWidget         *suspend_on_battery_group;
+   GtkComboBox       *suspend_on_ac_delay_combo;
+   AdwSwitchRow      *suspend_on_ac_switch_row;
++  AdwPreferencesGroup *suspend_notice_group;
+ 
+   GSettings     *gsd_settings;
+   GSettings     *session_settings;
+@@ -588,6 +589,17 @@ get_sleep_type (GValue   *value,
+   return TRUE;
+ }
+ 
++static void
++update_suspend_notice_visibility (CcPowerPanel *self)
++{
++  gboolean suspend = adw_switch_row_get_active (self->suspend_on_ac_switch_row);
++  if (self->has_batteries) {
++    suspend = suspend && adw_switch_row_get_active (self->suspend_on_battery_switch_row);
++  }
++
++  gtk_widget_set_visible (GTK_WIDGET (self->suspend_notice_group), !suspend);
++}
++
+ static GVariant *
+ set_sleep_type (const GValue       *value,
+                 const GVariantType *expected_type,
+@@ -1393,12 +1405,14 @@ cc_power_panel_class_init (CcPowerPanelClass *klass)
+   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, suspend_on_battery_group);
+   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, suspend_on_ac_delay_combo);
+   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, suspend_on_ac_switch_row);
++  gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, suspend_notice_group);
+ 
+   gtk_widget_class_bind_template_callback (widget_class, als_row_changed_cb);
+   gtk_widget_class_bind_template_callback (widget_class, blank_screen_row_changed_cb);
+   gtk_widget_class_bind_template_callback (widget_class, keynav_failed_cb);
+   gtk_widget_class_bind_template_callback (widget_class, power_button_row_changed_cb);
+   gtk_widget_class_bind_template_callback (widget_class, automatic_suspend_row_activated_cb);
++  gtk_widget_class_bind_template_callback (widget_class, update_suspend_notice_visibility);
+ }
+ 
+ static void
+diff --git a/panels/power/cc-power-panel.ui b/panels/power/cc-power-panel.ui
+index 76de6f0..5d71676 100644
+--- a/panels/power/cc-power-panel.ui
++++ b/panels/power/cc-power-panel.ui
+@@ -198,9 +198,9 @@
+     <property name="hide-on-close">True</property>
+     <property name="destroy-with-parent">True</property>
+     <property name="default-width">400</property>
+-    <property name="default-height">330</property>
++    <property name="default-height">420</property>
+     <property name="width-request">360</property>
+-    <property name="height-request">294</property>
++    <property name="height-request">394</property>
+     <child>
+       <object class="GtkShortcutController">
+         <property name="scope">managed</property>
+@@ -225,6 +225,7 @@
+                   <object class="AdwSwitchRow" id="suspend_on_battery_switch_row">
+                     <property name="title" translatable="yes">On _Battery Power</property>
+                     <property name="use_underline">True</property>
++                    <signal name="notify::active" handler="update_suspend_notice_visibility" object="CcPowerPanel" swapped="yes"/>
+                   </object>
+                 </child>
+                 <child>
+@@ -250,6 +251,7 @@
+                   <object class="AdwSwitchRow" id="suspend_on_ac_switch_row">
+                     <property name="title" translatable="yes">_Plugged In</property>
+                     <property name="use_underline">True</property>
++                    <signal name="notify::active" handler="update_suspend_notice_visibility" object="CcPowerPanel" swapped="yes"/>
+                   </object>
+                 </child>
+                 <child>
+@@ -269,6 +271,16 @@
+                 </child>
+               </object>
+             </child>
++            <child>
++              <object class="AdwPreferencesGroup" id="suspend_notice_group">
++                <property name="visible">False</property>
++                <child>
++                  <object class="AdwActionRow">
++                    <property name="title" translatable="yes">Disabling automatic suspend will result in higher power consumption. It is recommended to keep automatic suspend enabled.</property>
++                  </object>
++                </child>
++              </object>
++            </child>
+           </object>
+         </property>
+       </object>

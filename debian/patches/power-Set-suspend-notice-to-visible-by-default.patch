@@ -1,0 +1,30 @@
+From: Bin Li <binli@ubuntu.com>
+Date: Thu, 10 Apr 2025 12:40:05 +0800
+Subject: [PATCH] power: Set suspend notice to visible by default
+
+Fixes: #3408
+
+Signed-off-by: Bin Li <binli@ubuntu.com>
+
+Origin: backport, https://gitlab.gnome.org/GNOME/gnome-control-center/-/commit/4339427fbc129950f6967e09ec746fbbd5007c93.patch
+Bug: https://gitlab.gnome.org/GNOME/gnome-control-center/-/issues/3408
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/2102343
+Reviewed-by: Bin Li <binli@ubuntu.com>
+Last-Update: 2025-04-10
+---
+ panels/power/cc-power-panel.ui | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/panels/power/cc-power-panel.ui b/panels/power/cc-power-panel.ui
+index 5d71676..639b3b5 100644
+--- a/panels/power/cc-power-panel.ui
++++ b/panels/power/cc-power-panel.ui
+@@ -273,7 +273,7 @@
+             </child>
+             <child>
+               <object class="AdwPreferencesGroup" id="suspend_notice_group">
+-                <property name="visible">False</property>
++                <property name="visible">True</property>
+                 <child>
+                   <object class="AdwActionRow">
+                     <property name="title" translatable="yes">Disabling automatic suspend will result in higher power consumption. It is recommended to keep automatic suspend enabled.</property>
