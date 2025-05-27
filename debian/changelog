@@ -1,3 +1,19 @@
+gnome-control-center (1:46.7-0ubuntu0.24.04.2) noble; urgency=medium
+
+  [ Bin Li ]
+  * d/p/power-Add-increase-power-consuption-notice.patch:
+    Add increase power consuption description for automatic suspend
+    (LP: #2102343)
+  * d/p/power-Set-suspend-notice-to-visible-by-default.patch:
+    Set suspend notice to visible by default (LP: #2102343)
+
+  [ Yao Wei ]
+  * d/p/about-fix-multiple-gpu-name-with-nvidia-gpu-on-desktop-pc.patch:
+    - Fix multiple GPU name display with NVIDIA GPU on Desktop PC
+      (LP: #2037076)
+
+ -- Nathan Pratta Teodosio <nteodosio@ubuntu.com>  Tue, 27 May 2025 13:18:00 +0200
+
 gnome-control-center (1:46.7-0ubuntu0.24.04.1) noble; urgency=medium
 
   * New upstream release (LP: #2095618).
