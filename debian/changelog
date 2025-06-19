@@ -1,3 +1,12 @@
+gnome-control-center (1:46.7-0ubuntu0.24.04.3) noble; urgency=medium
+
+  * d/p/a11y-fix-accessibility-when-choosing-a-background.patch:
+    - Fix accessibility in the Appearance panel: now the name of the
+      stock backgrounds is pronounced when using a screen reader.
+      (LP: #2114995)
+
+ -- Sergio Costas Rodriguez <sergio.costas@canonical.com>  Tue, 19 Jun 2025 18:02:00 +0200
+
 gnome-control-center (1:46.7-0ubuntu0.24.04.2) noble; urgency=medium
 
   [ Bin Li ]

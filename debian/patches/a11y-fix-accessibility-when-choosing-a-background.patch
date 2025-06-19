@@ -1,0 +1,83 @@
+From: Sergio Costas Rodriguez <sergio.costas@canonical.com>
+Date: Thu, 19 Jun 2025 17:53:27 +0200
+Subject: a11y: fix accessibility when choosing a background
+
+The background selector in the Appearance panel shows a set of
+stock backgrounds. But when using the keyboard to select one and
+a screen reader, nothing is described when any of the pictures
+is selected. This is a regression from older versions.
+
+This bug has been fixed upstream, with
+
+https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/2828
+
+This patch backports this patch to Ubuntu 24.04
+
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/gnome-control-center/+bug/2114995
+---
+ panels/background/cc-background-chooser.c | 34 ++++++++++++++++++++++++-------
+ 1 file changed, 27 insertions(+), 7 deletions(-)
+
+diff --git a/panels/background/cc-background-chooser.c b/panels/background/cc-background-chooser.c
+index cb55468..2389e7d 100644
+--- a/panels/background/cc-background-chooser.c
++++ b/panels/background/cc-background-chooser.c
+@@ -174,21 +174,31 @@ create_widget_func (gpointer model_item,
+   gtk_overlay_add_overlay (GTK_OVERLAY (overlay), check);
+   if (button)
+     gtk_overlay_add_overlay (GTK_OVERLAY (overlay), button);
+-  gtk_accessible_update_property (GTK_ACCESSIBLE (overlay),
+-                                  GTK_ACCESSIBLE_PROPERTY_LABEL,
+-                                  cc_background_item_get_name (item),
+-                                  -1);
+ 
+ 
+   child = gtk_flow_box_child_new ();
+   gtk_widget_set_halign (child, GTK_ALIGN_CENTER);
+   gtk_widget_set_valign (child, GTK_ALIGN_CENTER);
+   gtk_flow_box_child_set_child (GTK_FLOW_BOX_CHILD (child), overlay);
++  gtk_accessible_update_property (GTK_ACCESSIBLE (child),
++                                  GTK_ACCESSIBLE_PROPERTY_LABEL,
++                                  cc_background_item_get_name (item),
++                                  -1);
+ 
+   g_object_set_data_full (G_OBJECT (child), "item", g_object_ref (item), g_object_unref);
+ 
+   if (self->active_item && cc_background_item_compare (item, self->active_item))
+-    gtk_widget_add_css_class (GTK_WIDGET (child), "active-item");
++
++    {
++      gtk_widget_add_css_class (GTK_WIDGET (child), "active-item");
++      gtk_accessible_update_state (GTK_ACCESSIBLE (child),
++                                   GTK_ACCESSIBLE_STATE_CHECKED, TRUE,
++                                   -1);
++    }
++  else
++    gtk_accessible_update_state (GTK_ACCESSIBLE (child),
++                                    GTK_ACCESSIBLE_STATE_CHECKED, FALSE,
++                                    -1);
+ 
+   return child;
+ }
+@@ -374,9 +384,19 @@ static void flow_box_set_active_item (GtkFlowBox *flowbox, CcBackgroundItem *act
+       item = g_object_get_data (G_OBJECT (child), "item");
+ 
+       if (cc_background_item_compare (item, active_item))
+-        gtk_widget_add_css_class (GTK_WIDGET (child), "active-item");
++        {
++          gtk_widget_add_css_class (GTK_WIDGET (child), "active-item");
++          gtk_accessible_update_state (GTK_ACCESSIBLE (child),
++                                       GTK_ACCESSIBLE_STATE_CHECKED, TRUE,
++                                       -1);
++        }
+       else
+-        gtk_widget_remove_css_class (GTK_WIDGET (child), "active-item");
++        {
++          gtk_widget_remove_css_class (GTK_WIDGET (child), "active-item");
++          gtk_accessible_update_state (GTK_ACCESSIBLE (child),
++                                       GTK_ACCESSIBLE_STATE_CHECKED, FALSE,
++                                       -1);
++        }
+     }
+ }
+ 
