@@ -1,0 +1,29 @@
+From: Sergio Costas Rodriguez <sergio.costas@canonical.com>
+Date: Tue, 17 Jun 2025 15:19:23 +0200
+Subject: a11y: add accessible role in list-row when needed
+
+All the list-row widgets lacks a role. Those with an arrow
+should use the `button` role. This patch fixes it.
+
+Origin: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/3184
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/gnome-control-center/+bug/2115973
+---
+ panels/common/cc-list-row.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/panels/common/cc-list-row.c b/panels/common/cc-list-row.c
+index bfa8e50..45d61d1 100644
+--- a/panels/common/cc-list-row.c
++++ b/panels/common/cc-list-row.c
+@@ -187,6 +187,11 @@ cc_list_row_set_show_arrow (CcListRow *self,
+     return;
+ 
+   self->show_arrow = show_arrow;
++  if (show_arrow)
++    g_object_set (G_OBJECT (self),
++                  "accessible-role",
++                  GTK_ACCESSIBLE_ROLE_BUTTON,
++                  NULL);
+   g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_SHOW_ARROW]);
+ }
+ 
