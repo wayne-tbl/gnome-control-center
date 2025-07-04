@@ -26,3 +26,7 @@ ubuntu/background-Add-brown-accent-color-support.patch
 ubuntu/sound-Add-toggle-for-the-startup-sound.patch
 ubuntu/list-apps-even-without-malcontent.patch
 ubuntu/multiple-identical-gpus.patch
+a11y-add-accessible-role-in-list-row-when-needed.patch
+a11y-Add-role-to-the-panel-list-elements.patch
+a11y-Specify-what-is-being-selected-in-avatar.patch
+a11y-Add-button-role-to-avatars.patch

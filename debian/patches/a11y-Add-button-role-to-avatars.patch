@@ -1,0 +1,25 @@
+From: Sergio Costas Rodriguez <sergio.costas@canonical.com>
+Date: Fri, 20 Jun 2025 09:20:54 +0200
+Subject: a11y: Add button role to avatars
+
+This commit adds the "button" role to each avatar picture, as
+required for accessibility compliance.
+
+Origin: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/3183
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/gnome-control-center/+bug/2115973
+---
+ panels/system/users/cc-avatar-chooser.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/panels/system/users/cc-avatar-chooser.c b/panels/system/users/cc-avatar-chooser.c
+index 866ada2..cc9970e 100644
+--- a/panels/system/users/cc-avatar-chooser.c
++++ b/panels/system/users/cc-avatar-chooser.c
+@@ -228,6 +228,7 @@ create_face_widget (gpointer item,
+                 adw_avatar_set_custom_image (ADW_AVATAR (avatar), GDK_PAINTABLE (source_image));
+         }
+ 
++        g_object_set (child, "accessible-role", GTK_ACCESSIBLE_ROLE_BUTTON, NULL);
+         gtk_accessible_update_property (GTK_ACCESSIBLE (child),
+                                         GTK_ACCESSIBLE_PROPERTY_LABEL, g_object_get_data (item, "a11y_label"),
+                                         -1);
