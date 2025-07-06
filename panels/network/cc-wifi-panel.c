@@ -245,10 +245,10 @@ add_wifi_device (CcWifiPanel *self,
   NetDeviceWifi *net_device;
   const char *iface;
 
-  iface = nm_device_get_iface(device);
+  iface = nm_device_get_iface (device);
 
-  /* Check if the interface is "ap0" or "p2p0" and ignore it */
-  if (g_strcmp0 (iface, "ap0") == 0 || g_strcmp0 (iface, "p2p0") == 0) {
+  /* Check if the interface is "ap*" or "p2p*" and ignore it */
+  if (g_str_has_prefix (iface, "ap") || g_str_has_prefix (iface, "p2p")) {
     g_debug ("Ignoring device with interface: %s", iface);
     g_signal_connect_object (device, "state-changed",
                              G_CALLBACK (wifi_panel_update_qr_image_cb),
