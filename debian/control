@@ -87,7 +87,6 @@ Depends: accountsservice (>= 23.11.69),
          mutter-common (>= 47),
          tecla (>= 47),
          webp-pixbuf-loader,
-         pq-gsettings,
          ${misc:Depends},
          ${shlibs:Depends}
 Recommends: cracklib-runtime,
