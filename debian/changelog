@@ -1,11 +1,12 @@
-gnome-control-center (1:48.1-1ubuntu0.2) UNRELEASED; urgency=medium
+gnome-control-center (1:48.1-1ubuntu0.2) plucky; urgency=medium
 
+  [ Sergio Costas Rodriguez ]
   * a11y: several accessibility patches (LP: #2115973)
     + Add role to all cc-list-row elements
     + Add role and context to the avatar pictures
     + Add role to the buttons in the panel's list of elements
 
- -- Sergio Costas Rodriguez <sergio.costas@canonical.com>  Mon, 7 Jul 2025 11:59:28 +0200
+ -- Daniel van Vugt <daniel.van.vugt@canonical.com>  Mon, 14 Jul 2025 15:09:31 +0800
 
 gnome-control-center (1:48.1-1ubuntu0.1) plucky; urgency=medium
 
