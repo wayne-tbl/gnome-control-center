@@ -67,6 +67,7 @@ template $CcNightLightPage: Adw.Bin {
             Adw.ComboRow schedule_type_row {
               title: _("_Schedule");
               use-underline: true;
+              visible: false;
               sensitive: bind night_light_toggle_row.active;
               notify::selected => $on_schedule_type_row_selected_changed_cb(template);
 
@@ -81,6 +82,7 @@ template $CcNightLightPage: Adw.Bin {
             Adw.ActionRow {
               title: _("_Times");
               use-underline: true;
+              visible: false;
               sensitive: bind night_light_toggle_row.active;
 
               Box box_manual {
