@@ -105,6 +105,7 @@ template $CcUserPage: Adw.NavigationPage {
           Adw.ActionRow auto_login_row {
             title: _("A_utomatic Login");
             use-underline: true;
+            visible: false;
             activatable-widget: auto_login_switch;
             sensitive: bind template.locked no-sync-create inverted;
             has-tooltip: bind template.locked;
@@ -172,7 +173,7 @@ template $CcUserPage: Adw.NavigationPage {
           separate-rows: true;
 
           Adw.ButtonRow remove_user_button {
-            visible: bind template.is-current-user no-sync-create inverted;
+            visible: false;
             sensitive: bind template.editable;
             title: _("_Remove User…");
             use-underline: true;
