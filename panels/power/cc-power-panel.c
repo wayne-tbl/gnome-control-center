@@ -524,7 +524,7 @@ update_suspend_notice_visibility (CcPowerPanel *self)
     suspend = suspend && adw_switch_row_get_active (self->suspend_on_battery_switch_row);
   }
 
-  gtk_widget_set_visible (GTK_WIDGET (self->suspend_notice_group), !suspend);
+  gtk_widget_set_visible (GTK_WIDGET (self->suspend_notice_group), FALSE);
 }
 
 static GVariant *
