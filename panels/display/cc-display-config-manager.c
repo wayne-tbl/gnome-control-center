@@ -236,7 +236,7 @@ cc_display_config_manager_get_apply_allowed (CcDisplayConfigManager *self)
 gboolean
 cc_display_config_manager_get_night_light_supported (CcDisplayConfigManager *self)
 {
-  return self->night_light_supported;
+  return TRUE;
 }
 
 CcDisplayConfigManager *
