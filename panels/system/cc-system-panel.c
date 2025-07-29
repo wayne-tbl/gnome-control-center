@@ -160,15 +160,9 @@ cc_system_panel_class_init (CcSystemPanelClass *klass)
 static void
 cc_system_panel_init (CcSystemPanel *self)
 {
-  CcServiceState service_state;
-
   g_resources_register (cc_system_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  service_state = cc_get_service_state (REMOTE_DESKTOP_SERVICE, G_BUS_TYPE_SYSTEM);
-  /* Hide the remote-desktop page if the g-r-d service is either "masked", "static", or "not-found". */
-  gtk_widget_set_visible (GTK_WIDGET (self->remote_desktop_row), service_state == CC_SERVICE_STATE_ENABLED ||
-                                                                 service_state == CC_SERVICE_STATE_DISABLED);
   gtk_widget_set_visible (GTK_WIDGET (self->software_updates_group), show_software_updates_group (self));
 
   cc_panel_add_static_subpage (CC_PANEL (self), "about", CC_TYPE_ABOUT_PAGE);
