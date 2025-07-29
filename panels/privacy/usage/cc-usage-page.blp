@@ -59,11 +59,13 @@ template $CcUsagePage: Adw.NavigationPage {
         Adw.SwitchRow purge_temp_row {
           title: _("Automatically Delete Temporary _Files");
           use-underline: true;
+          visible: false;
         }
 
         $CcNumberRow purge_after_row {
           title: _("Automatic Deletion _Period");
           use-underline: true;
+          visible: false;
           values: "[1, 2, 3, 4, 5, 6, 7, 14, 30]";
           value-type: days;
 
@@ -92,6 +94,7 @@ template $CcUsagePage: Adw.NavigationPage {
         Adw.ButtonRow {
           title: _("_Delete Temporary Files…");
           use-underline: true;
+          visible: false;
           activated => $adw_dialog_present(delete_temp_files_dialog);
 
           styles [
