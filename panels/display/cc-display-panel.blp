@@ -117,6 +117,18 @@ template $CcDisplayPanel: $CcPanel {
             action-target: "'night-light'";
           }
         }
+
+        Adw.PreferencesGroup {
+          Adw.SwitchRow wake_gesture_row {
+            title: _("Wake Gesture");
+            subtitle: _("Enable or disable wake gesture sensor");
+          }
+
+          Adw.SwitchRow tilt_wake_gesture_row {
+            title: _("Tilt To Wake Gesture");
+            subtitle: _("Enable or disable tilt to wake gesture sensor");
+          }
+        }
       };
     };
   }
