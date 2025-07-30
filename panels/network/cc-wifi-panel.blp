@@ -27,7 +27,7 @@ template $CcWifiPanel: $CcPanel {
       Adw.PreferencesGroup rfkill_widget {
         Adw.SwitchRow rfkill_row {
           title: _("Airplane Mode");
-          subtitle: _("Disables Wi-Fi, Bluetooth and mobile broadband");
+          subtitle: _("Disables mobile broadband");
           notify::active => $rfkill_switch_notify_activate_cb(template);
         }
       }
