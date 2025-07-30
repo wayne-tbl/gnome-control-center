@@ -129,6 +129,18 @@ template $CcDisplayPanel: $CcPanel {
             subtitle: _("Enable or disable tilt to wake gesture sensor");
           }
         }
+
+        Adw.PreferencesGroup {
+          Adw.SwitchRow glove_mode_row {
+            title: _("Glove Mode");
+            subtitle: _("Enable or disable glove mode");
+          }
+
+          Adw.SwitchRow palm_rejection_row {
+            title: _("Palm Rejection");
+            subtitle: _("Enable or disable palm rejection");
+          }
+        }
       };
     };
   }
