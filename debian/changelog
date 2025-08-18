@@ -1,3 +1,9 @@
+gnome-control-center (1:48.4-1~deb13u1) UNRELEASED; urgency=medium
+
+  * d/control, d/gbp.conf: Set packaging branch for trixie stable updates
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 18 Aug 2025 15:07:36 +0100
+
 gnome-control-center (1:48.4-1) unstable; urgency=medium
 
   * Team upload
