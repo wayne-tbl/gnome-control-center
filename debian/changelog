@@ -1,3 +1,16 @@
+gnome-control-center (1:49~rc-0ubuntu2) questing; urgency=medium
+
+  * d/p/u/remove-donate.patch: Remove donate button from the About section.
+
+  [ Marco Trevisan ]
+  * debian/control: Drop dependency on libgtk-4-media-gstreamer.
+    This is now provided by libgtk-4-1 on which g-c-c already depends on.
+  * debian/control: Drop gnome-rr-4 dependency
+  * debian/control: Drop suggest on x11-xserver-utils.
+    There's no x11 support at all in our g-c-c build now
+
+ -- Nathan Pratta Teodosio <nteodosio@ubuntu.com>  Thu, 04 Sep 2025 09:09:58 +0200
+
 gnome-control-center (1:49~rc-0ubuntu1) questing; urgency=medium
 
   * New upstream release
