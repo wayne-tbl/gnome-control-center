@@ -24,3 +24,4 @@ ubuntu/sound-Add-toggle-for-the-startup-sound.patch
 ubuntu/list-apps-even-without-malcontent.patch
 ubuntu/panels-applications-Add-snap-keywords-to-application-pane.patch
 ubuntu/applications-Support-controlling-the-autostart-flag-on-ap.patch
+ubuntu/remove-donate.patch
