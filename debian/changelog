@@ -1,6 +1,8 @@
 gnome-control-center (1:49.0-1ubuntu1) UNRELEASED; urgency=medium
 
   * Merge from Debian unstable. Remaining changes:
+    + d/p/gnome-shell-49.patch: Dropped, as Ubuntu does have
+      Gnome Shell 49 and Gnome Settings Daemon 49.
     + Add gnome-control-center-faces package to share with unity-control-center
     + Install apport hook
     + debian/control:
