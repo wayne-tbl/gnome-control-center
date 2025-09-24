@@ -1,4 +1,4 @@
-gnome-control-center (1:49.0-1ubuntu1) UNRELEASED; urgency=medium
+gnome-control-center (1:49.0-1ubuntu1) questing; urgency=medium
 
   * Merge from Debian unstable. Remaining changes:
     + d/p/gnome-shell-49.patch: Dropped, as Ubuntu does have
