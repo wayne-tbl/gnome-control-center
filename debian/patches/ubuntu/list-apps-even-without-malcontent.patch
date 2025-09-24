@@ -11,7 +11,7 @@ at runtime.
  1 file changed, 13 insertions(+), 9 deletions(-)
 
 diff --git a/panels/applications/cc-applications-panel.c b/panels/applications/cc-applications-panel.c
-index 4ae5ff8..ad10fa1 100644
+index b80010c..a7d55fe 100644
 --- a/panels/applications/cc-applications-panel.c
 +++ b/panels/applications/cc-applications-panel.c
 @@ -81,6 +81,7 @@ struct _CcApplicationsPanel

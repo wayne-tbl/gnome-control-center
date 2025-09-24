@@ -1,7 +1,14 @@
-Description: Remove donate button from the About section.
-Author: Nathan Pratta Teodosio <nteodosio@ubuntu.com>
-Forwarded: not-needed
+From: Nathan Pratta Teodosio <nteodosio@ubuntu.com>
+Date: Wed, 24 Sep 2025 15:26:12 +0200
+Subject: Remove donate button from the About section.
 
+Forwarded: not-needed
+---
+ panels/system/about/cc-about-page.blp | 19 -------------------
+ 1 file changed, 19 deletions(-)
+
+diff --git a/panels/system/about/cc-about-page.blp b/panels/system/about/cc-about-page.blp
+index 1f2800b..f0e6ac5 100644
 --- a/panels/system/about/cc-about-page.blp
 +++ b/panels/system/about/cc-about-page.blp
 @@ -24,25 +24,6 @@ template $CcAboutPage: Adw.NavigationPage {

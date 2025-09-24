@@ -52,7 +52,7 @@ index 139925b..ce9a6ea 100644
                title: _("Scr_eenshots");
                subtitle: _("Take pictures of the screen at any time");
 diff --git a/panels/applications/cc-applications-panel.c b/panels/applications/cc-applications-panel.c
-index ad10fa1..503962d 100644
+index a7d55fe..89c4fed 100644
 --- a/panels/applications/cc-applications-panel.c
 +++ b/panels/applications/cc-applications-panel.c
 @@ -56,6 +56,8 @@
