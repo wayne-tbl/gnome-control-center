@@ -1,3 +1,23 @@
+gnome-control-center (1:49.0-1) unstable; urgency=medium
+
+  [ Jeremy Bícha ]
+  * New upstream release
+  * Add patch to revert a screen brightness change that needs GNOME Shell 49
+  * Release to unstable
+
+  [ Marco Trevisan (Treviño) ]
+  * debian/control: Drop dependency on libgtk-4-media-gstreamer
+  * debian/control: Drop gnome-rr-4 dependency
+  * debian/control: Drop suggest on x11-xserver-utils
+
+  [ Simon McVittie ]
+  * Merge packaging changes from unstable (no functional change)
+  * Build-depend on gobject-introspection instead of
+    libgirepository1.0-dev
+  * Standards-Version: 4.7.2 (no changes required)
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Tue, 16 Sep 2025 00:07:41 -0400
+
 gnome-control-center (1:49~rc-0ubuntu2) questing; urgency=medium
 
   * d/p/u/remove-donate.patch: Remove donate button from the About section.
@@ -209,6 +229,22 @@ gnome-control-center (1:49~alpha-1ubuntu1) questing; urgency=medium
       - u/list-apps-even-without-malcontent.patch
 
  -- Nathan Pratta Teodosio <nteodosio@ubuntu.com>  Mon, 28 Apr 2025 10:05:28 +0200
+
+gnome-control-center (1:48.4-1) unstable; urgency=medium
+
+  * Team upload
+  * d/control, d/gbp.conf, d/watch: Limit to 48.x versions.
+    We'll stick to 48.x in testing/unstable for now, to get better
+    testing for 48.x updates in trixie later.
+  * New upstream stable release
+    - In the Power panel, move the General section to the top, avoiding a UI
+      reflow when the notice recommending automatic suspend is shown
+      or hidden (gnome-control-center#3373 upstream)
+    - Disable Pango markup when displaying errors from gnome-online-accounts,
+      fixing display of some error messages that contain URLs
+    - Translation updates
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 08 Aug 2025 10:18:47 +0100
 
 gnome-control-center (1:48.3-3) unstable; urgency=medium
 
@@ -2592,6 +2628,16 @@ gnome-control-center (1:43.0-1) unstable; urgency=medium
   * Include dh_translations override needed for Ubuntu
 
  -- Jeremy Bicha <jbicha@ubuntu.com>  Thu, 15 Sep 2022 14:17:01 -0400
+
+gnome-control-center (1:43~rc-2) unstable; urgency=medium
+
+  * New upstream release
+    - Fixes Screen Blank control (Closes: #1018672, LP: #1988087)
+  * debian/control.in: Bump minimum meson to 0.57.0
+  * Build against libsoup3 libraries
+  * Drop sound patch: applied in new release
+
+ -- Jeremy Bicha <jbicha@ubuntu.com>  Mon, 05 Sep 2022 16:57:51 -0400
 
 gnome-control-center (1:43~rc-1ubuntu2) kinetic; urgency=medium
 
@@ -8071,3 +8117,4 @@ gnome-core (0.13-1) unstable; urgency=low
   * Initial Release.
 
  -- Jim Pick <jim@jimpick.com>  Mon, 16 Mar 1998 15:27:43 -0800
+
