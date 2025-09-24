@@ -1,8 +1,10 @@
-gnome-control-center (1:49.0-1ubuntu2) UNRELEASED; urgency=medium
+gnome-control-center (1:49.0-1ubuntu2) questing; urgency=medium
 
   * d/p: Refresh
-  * debian/source/include-binaries: Remove reference to not-existent patch
-  * debian: Remove ubuntu logos, we're now relying on vendor images
+  * debian: Remove ubuntu logos, we're now relying on vendor images and
+    nothign in gnome-control-center code reference to them
+  * debian/source/include-binaries: Dropped
+    It contained our dropped logos and reference to not-existent patch
   * debian/gnome-control-center-data.links: Do not add broken mono symlinks.
     Mono speaker icons are include in both yaru and adwaita for long time,
     but most importantly g-c-c ships defaults in the resource files, so
@@ -17,7 +19,7 @@ gnome-control-center (1:49.0-1ubuntu2) UNRELEASED; urgency=medium
     so we should use rather a local error or the return value, as in this
     case
 
- -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Wed, 24 Sep 2025 15:40:27 +0200
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Wed, 24 Sep 2025 15:58:14 +0200
 
 gnome-control-center (1:49.0-1ubuntu1) questing; urgency=medium
 
