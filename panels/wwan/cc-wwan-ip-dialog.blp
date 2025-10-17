@@ -1,0 +1,47 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcWwanIpDialog: Dialog {
+  default-height: 480;
+  default-width: 360;
+  hide-on-close: true;
+  title: _("IP Configuration");
+  modal: true;
+
+  child: Box {
+    orientation: vertical;
+    margin-start: 12;
+    margin-end: 12;
+    margin-top: 12;
+    margin-bottom: 12;
+    spacing: 12;
+
+    ListBox {
+      selection-mode: none;
+      styles [
+        "content",
+      ]
+
+      Adw.ActionRow {
+        title: _("IPv4");
+        subtitle: _("Internet Protocol version 4");
+
+        [suffix]
+        CheckButton ip_version_ipv4 {
+          valign: center;
+        }
+      }
+
+      Adw.ActionRow {
+        title: _("IPv6");
+        subtitle: _("Internet Protocol version 6");
+
+        [suffix]
+        CheckButton ip_version_ipv6 {
+          valign: center;
+          group: ip_version_ipv4;
+        }
+      }
+    }
+  };
+}
