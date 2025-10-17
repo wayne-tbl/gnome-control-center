@@ -443,7 +443,7 @@ wwan_network_settings_activated_cb (CcWwanDevicePage *self,
     {
       if (!self->bands_dialog)
         self->bands_dialog = cc_wwan_bands_dialog_new (top_level, self->device);
-      
+
       dialog = GTK_WIDGET (self->bands_dialog);
     }
   else
