@@ -10,5 +10,6 @@
     <file preprocess="xml-stripblanks">cc-wwan-apn-dialog.ui</file>
     <file preprocess="xml-stripblanks">cc-wwan-mms-dialog.ui</file>
     <file preprocess="xml-stripblanks">cc-wwan-bands-dialog.ui</file>
+    <file preprocess="xml-stripblanks">cc-wwan-ip-dialog.ui</file>
   </gresource>
 </gresources>
