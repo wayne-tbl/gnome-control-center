@@ -37,6 +37,6 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (CcWwanBandsDialog, cc_wwan_bands_dialog, CC, WWAN_BANDS_DIALOG, GtkDialog)
 
 GtkWindow *cc_wwan_bands_dialog_new (GtkWindow    *parent_window,
-                                    CcWwanDevice *device);
+                                     CcWwanDevice *device);
 
 G_END_DECLS
