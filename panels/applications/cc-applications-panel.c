@@ -148,6 +148,10 @@ struct _CcApplicationsPanel
   AdwActionRow    *storage_page_total_row;
   AdwButtonRow    *clear_cache_button_row;
 
+  GSettings       *shell_settings;
+  AdwSwitchRow    *hide_row;
+  gboolean         have_filtered_app_ids;
+
   guint64          app_size;
   guint64          cache_size;
   guint64          data_size;
@@ -176,7 +180,70 @@ gnome_software_is_installed (void)
   return path != NULL;
 }
 
+static gchar *
+strip_desktop_extension (const gchar *app_id)
+{
+  gchar *desktop_id = g_strdup (app_id);
+  if (g_str_has_suffix (desktop_id, ".desktop"))
+    desktop_id[strlen (desktop_id) - 8] = '\0';
+  return desktop_id;
+}
+
+static GStrv
+build_filtered_app_list (GStrv        current_list,
+                         const gchar *desktop_id,
+                         gboolean     should_add)
+{
+  g_autoptr(GPtrArray) new_list = g_ptr_array_new_with_free_func (g_free);
+
+  for (gsize i = 0; current_list && current_list[i]; i++)
+    {
+      if (g_strcmp0 (current_list[i], desktop_id) != 0)
+        g_ptr_array_add (new_list, g_strdup (current_list[i]));
+    }
+
+  if (should_add)
+    g_ptr_array_add (new_list, g_strdup (desktop_id));
+
+  g_ptr_array_add (new_list, NULL);
+
+  return (GStrv) g_ptr_array_steal (new_list, NULL);
+}
+
+static gboolean
+is_app_filtered (GStrv        filtered_apps,
+                 const gchar *desktop_id)
+{
+  for (gsize i = 0; filtered_apps && filtered_apps[i]; i++)
+    {
+      if (g_strcmp0 (filtered_apps[i], desktop_id) == 0)
+        return TRUE;
+    }
+  return FALSE;
+}
+
 /* Callbacks */
+
+static void
+hide_cb (CcApplicationsPanel *self)
+{
+  gboolean should_hide;
+  g_auto(GStrv) filtered_apps = NULL;
+  g_autofree gchar *desktop_id = NULL;
+  g_auto(GStrv) new_filtered_apps = NULL;
+
+  if (!self->shell_settings || !self->current_app_id)
+    return;
+
+  should_hide = adw_switch_row_get_active (self->hide_row);
+  desktop_id = strip_desktop_extension (self->current_app_id);
+  filtered_apps = g_settings_get_strv (self->shell_settings, "filtered-app-ids");
+
+  new_filtered_apps = build_filtered_app_list (filtered_apps, desktop_id, should_hide);
+
+  g_settings_set_strv (self->shell_settings, "filtered-app-ids",
+                       (const gchar * const *) new_filtered_apps);
+}
 
 static gboolean
 privacy_link_cb (CcApplicationsPanel *self)
@@ -1546,6 +1613,13 @@ update_panel (CcApplicationsPanel *self,
   self->current_app_id = get_app_id (info);
   self->current_portal_app_id = get_portal_app_id (info);
 
+  if (self->shell_settings && self->current_app_id)
+  {
+    g_auto(GStrv) filtered_apps = g_settings_get_strv (self->shell_settings, "filtered-app-ids");
+    g_autofree gchar *desktop_id = strip_desktop_extension (self->current_app_id);
+    adw_switch_row_set_active (self->hide_row, is_app_filtered (filtered_apps, desktop_id));
+  }
+
   /* Don't show the "Open" button for Settings itself. */
   gtk_widget_set_visible (GTK_WIDGET (self->launch_button),
                           g_strcmp0 (self->current_app_id, APPLICATION_ID) != 0);
@@ -1784,6 +1858,7 @@ cc_applications_panel_finalize (GObject *object)
   g_clear_object (&self->location_settings);
   g_clear_object (&self->privacy_settings);
   g_clear_object (&self->search_settings);
+  g_clear_object (&self->shell_settings);
 
   g_clear_object (&self->current_app_info);
   g_clear_pointer (&self->current_app_id, g_free);
@@ -1905,7 +1980,9 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, storage_page_total_row);
   gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, general_group);
   gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, view_details_button);
+  gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, hide_row);
 
+  gtk_widget_class_bind_template_callback (widget_class, hide_cb);
   gtk_widget_class_bind_template_callback (widget_class, camera_cb);
   gtk_widget_class_bind_template_callback (widget_class, location_cb);
   gtk_widget_class_bind_template_callback (widget_class, microphone_cb);
@@ -2027,4 +2104,16 @@ cc_applications_panel_init (CcApplicationsPanel *self)
 
   self->globs = parse_globs ();
   self->search_providers = parse_search_providers ();
+
+  GSettingsSchemaSource *schema_source = g_settings_schema_source_get_default ();
+  g_autoptr (GSettingsSchema) shell_schema = NULL;
+
+  shell_schema = g_settings_schema_source_lookup (schema_source, "io.furios.phosh.shell", TRUE);
+
+  if (shell_schema && g_settings_schema_has_key (shell_schema, "filtered-app-ids")) {
+    self->shell_settings = g_settings_new ("io.furios.phosh.shell");
+    gtk_widget_set_visible (GTK_WIDGET (self->hide_row), TRUE);
+  } else {
+    self->shell_settings = NULL;
+  }
 }

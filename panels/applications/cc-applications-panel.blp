@@ -235,6 +235,14 @@ template $CcApplicationsPanel: $CcPanel {
               notify::active => $notification_cb(template);
             }
 
+            Adw.SwitchRow hide_row {
+              title: _("_Hide in App Grid");
+              subtitle: _("Remove this app from the app grid");
+              use-underline: true;
+              visible: false;
+              notify::active => $hide_cb(template);
+            }
+
             Adw.SwitchRow background_row {
               title: _("_Run in Background");
               subtitle: _("Allow activity when the app is closed");
