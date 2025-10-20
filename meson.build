@@ -320,7 +320,7 @@ config_h.set('HAVE_SNAP', enable_snap,
              description: 'Define to 1 if Snap support is enabled')
 
 # malcontent support
-enable_malcontent = get_option('malcontent')
+enable_malcontent = false
 if enable_malcontent
   malcontent_dep = dependency(
     'malcontent-0',
