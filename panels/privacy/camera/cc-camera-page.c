@@ -424,8 +424,8 @@ cc_camera_page_class_init (CcCameraPageClass *klass)
 static void
 cc_camera_page_init (CcCameraPage *self)
 {
-  g_autoptr (GSettingsSchemaSource) schema_source = NULL;
   g_autoptr (GSettingsSchema) camera_schema = NULL;
+  GSettingsSchemaSource *schema_source = NULL;
 
   gtk_widget_init_template (GTK_WIDGET (self));
 
@@ -458,7 +458,12 @@ cc_camera_page_init (CcCameraPage *self)
                             on_perm_store_ready,
                             self);
 
-  schema_source = g_settings_schema_source_get_default();
+  schema_source = g_settings_schema_source_get_default ();
+  if (schema_source)
+    camera_schema = g_settings_schema_source_lookup (schema_source, "io.furios.camera", TRUE);
+  else
+    camera_schema = NULL;
+
   camera_schema = g_settings_schema_source_lookup (schema_source, "io.furios.camera", TRUE);
 
   if (camera_schema)
