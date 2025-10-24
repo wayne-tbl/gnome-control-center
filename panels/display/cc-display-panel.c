@@ -1075,8 +1075,8 @@ cc_display_panel_init (CcDisplayPanel *self)
 {
   g_autoptr(GtkCssProvider) provider = NULL;
   g_autoptr(GtkExpression) expression = NULL;
-  g_autoptr(GSettingsSchemaSource) schema_source = NULL;
   g_autoptr(GSettingsSchema) gesture_schema = NULL;
+  GSettingsSchemaSource *schema_source = NULL;
 
   g_resources_register (cc_display_get_resource ());
 
@@ -1157,6 +1157,11 @@ cc_display_panel_init (CcDisplayPanel *self)
   on_night_light_enabled_changed_cb (self);
 
   schema_source = g_settings_schema_source_get_default ();
+  if (schema_source)
+    gesture_schema = g_settings_schema_source_lookup (schema_source, "io.furios.gesture", TRUE);
+  else
+    gesture_schema = NULL;
+
   gesture_schema = g_settings_schema_source_lookup (schema_source, "io.furios.gesture", TRUE);
   if (gesture_schema)
     self->gesture_settings = g_settings_new ("io.furios.gesture");
