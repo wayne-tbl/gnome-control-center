@@ -463,7 +463,7 @@ fingerprint_worker_thread (gpointer user_data)
     current_state = get_fingerprint_state (self, &error);
 
     if (error) {
-      g_warning ("Error getting State property: %s\n", error->message);
+      g_warning ("Error getting State property: %s", error->message);
       g_clear_error (&error);
     }
 
@@ -473,7 +473,7 @@ fingerprint_worker_thread (gpointer user_data)
         self->awaiting_cancel = TRUE;
         operation_success = fingerprint_stop_identify (self, &error);
         if (error) {
-          g_warning ("Error stopping identification: %s\n", error->message);
+          g_warning ("Error stopping identification: %s", error->message);
           g_clear_error (&error);
         }
 
@@ -481,7 +481,7 @@ fingerprint_worker_thread (gpointer user_data)
 
         current_state = get_fingerprint_state (self, &error);
         if (error) {
-          g_warning ("Error getting state: %s\n", error->message);
+          g_warning ("Error getting state: %s", error->message);
           g_clear_error (&error);
         }
       }
@@ -507,7 +507,7 @@ fingerprint_worker_thread (gpointer user_data)
         self->awaiting_cancel = TRUE;
         operation_success = fingerprint_stop_identify (self, &error);
         if (error) {
-          g_warning ("Error stopping identification: %s\n", error->message);
+          g_warning ("Error stopping identification: %s", error->message);
           g_clear_error (&error);
         }
 
@@ -515,7 +515,7 @@ fingerprint_worker_thread (gpointer user_data)
 
         current_state = get_fingerprint_state (self, &error);
         if (error) {
-          g_warning ("Error getting state: %s\n", error->message);
+          g_warning ("Error getting state: %s", error->message);
           g_clear_error (&error);
         }
       }
@@ -528,7 +528,7 @@ fingerprint_worker_thread (gpointer user_data)
         operation_success = fingerprint_enroll (self, self->selected_finger, &error);
 
         if (error) {
-          g_warning ("Error calling Enroll: %s\n", error->message);
+          g_warning ("Error calling Enroll: %s", error->message);
           g_clear_error (&error);
           self->enrolling = FALSE;
         } else if (!operation_success) {
@@ -549,7 +549,7 @@ fingerprint_worker_thread (gpointer user_data)
       }
 
       if (error) {
-        g_warning ("Error canceling operation: %s\n", error->message);
+        g_warning ("Error canceling operation: %s", error->message);
         g_clear_error (&error);
       }
 
@@ -672,7 +672,7 @@ handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVaria
     gint32 current_state = get_fingerprint_state (self, &error);
 
     if (error) {
-      g_warning ("Error getting State property: %s\n", error->message);
+      g_warning ("Error getting State property: %s", error->message);
       g_clear_error (&error);
     } else if (current_state == STATE_IDLE) {
       g_debug ("Starting identification after EnrolledFingersChanged");
@@ -885,7 +885,7 @@ init_dbus_proxies (CcFingerprintPanel *self)
   );
 
   if (error) {
-    g_warning ("Error creating fingerprint proxy: %s\n", error->message);
+    g_warning ("Error creating fingerprint proxy: %s", error->message);
     g_clear_error (&error);
     return FALSE;
   }
@@ -902,7 +902,7 @@ init_dbus_proxies (CcFingerprintPanel *self)
   );
 
   if (error) {
-    g_warning ("Error creating properties proxy: %s\n", error->message);
+    g_warning ("Error creating properties proxy: %s", error->message);
     g_clear_error (&error);
     g_clear_object (&self->fingerprint_proxy);
     return FALSE;
@@ -933,7 +933,7 @@ ping_biomd (void)
   );
 
   if (error) {
-    g_warning ("Error creating proxy: %s\n", error->message);
+    g_warning ("Error creating proxy: %s", error->message);
     g_clear_error (&error);
     return FALSE;
   }
@@ -949,7 +949,7 @@ ping_biomd (void)
   );
 
   if (error) {
-    g_warning ("Error calling Ping: %s\n", error->message);
+    g_warning ("Error calling Ping: %s", error->message);
     g_clear_error (&error);
   } else {
     g_variant_get (result, "(b)", &ping_result);
