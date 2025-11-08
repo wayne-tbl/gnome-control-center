@@ -29,6 +29,21 @@
 
 typedef struct
 {
+  const char *key;
+  const char *panel_id;
+} FuriosPanelMap;
+
+static const FuriosPanelMap furios_panel_map[] = {
+  { "andromeda",  "andromeda"  },
+  { "assistant",  "assistant"  },
+  { "fingerprint","fingerprint"},
+  { "gps",        "gps"        },
+  { "nfc",        "nfc"        },
+  { "usb",        "usb"        },
+};
+
+typedef struct
+{
   GtkWidget          *row;
   GtkWidget          *description_label;
   CcPanelCategory     category;
@@ -42,6 +57,8 @@ typedef struct
 struct _CcPanelList
 {
   AdwBin              parent;
+
+  GSettings          *furios_settings;
 
   GtkWidget          *main_listbox;
   GtkWidget          *search_listbox;
@@ -416,6 +433,44 @@ static const gchar * const panel_order[] = {
   "reset-settings",
 };
 
+static gboolean
+furios_device_key_for_panel_id (const gchar  *panel_id,
+                                const gchar **out_key)
+{
+  guint i;
+
+  for (i = 0; i < G_N_ELEMENTS (furios_panel_map); i++)
+    {
+      if (g_strcmp0 (furios_panel_map[i].panel_id, panel_id) == 0)
+        {
+          if (out_key)
+            *out_key = furios_panel_map[i].key;
+          return TRUE;
+        }
+    }
+
+  return FALSE;
+}
+
+static CcPanelVisibility
+furios_device_get_effective_visibility (CcPanelList       *self,
+                                        const gchar       *panel_id,
+                                        CcPanelVisibility  base_visibility)
+{
+  const gchar *key = NULL;
+
+  if (!self->furios_settings)
+    return base_visibility;
+
+  if (!furios_device_key_for_panel_id (panel_id, &key))
+    return base_visibility;
+
+  if (!g_settings_get_boolean (self->furios_settings, key))
+    return CC_PANEL_HIDDEN;
+
+  return base_visibility;
+}
+
 static guint
 get_panel_id_index (const gchar *panel_id)
 {
@@ -614,6 +669,7 @@ cc_panel_list_finalize (GObject *object)
   g_clear_pointer (&self->current_panel_id, g_free);
   g_clear_pointer (&self->id_to_data, g_hash_table_destroy);
   g_clear_pointer (&self->id_to_search_data, g_hash_table_destroy);
+  g_clear_object (&self->furios_settings);
 
   G_OBJECT_CLASS (cc_panel_list_parent_class)->finalize (object);
 }
@@ -747,11 +803,25 @@ cc_panel_list_class_init (CcPanelListClass *klass)
 static void
 cc_panel_list_init (CcPanelList *self)
 {
+  g_autoptr(GSettingsSchemaSource) schema_source = NULL;
+  g_autoptr(GSettingsSchema) device_schema = NULL;
+
   gtk_widget_init_template (GTK_WIDGET (self));
 
   self->id_to_data = g_hash_table_new (g_str_hash, g_str_equal);
   self->id_to_search_data = g_hash_table_new (g_str_hash, g_str_equal);
   self->view = CC_PANEL_LIST_MAIN;
+
+  schema_source = g_settings_schema_source_get_default ();
+  if (schema_source)
+    device_schema = g_settings_schema_source_lookup (schema_source,
+                                                     "io.furios.device",
+                                                     TRUE);
+
+  if (device_schema)
+    self->furios_settings = g_settings_new ("io.furios.device");
+  else
+    self->furios_settings = NULL;
 
   gtk_list_box_set_sort_func (GTK_LIST_BOX (self->main_listbox),
                               sort_function,
@@ -895,6 +965,8 @@ cc_panel_list_add_panel (CcPanelList        *self,
   RowData *data, *search_data;
 
   g_return_if_fail (CC_IS_PANEL_LIST (self));
+
+  visibility = furios_device_get_effective_visibility (self, id, visibility);
 
   /* Add the panel to the proper listbox */
   data = row_data_new (category, id, title, description, keywords, icon, visibility);
