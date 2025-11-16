@@ -803,7 +803,7 @@ cc_panel_list_class_init (CcPanelListClass *klass)
 static void
 cc_panel_list_init (CcPanelList *self)
 {
-  g_autoptr(GSettingsSchemaSource) schema_source = NULL;
+  GSettingsSchemaSource *schema_source = NULL;
   g_autoptr(GSettingsSchema) device_schema = NULL;
 
   gtk_widget_init_template (GTK_WIDGET (self));
