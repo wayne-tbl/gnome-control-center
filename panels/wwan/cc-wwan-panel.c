@@ -871,8 +871,8 @@ wwan_update_panel_visibility (MMManager *mm_manager)
   g_list_free_full (devices, (GDestroyNotify)g_object_unref);
 }
 
-void
-cc_wwan_panel_static_init_func (void)
+static gpointer
+cc_wwan_panel_static_init_func_thread (gpointer user_data)
 {
   g_autoptr(GDBusConnection) system_bus = NULL;
   g_autoptr(MMManager) mm_manager = NULL;
@@ -901,7 +901,7 @@ cc_wwan_panel_static_init_func (void)
       application = CC_APPLICATION (g_application_get_default ());
       cc_shell_model_set_panel_visibility (cc_application_get_model (application),
                                            "wwan", FALSE);
-      return;
+      return NULL;
     }
   else
     {
@@ -914,4 +914,14 @@ cc_wwan_panel_static_init_func (void)
   g_signal_connect (mm_manager, "object-removed", G_CALLBACK (wwan_update_panel_visibility), NULL);
 
   wwan_update_panel_visibility (mm_manager);
+
+  return NULL;
+}
+
+void
+cc_wwan_panel_static_init_func (void)
+{
+  g_thread_new ("cc-wwan-init",
+                cc_wwan_panel_static_init_func_thread,
+                NULL);
 }
