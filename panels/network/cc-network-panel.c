@@ -718,11 +718,37 @@ cc_network_panel_class_init (CcNetworkPanelClass *klass)
         g_type_ensure (CC_TYPE_NET_PROXY_PAGE);
 }
 
+static gpointer
+cc_network_panel_modem_setup_thread (gpointer user_data)
+{
+        CcNetworkPanel *self = user_data;
+        g_autoptr(GDBusConnection) system_bus = NULL;
+        g_autoptr(GError) error = NULL;
+
+        g_object_ref (self);
+
+        /* Setup ModemManager client */
+        system_bus = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
+        if (system_bus == NULL) {
+                g_warning ("Error connecting to system D-Bus: %s",
+                           error->message);
+        } else {
+                self->modem_manager = mm_manager_new_sync (system_bus,
+                                                           G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE,
+                                                           NULL,
+                                                           &error);
+                if (self->modem_manager == NULL)
+                        g_warning ("Error connecting to ModemManager: %s",
+                                   error->message);
+        }
+
+        g_object_unref (self);
+        return NULL;
+}
+
 static void
 cc_network_panel_init (CcNetworkPanel *self)
 {
-        g_autoptr(GDBusConnection) system_bus = NULL;
-        g_autoptr(GError) error = NULL;
         const GPtrArray *connections;
         guint i;
 
@@ -757,19 +783,9 @@ cc_network_panel_init (CcNetworkPanel *self)
                                  G_CALLBACK (device_removed_cb), self, G_CONNECT_SWAPPED);
 
         /* Setup ModemManager client */
-        system_bus = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
-        if (system_bus == NULL) {
-                g_warning ("Error connecting to system D-Bus: %s",
-                           error->message);
-        } else {
-                self->modem_manager = mm_manager_new_sync (system_bus,
-                                                            G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE,
-                                                            NULL,
-                                                            &error);
-                if (self->modem_manager == NULL)
-                        g_warning ("Error connecting to ModemManager: %s",
-                                   error->message);
-        }
+        g_thread_new ("cc-network-modem-setup",
+                      cc_network_panel_modem_setup_thread,
+                      self);
 
         /* add remote settings such as VPN settings as virtual devices */
         g_signal_connect_object (self->client, NM_CLIENT_CONNECTION_ADDED,
