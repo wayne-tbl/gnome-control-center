@@ -60,7 +60,6 @@ Build-Depends: debhelper-compat (= 13),
                tecla (>= 47),
                tzdata <!nocheck>,
 Standards-Version: 4.7.2
-Rules-Requires-Root: no
 XS-Debian-Vcs-Git: https://salsa.debian.org/gnome-team/gnome-control-center.git
 XS-Debian-Vcs-Browser: https://salsa.debian.org/gnome-team/gnome-control-center
 Vcs-Git: https://salsa.debian.org/gnome-team/gnome-control-center.git -b ubuntu/master
@@ -83,6 +82,7 @@ Depends: accountsservice (>= 23.11.69),
          libjxl-gdk-pixbuf,
          mutter-common (>= 47),
          tecla (>= 47),
+         upower,
          webp-pixbuf-loader,
          whoopsie-preferences,
          ${misc:Depends},
@@ -110,7 +110,7 @@ Suggests: gnome-software | gnome-packagekit,
           malcontent-gui [amd64 arm64 armel armhf i386 mips64el ppc64el riscv64 s390x hppa powerpc ppc64 x32],
           realmd,
 Breaks: gnome-remote-desktop (<< 42),
-        gnome-shell (<< 42)
+        gnome-shell (<< 49)
 Description: utilities to configure the GNOME desktop
  This package contains configuration applets for the GNOME desktop,
  allowing to set accessibility configuration, desktop fonts, keyboard
