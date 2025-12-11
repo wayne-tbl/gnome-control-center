@@ -493,7 +493,7 @@ index d96b4d2..f98498e 100644
                  self->system_region = g_strdup (time);
  
 diff --git a/panels/system/users/cc-user-page.c b/panels/system/users/cc-user-page.c
-index 3cae301..e48353c 100644
+index f124116..5db436e 100644
 --- a/panels/system/users/cc-user-page.c
 +++ b/panels/system/users/cc-user-page.c
 @@ -29,6 +29,7 @@
@@ -504,7 +504,7 @@ index 3cae301..e48353c 100644
  #include "cc-user-page.h"
  #include "cc-avatar-chooser.h"
  #include "cc-fingerprint-dialog.h"
-@@ -160,6 +161,7 @@ get_user_language (ActUser *user)
+@@ -161,6 +162,7 @@ get_user_language (ActUser *user)
  
      lang = g_strdup (act_user_get_language (user));
      if (lang && *lang != '\0') {
@@ -512,7 +512,7 @@ index 3cae301..e48353c 100644
          return gnome_get_language_from_locale (lang, NULL);
      }
  
-@@ -289,9 +291,12 @@ show_language_chooser (CcUserPage *self)
+@@ -290,9 +292,12 @@ show_language_chooser (CcUserPage *self)
  {
      CcLanguageChooser *language_chooser;
      const gchar *current_language;

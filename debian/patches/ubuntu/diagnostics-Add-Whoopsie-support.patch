@@ -12,7 +12,7 @@ Subject: diagnostics: Add Whoopsie support
  6 files changed, 268 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index 0eac10a..676eda6 100644
+index d4ed8e2..9e456ea 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -313,6 +313,14 @@ config_h.set('HAVE_LOCATION_SERVICES', location_services.enabled(),
