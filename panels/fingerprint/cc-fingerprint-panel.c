@@ -914,6 +914,59 @@ init_dbus_proxies (CcFingerprintPanel *self)
 }
 
 static gboolean
+is_biomd_hardware_available (void)
+{
+  GDBusProxy *proxy;
+  GError *error = NULL;
+  GVariant *result;
+  GVariant *value;
+  gboolean hardware_available = FALSE;
+
+  proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    BIOMD_DBUS_NAME,
+    "/io/FuriOS/Biomd/Fingerprint",
+    "org.freedesktop.DBus.Properties",
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_warning ("Error creating properties proxy: %s", error->message);
+    g_clear_error (&error);
+    return FALSE;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    proxy,
+    "Get",
+    g_variant_new ("(ss)",
+                   "io.FuriOS.Biomd.Fingerprint",
+                   "HardwareAvailable"),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_warning ("Error getting HardwareAvailable: %s", error->message);
+    g_clear_error (&error);
+  } else {
+    g_variant_get (result, "(v)", &value);
+    hardware_available = g_variant_get_boolean (value);
+    g_variant_unref (value);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (proxy);
+
+  return hardware_available;
+}
+
+static gboolean
 ping_biomd (void)
 {
   GDBusProxy *proxy;
@@ -1066,7 +1119,7 @@ cc_fingerprint_panel_init (CcFingerprintPanel *self)
   self->wants_death = FALSE;
   self->initialized = FALSE;
 
-  if (ping_biomd ()) {
+  if (ping_biomd () && is_biomd_hardware_available ()) {
     if (init_dbus_proxies (self)) {
       g_signal_connect (self->finger_list, "row-activated", G_CALLBACK (on_finger_activated), self);
       g_signal_connect (self->unenrolled_finger_list, "row-activated", G_CALLBACK (on_unenrolled_finger_activated), self);
