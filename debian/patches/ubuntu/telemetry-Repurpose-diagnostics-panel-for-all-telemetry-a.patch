@@ -1,0 +1,602 @@
+From: kkuo <kat.kuo@canonical.com>
+Date: Mon, 5 Jan 2026 16:31:08 -0500
+Subject: telemetry-Repurpose diagnostics panel for all telemetry applications
+
+---
+ panels/privacy/cc-privacy-panel.blp            |  10 +-
+ panels/privacy/cc-privacy-panel.c              |   4 +-
+ panels/privacy/gnome-privacy-panel.desktop.in  |   2 +-
+ panels/privacy/meson.build                     |   4 +-
+ panels/privacy/privacy.gresource.xml           |   2 +-
+ panels/privacy/telemetry/cc-telemetry-page.blp |  29 ++
+ panels/privacy/telemetry/cc-telemetry-page.c   | 384 +++++++++++++++++++++++++
+ panels/privacy/telemetry/cc-telemetry-page.h   |  33 +++
+ panels/privacy/telemetry/meson.build           |  14 +
+ 9 files changed, 471 insertions(+), 11 deletions(-)
+ create mode 100644 panels/privacy/telemetry/cc-telemetry-page.blp
+ create mode 100644 panels/privacy/telemetry/cc-telemetry-page.c
+ create mode 100644 panels/privacy/telemetry/cc-telemetry-page.h
+ create mode 100644 panels/privacy/telemetry/meson.build
+
+diff --git a/panels/privacy/cc-privacy-panel.blp b/panels/privacy/cc-privacy-panel.blp
+index 4ef1b86..7ccaae1 100644
+--- a/panels/privacy/cc-privacy-panel.blp
++++ b/panels/privacy/cc-privacy-panel.blp
+@@ -43,13 +43,13 @@ template $CcPrivacyPanel: $CcPanel {
+           }
+ 
+           $CcListRow {
+-            title: _("_Diagnostics");
+-            subtitle: _("Automatic problem reporting");
++            title: _("Tele_metry");
++            subtitle: _("Control error and system reporting");
+             icon-name: "org.gnome.Settings-device-diagnostics-symbolic";
+             show-arrow: true;
+             action-name: "navigation.push";
+-            action-target: "'diagnostics'";
+-            visible: bind diagnostics_page.visible;
++            action-target: "'telemetry'";
++            visible: bind telemetry_page.visible;
+           }
+ 
+           $CcListRow {
+@@ -108,7 +108,7 @@ template $CcPrivacyPanel: $CcPanel {
+   $CcUsagePage {}
+ 
+   [subpage]
+-  $CcDiagnosticsPage diagnostics_page {}
++  $CcTelemetryPage telemetry_page {}
+ 
+   [subpage]
+   $CcConnectivityPage {}
+diff --git a/panels/privacy/cc-privacy-panel.c b/panels/privacy/cc-privacy-panel.c
+index d6e3fd1..efae061 100644
+--- a/panels/privacy/cc-privacy-panel.c
++++ b/panels/privacy/cc-privacy-panel.c
+@@ -27,7 +27,7 @@
+ #endif
+ #include "camera/cc-camera-page.h"
+ #include "connectivity/cc-connectivity-page.h"
+-#include "diagnostics/cc-diagnostics-page.h"
++#include "telemetry/cc-telemetry-page.h"
+ #include "firmware-security/cc-firmware-security-page.h"
+ #include "cc-list-row.h"
+ #include "location/cc-location-page.h"
+@@ -74,7 +74,7 @@ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
+ 
+   g_type_ensure (CC_TYPE_CAMERA_PAGE);
+   g_type_ensure (CC_TYPE_CONNECTIVITY_PAGE);
+-  g_type_ensure (CC_TYPE_DIAGNOSTICS_PAGE);
++  g_type_ensure (CC_TYPE_TELEMETRY_PAGE);
+   g_type_ensure (CC_TYPE_FIRMWARE_SECURITY_PAGE);
+   g_type_ensure (CC_TYPE_LOCATION_PAGE);
+   g_type_ensure (CC_TYPE_SCREEN_PAGE);
+diff --git a/panels/privacy/gnome-privacy-panel.desktop.in b/panels/privacy/gnome-privacy-panel.desktop.in
+index 3704b2b..e44caf3 100644
+--- a/panels/privacy/gnome-privacy-panel.desktop.in
++++ b/panels/privacy/gnome-privacy-panel.desktop.in
+@@ -11,4 +11,4 @@ StartupNotify=true
+ Categories=GNOME;GTK;Settings;DesktopSettings;X-GNOME-Settings-Panel;X-GNOME-AccountSettings;
+ OnlyShowIn=GNOME;
+ # Translators: Search terms to find the Privacy panel. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
+-Keywords=Privacy;Screen;Lock;Private;Usage;Recent;History;Files;Temporary;Tmp;Trash;Purge;Retain;Diagnostics;Crash;Location;Gps;Camera;Photos;Video;Webcam;Recording;Security;Firmware;Thunderbolt;Network;error;bug;whoopsie;launchpad;issue;
++Keywords=Privacy;Screen;Lock;Private;Usage;Recent;History;Files;Telemetry;Temporary;Tmp;Trash;Purge;Retain;Diagnostics;Crash;Location;Gps;Camera;Photos;Video;Webcam;Recording;Security;Firmware;Thunderbolt;Network;error;bug;whoopsie;launchpad;issue;
+diff --git a/panels/privacy/meson.build b/panels/privacy/meson.build
+index 03078c7..8917158 100644
+--- a/panels/privacy/meson.build
++++ b/panels/privacy/meson.build
+@@ -15,7 +15,7 @@ blueprints = []
+ subdir('bolt')
+ subdir('camera')
+ subdir('connectivity')
+-subdir('diagnostics')
++subdir('telemetry')
+ subdir('firmware-security')
+ subdir('icons')
+ subdir('location')
+@@ -40,7 +40,7 @@ blueprints += custom_target(
+ sources = files(
+   'camera/cc-camera-page.c',
+   'connectivity/cc-connectivity-page.c',
+-  'diagnostics/cc-diagnostics-page.c',
++  'telemetry/cc-telemetry-page.c',
+   'firmware-security/cc-firmware-security-boot-dialog.c',
+   'firmware-security/cc-firmware-security-dialog.c',
+   'firmware-security/cc-firmware-security-help-dialog.c',
+diff --git a/panels/privacy/privacy.gresource.xml b/panels/privacy/privacy.gresource.xml
+index 3d9612c..121f555 100644
+--- a/panels/privacy/privacy.gresource.xml
++++ b/panels/privacy/privacy.gresource.xml
+@@ -6,7 +6,7 @@
+     <file preprocess="xml-stripblanks">bolt/cc-bolt-page.ui</file>
+     <file preprocess="xml-stripblanks">camera/cc-camera-page.ui</file>
+     <file preprocess="xml-stripblanks">connectivity/cc-connectivity-page.ui</file>
+-    <file preprocess="xml-stripblanks">diagnostics/cc-diagnostics-page.ui</file>
++    <file preprocess="xml-stripblanks">telemetry/cc-telemetry-page.ui</file>
+     <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-boot-dialog.ui</file>
+     <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-dialog.ui</file>
+     <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-help-dialog.ui</file>
+diff --git a/panels/privacy/telemetry/cc-telemetry-page.blp b/panels/privacy/telemetry/cc-telemetry-page.blp
+new file mode 100644
+index 0000000..c414fc4
+--- /dev/null
++++ b/panels/privacy/telemetry/cc-telemetry-page.blp
+@@ -0,0 +1,29 @@
++using Gtk 4.0;
++using Adw 1;
++
++template $CcTelemetryPage: Adw.NavigationPage {
++  title: _("Telemetry");
++  tag: "telemetry";
++
++  child: Adw.ToolbarView {
++    [top]
++    Adw.HeaderBar {}
++
++    content: Adw.PreferencesPage {
++      Adw.PreferencesGroup diagnostics_group {
++        title: _("Error Reporting");
++
++        Adw.SwitchRow abrt_row {
++          title: _("_Automatic Error Reporting");
++          use-underline: true;
++        }
++        Adw.ComboRow whoopsie_combo_row {
++          title: _("Send error reports to Canonical");
++          visible: false;
++          use-underline: true;
++          notify::selected-item => $whoopsie_combo_row_changed_cb(template);
++        }
++      }
++    };
++  };
++}
+diff --git a/panels/privacy/telemetry/cc-telemetry-page.c b/panels/privacy/telemetry/cc-telemetry-page.c
+new file mode 100644
+index 0000000..dcdc4d9
+--- /dev/null
++++ b/panels/privacy/telemetry/cc-telemetry-page.c
+@@ -0,0 +1,384 @@
++/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
++ *
++ * Copyright (C) 2026 Canonical Ltd.
++ * Copyright (C) 2018 Red Hat, Inc
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author(s):
++ *   Kat Kuo <kat.kuo@canonical.com>
++ *   Matthias Clasen <mclasen@redhat.com>
++ */
++
++#include <config.h>
++
++#include "cc-telemetry-page.h"
++#include "cc-util.h"
++#include "shell/cc-application.h"
++
++#include <gio/gdesktopappinfo.h>
++#include <glib/gi18n.h>
++
++#ifdef HAVE_WHOOPSIE
++#include <whoopsie-preferences/libwhoopsie-preferences.h>
++#endif
++
++struct _CcTelemetryPage
++{
++  AdwNavigationPage    parent_instance;
++
++  AdwPreferencesGroup *diagnostics_group;
++  AdwSwitchRow        *abrt_row;
++
++#ifdef HAVE_WHOOPSIE
++  AdwComboRow         *whoopsie_combo_row;
++  WhoopsiePreferences *whoopsie;
++  GCancellable        *cancellable;
++#endif
++
++  GSettings           *privacy_settings;
++};
++
++G_DEFINE_TYPE (CcTelemetryPage, cc_telemetry_page, ADW_TYPE_NAVIGATION_PAGE)
++
++/* Static init function */
++
++static void
++abrt_appeared_cb (GDBusConnection *connection,
++                  const gchar     *name,
++                  const gchar     *name_owner,
++                  gpointer         user_data)
++{
++  CcTelemetryPage *self = CC_TELEMETRY_PAGE (user_data);
++
++  g_debug ("ABRT appeared");
++  gtk_widget_set_visible (GTK_WIDGET (self), TRUE);
++}
++
++static void
++abrt_vanished_cb (GDBusConnection *connection,
++                  const gchar     *name,
++                  gpointer         user_data)
++{
++  g_debug ("ABRT vanished");
++#ifndef HAVE_WHOOPSIE
++  CcTelemetryPage *self = CC_TELEMETRY_PAGE (user_data);
++  gtk_widget_set_visible (GTK_WIDGET (self), FALSE);
++#endif
++}
++
++#ifdef HAVE_WHOOPSIE
++typedef enum
++{
++  WHOOPSIE_BUTTON_SETTING_NEVER,
++  WHOOPSIE_BUTTON_SETTING_AUTO,
++  WHOOPSIE_BUTTON_SETTING_MANUAL,
++} WhoopsieButtonSettingType;
++
++static void
++whoopsie_set_report_crashes_done (GObject *source_object,
++                                  GAsyncResult *res,
++                                  gpointer user_data)
++{
++  CcTelemetryPage *self = CC_TELEMETRY_PAGE (user_data);
++  g_autoptr(GError) error = NULL;
++
++  if (!whoopsie_preferences_call_set_report_crashes_finish (self->whoopsie, res, &error))
++    {
++      if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
++        return;
++
++      g_warning ("Failed to toggle crash reporting: %s", error->message);
++    }
++}
++
++static void
++whoopsie_set_report_crashes_mode_done (GObject *source_object,
++                                       GAsyncResult *res,
++                                       gpointer user_data)
++{
++  CcTelemetryPage *self = CC_TELEMETRY_PAGE (user_data);
++  g_autoptr(GError) error = NULL;
++
++  if (!whoopsie_preferences_call_set_automatically_report_crashes_finish (self->whoopsie, res, &error))
++    {
++      if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
++        return;
++
++      g_warning ("Failed to toggle crash reporting mode: %s", error->message);
++    }
++}
++
++static void
++whoopsie_combo_row_changed_cb (CcTelemetryPage *self)
++{
++  g_autoptr (GObject) item = NULL;
++  GListModel *model;
++  gint selected_index;
++  gint value;
++
++  model = adw_combo_row_get_model (self->whoopsie_combo_row);
++  selected_index = adw_combo_row_get_selected (self->whoopsie_combo_row);
++  if (selected_index == -1)
++    return;
++
++  item = g_list_model_get_item (model, selected_index);
++  value = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (item), "value"));
++
++  whoopsie_preferences_call_set_report_crashes (self->whoopsie,
++                                                value != WHOOPSIE_BUTTON_SETTING_NEVER,
++                                                self->cancellable,
++                                                whoopsie_set_report_crashes_done,
++                                                self);
++
++  whoopsie_preferences_call_set_automatically_report_crashes (self->whoopsie,
++                                                              value == WHOOPSIE_BUTTON_SETTING_AUTO,
++                                                              self->cancellable,
++                                                              whoopsie_set_report_crashes_mode_done,
++                                                              self);
++}
++
++static void
++set_value_for_combo_row (AdwComboRow *combo_row, gint value)
++{
++  g_autoptr (GObject) new_item = NULL;
++  GListModel *model;
++  guint i;
++
++  /* try to make the UI match the setting */
++  model = adw_combo_row_get_model (combo_row);
++  for (i = 0; i < g_list_model_get_n_items (model); i++)
++    {
++      g_autoptr (GObject) item = g_list_model_get_item (model, i);
++      gint value_tmp = GPOINTER_TO_UINT (g_object_get_data (item, "value"));
++      if (value_tmp == value)
++        {
++          adw_combo_row_set_selected (combo_row, i);
++          return;
++        }
++    }
++}
++
++static void
++whoopsie_properties_changed (CcTelemetryPage *self)
++{
++  g_autofree char *name_owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self->whoopsie));
++
++  /* Bail out if dbus service has gone away */
++  if (G_UNLIKELY (!name_owner))
++    return;
++
++  WhoopsieButtonSettingType value = WHOOPSIE_BUTTON_SETTING_NEVER;
++
++  if (whoopsie_preferences_get_automatically_report_crashes (self->whoopsie))
++    value = WHOOPSIE_BUTTON_SETTING_AUTO;
++  else if (whoopsie_preferences_get_report_crashes (self->whoopsie))
++    value = WHOOPSIE_BUTTON_SETTING_MANUAL;
++
++  g_signal_handlers_block_by_func (self->whoopsie_combo_row, whoopsie_combo_row_changed_cb, self);
++  set_value_for_combo_row (self->whoopsie_combo_row, value);
++  g_signal_handlers_unblock_by_func (self->whoopsie_combo_row, whoopsie_combo_row_changed_cb, self);
++}
++
++static void
++whoopsie_bus_owner_changed (GDBusProxy *proxy)
++{
++  g_autofree char *name_owner = g_dbus_proxy_get_name_owner (proxy);
++
++  if (!name_owner)
++    {
++      /* Trigger the service to start again, as it has just been stopped by a timeout
++       * don't bother on waiting for the call results.
++       */
++      whoopsie_preferences_call_get_identifier (WHOOPSIE_PREFERENCES (proxy), NULL, NULL, NULL);
++    }
++}
++
++static void
++populate_whoopsie_button_row (AdwComboRow *combo_row)
++{
++  g_autoptr (GtkStringList) string_list = NULL;
++  struct {
++    char *name;
++    WhoopsieButtonSettingType value;
++  } actions[] = {
++    { NC_("Whoopsie error reporting", "Never"), WHOOPSIE_BUTTON_SETTING_NEVER },
++    { NC_("Whoopsie error reporting", "Automatic"), WHOOPSIE_BUTTON_SETTING_AUTO },
++    { NC_("Whoopsie error reporting", "Manual"), WHOOPSIE_BUTTON_SETTING_MANUAL },
++  };
++  guint item_index = 0;
++  guint i;
++
++  string_list = gtk_string_list_new (NULL);
++  for (i = 0; i < G_N_ELEMENTS (actions); i++)
++    {
++      g_autoptr (GObject) item = NULL;
++
++      gtk_string_list_append (string_list, _(actions[i].name));
++
++      item = g_list_model_get_item (G_LIST_MODEL (string_list), item_index++);
++      g_object_set_data (item, "value", GUINT_TO_POINTER (actions[i].value));
++    }
++
++  adw_combo_row_set_model (combo_row, G_LIST_MODEL (string_list));
++}
++
++static void
++on_new_whoopsie_proxy_cb (GObject *object,
++                          GAsyncResult *res,
++                          gpointer data)
++{
++  CcTelemetryPage *self = CC_TELEMETRY_PAGE (data);
++  g_autoptr(GError) error = NULL;
++
++  self->whoopsie = whoopsie_preferences_proxy_new_for_bus_finish (res, &error);
++
++  if (error)
++    {
++      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
++        g_warning ("Failed to get whoopsie proxy: %s", error->message);
++
++      gtk_widget_set_visible (GTK_WIDGET (self->whoopsie_combo_row), FALSE);
++      gtk_widget_set_visible (GTK_WIDGET (self->abrt_row), TRUE);
++      return;
++    }
++
++  g_debug ("Whoopsie available");
++  gtk_widget_set_visible (GTK_WIDGET (self), TRUE);
++  gtk_widget_set_visible (GTK_WIDGET (self->whoopsie_combo_row), TRUE);
++  gtk_widget_set_sensitive (GTK_WIDGET (self->whoopsie_combo_row), TRUE);
++
++
++  g_signal_handlers_block_by_func (self->whoopsie_combo_row,
++                                   whoopsie_combo_row_changed_cb, self);
++  populate_whoopsie_button_row (self->whoopsie_combo_row);
++  g_signal_handlers_unblock_by_func (self->whoopsie_combo_row,
++                                     whoopsie_combo_row_changed_cb, self);
++
++  g_signal_connect_object (self->whoopsie, "g-properties-changed",
++                           G_CALLBACK (whoopsie_properties_changed),
++                           self, G_CONNECT_SWAPPED);
++
++  g_signal_connect_object (self->whoopsie, "notify::g-name-owner",
++                           G_CALLBACK (whoopsie_bus_owner_changed),
++                           self, 0);
++
++
++  whoopsie_properties_changed (self);
++}
++#else
++static void
++whoopsie_combo_row_changed_cb (CcTelemetryPage *self)
++{}
++#endif
++
++static void
++cc_telemetry_page_finalize (GObject *object)
++{
++  CcTelemetryPage *self = CC_TELEMETRY_PAGE (object);
++
++  g_clear_object (&self->privacy_settings);
++
++  G_OBJECT_CLASS (cc_telemetry_page_parent_class)->finalize (object);
++
++#if HAVE_WHOOPISE
++  g_cancellable_cancel (self->cancellable);
++  g_clear_object (&self->cancellable);
++  g_clear_object (&self->whoopsie);
++#endif
++}
++
++static void
++cc_telemetry_page_class_init (CcTelemetryPageClass *klass)
++{
++  GObjectClass *oclass = G_OBJECT_CLASS (klass);
++  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
++
++  oclass->finalize = cc_telemetry_page_finalize;
++
++  gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/control-center/privacy/telemetry/cc-telemetry-page.ui");
++
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, diagnostics_group);
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, abrt_row);
++
++#ifdef HAVE_WHOOPSIE
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, whoopsie_combo_row);
++#endif
++  gtk_widget_class_bind_template_callback (widget_class, whoopsie_combo_row_changed_cb);
++}
++
++static void
++cc_telemetry_page_init (CcTelemetryPage *self)
++{
++  g_autofree gchar *os_name = NULL;
++  g_autofree gchar *url = NULL;
++  g_autofree gchar *msg = NULL;
++  g_autofree gchar *link = NULL;
++
++  gtk_widget_init_template (GTK_WIDGET (self));
++
++  g_bus_watch_name (G_BUS_TYPE_SYSTEM,
++                    "org.freedesktop.problems.daemon",
++                    G_BUS_NAME_WATCHER_FLAGS_NONE,
++                    abrt_appeared_cb,
++                    abrt_vanished_cb,
++                    self,
++                    NULL);
++
++  gtk_widget_set_visible (GTK_WIDGET (self), FALSE);
++
++  self->privacy_settings = g_settings_new ("org.gnome.desktop.privacy");
++
++  g_settings_bind (self->privacy_settings, "report-technical-problems",
++                   self->abrt_row, "active",
++                   G_SETTINGS_BIND_DEFAULT);
++
++#ifdef HAVE_WHOOPSIE
++  /* check for whoopsie */
++  self->cancellable = g_cancellable_new ();
++  whoopsie_preferences_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
++                                          G_DBUS_PROXY_FLAGS_NONE,
++                                          "com.ubuntu.WhoopsiePreferences",
++                                          "/com/ubuntu/WhoopsiePreferences",
++                                          self->cancellable,
++                                          on_new_whoopsie_proxy_cb,
++                                          self);
++
++  gtk_widget_set_visible (GTK_WIDGET (self), TRUE);
++  gtk_widget_set_visible (GTK_WIDGET (self->whoopsie_combo_row), TRUE);
++  gtk_widget_set_visible (GTK_WIDGET (self->abrt_row), FALSE);
++  gtk_widget_set_sensitive (GTK_WIDGET (self->whoopsie_combo_row), FALSE);
++#endif
++
++  os_name = g_get_os_info (G_OS_INFO_KEY_NAME);
++  if (!os_name)
++    os_name = g_strdup ("GNOME");
++  url = g_get_os_info (G_OS_INFO_KEY_PRIVACY_POLICY_URL);
++
++  if (url) {
++    /* translators: Text used in link to privacy policy */
++    link = g_strdup_printf ("<a href=\"%s\">%s</a>", url, _("learn more"));
++
++    /* translators: The first '%s' is the distributor's name, such as 'Fedora', the second '%s' is a link to the privacy policy */
++    msg = g_strdup_printf (_("Sending reports of technical problems helps us improve %s. Reports "
++                           "are sent anonymously and are scrubbed of personal data — %s."),
++                           os_name, link);
++  } else {
++    /* translators: The '%s' is the distributor's name, such as 'Fedora' */
++    msg = g_strdup_printf (_("Sending reports of technical problems helps us improve %s. Reports "
++                           "are sent anonymously and are scrubbed of personal data."),
++                           os_name);
++  }
++  adw_preferences_group_set_description (self->diagnostics_group, msg);
++}
+diff --git a/panels/privacy/telemetry/cc-telemetry-page.h b/panels/privacy/telemetry/cc-telemetry-page.h
+new file mode 100644
+index 0000000..acb5f1a
+--- /dev/null
++++ b/panels/privacy/telemetry/cc-telemetry-page.h
+@@ -0,0 +1,33 @@
++/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
++ *
++ * Copyright (C) 2026 Canonical Ltd.
++ * Copyright (C) 2018 Red Hat, Inc
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author(s):
++ *   Kat Kuo <kat.kuo@canonical.com>
++ *   Matthias Clasen <mclasen@redhat.com>
++ */
++
++#pragma once
++
++#include <adwaita.h>
++
++G_BEGIN_DECLS
++
++#define CC_TYPE_TELEMETRY_PAGE (cc_telemetry_page_get_type ())
++G_DECLARE_FINAL_TYPE (CcTelemetryPage, cc_telemetry_page, CC, TELEMETRY_PAGE, AdwNavigationPage)
++
++G_END_DECLS
+diff --git a/panels/privacy/telemetry/meson.build b/panels/privacy/telemetry/meson.build
+new file mode 100644
+index 0000000..648d08b
+--- /dev/null
++++ b/panels/privacy/telemetry/meson.build
+@@ -0,0 +1,14 @@
++ui_sources = files(
++  'cc-telemetry-page.blp',
++)
++
++ui_compiled = []
++foreach ui_source : ui_sources
++  ui_compiled += fs.name(fs.replace_suffix(ui_source, '.ui'))
++endforeach
++
++blueprints += custom_target(
++  input: ui_sources,
++  output: ui_compiled,
++  command: [blueprint_compiler, 'batch-compile', '@OUTDIR@', '@CURRENT_SOURCE_DIR@', '@INPUT@']
++)
