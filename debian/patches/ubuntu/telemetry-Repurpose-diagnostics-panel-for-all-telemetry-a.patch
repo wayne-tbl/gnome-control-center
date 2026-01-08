@@ -1,23 +1,82 @@
 From: kkuo <kat.kuo@canonical.com>
 Date: Mon, 5 Jan 2026 16:31:08 -0500
-Subject: telemetry-Repurpose diagnostics panel for all telemetry applications
+Subject: telemetry: Repurpose diagnostics panel for all telemetry
+ applications
 
+This patch renames and repurposes the diagnostics panel to be a catchall
+for telemetry-related features.
+
+The Diagnostics panel is renamed to Telemetry while maintaining the same
+ABRT and Whoopsie functionality and modularization. To reduce the patch
+size, the Diagnostics panel code is deactivated, not removed.
+
+Additional modular integration with Ubuntu Insights via the insights
+build argument is also added. This integration allows for user consent
+to be managed in a centralized and fine-grained manner. Additionally,
+functionality to generate and show an example report is also present.
 ---
- panels/privacy/cc-privacy-panel.blp            |  10 +-
- panels/privacy/cc-privacy-panel.c              |   4 +-
- panels/privacy/gnome-privacy-panel.desktop.in  |   2 +-
- panels/privacy/meson.build                     |   4 +-
- panels/privacy/privacy.gresource.xml           |   2 +-
- panels/privacy/telemetry/cc-telemetry-page.blp |  29 ++
- panels/privacy/telemetry/cc-telemetry-page.c   | 384 +++++++++++++++++++++++++
- panels/privacy/telemetry/cc-telemetry-page.h   |  33 +++
- panels/privacy/telemetry/meson.build           |  14 +
- 9 files changed, 471 insertions(+), 11 deletions(-)
+ meson.build                                        |   9 +
+ meson_options.txt                                  |   1 +
+ panels/privacy/cc-privacy-panel.blp                |  10 +-
+ panels/privacy/cc-privacy-panel.c                  |   4 +-
+ panels/privacy/gnome-privacy-panel.desktop.in      |   2 +-
+ panels/privacy/meson.build                         |  27 +-
+ panels/privacy/privacy.gresource.xml.in            |  23 +
+ .../telemetry/cc-telemetry-insights-example.blp    |  47 ++
+ .../telemetry/cc-telemetry-insights-example.c      | 102 ++++
+ .../telemetry/cc-telemetry-insights-example.h      |  32 ++
+ panels/privacy/telemetry/cc-telemetry-page.blp     |  89 +++
+ panels/privacy/telemetry/cc-telemetry-page.c       | 631 +++++++++++++++++++++
+ panels/privacy/telemetry/cc-telemetry-page.h       |  33 ++
+ panels/privacy/telemetry/meson.build               |  18 +
+ panels/privacy/telemetry/telemetry.css             |   8 +
+ 15 files changed, 1025 insertions(+), 11 deletions(-)
+ create mode 100644 panels/privacy/privacy.gresource.xml.in
+ create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.blp
+ create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.c
+ create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.h
  create mode 100644 panels/privacy/telemetry/cc-telemetry-page.blp
  create mode 100644 panels/privacy/telemetry/cc-telemetry-page.c
  create mode 100644 panels/privacy/telemetry/cc-telemetry-page.h
  create mode 100644 panels/privacy/telemetry/meson.build
+ create mode 100644 panels/privacy/telemetry/telemetry.css
 
+diff --git a/meson.build b/meson.build
+index 6d9b3f9..384ffdc 100644
+--- a/meson.build
++++ b/meson.build
+@@ -337,6 +337,14 @@ endif
+ config_h.set('HAVE_WHOOPSIE', enable_whoopsie,
+              description: 'Define to 1 if Whoopsie is enabled')
+ 
++# Insights (Ubuntu telemetry service)
++enable_insights = get_option('insights')
++if enable_insights
++  insights_dep = dependency('insights', version: '>= 0.8.1')
++endif
++config_h.set('HAVE_INSIGHTS', enable_insights,
++             description: 'Define to 1 if Ubuntu Insights is enabled')
++
+ if host_is_linux
+   # ModemManager
+   mm_dep =  dependency('mm-glib', version: '>= 0.7')
+@@ -443,6 +451,7 @@ summary({
+     'Snap': enable_snap,
+     'Malcontent': enable_malcontent,
+     'Whoopsie': enable_whoopsie,
++    'Insights': enable_insights,
+   },
+   section: 'Optional Dependencies',
+   bool_yn: true,
+diff --git a/meson_options.txt b/meson_options.txt
+index 4e1f5d9..e88d3b3 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -10,3 +10,4 @@ option('malcontent', type: 'boolean', value: false, description: 'build with mal
+ option('distributor_logo', type: 'string', description: 'absolute path to distributor logo for the About panel')
+ option('dark_mode_distributor_logo', type: 'string', description: 'absolute path to distributor logo dark mode variant')
+ option('whoopsie', type: 'boolean', value: false, description: 'build with Whoopsie support')
++option('insights', type: 'boolean', value: false, description: 'build with Ubuntu Insights support')
 diff --git a/panels/privacy/cc-privacy-panel.blp b/panels/privacy/cc-privacy-panel.blp
 index 4ef1b86..7ccaae1 100644
 --- a/panels/privacy/cc-privacy-panel.blp
@@ -82,7 +141,7 @@ index 3704b2b..e44caf3 100644
 -Keywords=Privacy;Screen;Lock;Private;Usage;Recent;History;Files;Temporary;Tmp;Trash;Purge;Retain;Diagnostics;Crash;Location;Gps;Camera;Photos;Video;Webcam;Recording;Security;Firmware;Thunderbolt;Network;error;bug;whoopsie;launchpad;issue;
 +Keywords=Privacy;Screen;Lock;Private;Usage;Recent;History;Files;Telemetry;Temporary;Tmp;Trash;Purge;Retain;Diagnostics;Crash;Location;Gps;Camera;Photos;Video;Webcam;Recording;Security;Firmware;Thunderbolt;Network;error;bug;whoopsie;launchpad;issue;
 diff --git a/panels/privacy/meson.build b/panels/privacy/meson.build
-index 03078c7..8917158 100644
+index 03078c7..5bdea29 100644
 --- a/panels/privacy/meson.build
 +++ b/panels/privacy/meson.build
 @@ -15,7 +15,7 @@ blueprints = []
@@ -103,25 +162,286 @@ index 03078c7..8917158 100644
    'firmware-security/cc-firmware-security-boot-dialog.c',
    'firmware-security/cc-firmware-security-dialog.c',
    'firmware-security/cc-firmware-security-help-dialog.c',
-diff --git a/panels/privacy/privacy.gresource.xml b/panels/privacy/privacy.gresource.xml
-index 3d9612c..121f555 100644
---- a/panels/privacy/privacy.gresource.xml
-+++ b/panels/privacy/privacy.gresource.xml
-@@ -6,7 +6,7 @@
-     <file preprocess="xml-stripblanks">bolt/cc-bolt-page.ui</file>
-     <file preprocess="xml-stripblanks">camera/cc-camera-page.ui</file>
-     <file preprocess="xml-stripblanks">connectivity/cc-connectivity-page.ui</file>
--    <file preprocess="xml-stripblanks">diagnostics/cc-diagnostics-page.ui</file>
+@@ -52,6 +52,10 @@ sources = files(
+   'usage/cc-usage-page.c',
+ )
+ 
++if enable_insights
++sources += files(  'telemetry/cc-telemetry-insights-example.c')
++endif
++
+ if host_is_linux_not_s390
+   sources += files(
+     'bolt/bolt-client.c',
+@@ -78,9 +82,22 @@ if host_is_linux_not_s390
+   )
+ endif
+ 
++resource_conf = configuration_data()
++telemetry_ui = ''
++if enable_insights
++  telemetry_ui = '    <file preprocess="xml-stripblanks">telemetry/cc-telemetry-insights-example.ui</file>'
++endif
++resource_conf.set('telemetry_insights_example_ui', telemetry_ui)
++
++resource_file = configure_file(
++  input: cappletname + '.gresource.xml.in',
++  output: cappletname + '.gresource.xml',
++  configuration: resource_conf
++)
++
+ sources += gnome.compile_resources(
+   'cc-' + cappletname + '-resources',
+-  cappletname + '.gresource.xml',
++  resource_file,
+   c_name: 'cc_' + cappletname,
+   export: true,
+   dependencies: blueprints,
+@@ -107,6 +124,10 @@ if enable_whoopsie
+   deps += whoopsie_dep
+ endif
+ 
++if enable_insights
++  deps += insights_dep
++endif
++
+ panels_libs += static_library(
+   cappletname,
+   sources: sources,
+diff --git a/panels/privacy/privacy.gresource.xml.in b/panels/privacy/privacy.gresource.xml.in
+new file mode 100644
+index 0000000..2d44ce9
+--- /dev/null
++++ b/panels/privacy/privacy.gresource.xml.in
+@@ -0,0 +1,23 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<gresources>
++  <gresource prefix="/org/gnome/control-center/privacy">
++    <file preprocess="xml-stripblanks">bolt/cc-bolt-device-dialog.ui</file>
++    <file preprocess="xml-stripblanks">bolt/cc-bolt-device-entry.ui</file>
++    <file preprocess="xml-stripblanks">bolt/cc-bolt-page.ui</file>
++    <file preprocess="xml-stripblanks">camera/cc-camera-page.ui</file>
++    <file preprocess="xml-stripblanks">connectivity/cc-connectivity-page.ui</file>
 +    <file preprocess="xml-stripblanks">telemetry/cc-telemetry-page.ui</file>
-     <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-boot-dialog.ui</file>
-     <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-dialog.ui</file>
-     <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-help-dialog.ui</file>
++@telemetry_insights_example_ui@
++    <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-boot-dialog.ui</file>
++    <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-dialog.ui</file>
++    <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-help-dialog.ui</file>
++    <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-page.ui</file>
++    <file preprocess="xml-stripblanks">location/cc-location-page.ui</file>
++    <file preprocess="xml-stripblanks">cc-privacy-panel.ui</file>
++    <file preprocess="xml-stripblanks">screen/cc-screen-page.ui</file>
++    <file preprocess="xml-stripblanks">usage/cc-usage-page.ui</file>
++
++    <file>telemetry/telemetry.css</file>
++    <file>firmware-security/security-level.css</file>
++  </gresource>
++</gresources>
+diff --git a/panels/privacy/telemetry/cc-telemetry-insights-example.blp b/panels/privacy/telemetry/cc-telemetry-insights-example.blp
+new file mode 100644
+index 0000000..3f5ce2f
+--- /dev/null
++++ b/panels/privacy/telemetry/cc-telemetry-insights-example.blp
+@@ -0,0 +1,47 @@
++using Gtk 4.0;
++using Adw 1;
++
++template $CcTelemetryInsightsExample: Adw.Window {
++  title: _("System Report");
++  modal: true;
++  width-request: 535;
++  height-request: 600;
++
++  content: Adw.ToolbarView {
++    [top]
++    Adw.HeaderBar {}
++
++    content: ScrolledWindow {
++      hscrollbar-policy: never;
++
++      child: Box {
++        orientation: vertical;
++        spacing: 12;
++        margin-top: 29;
++        margin-bottom: 29;
++        margin-start: 24;
++        margin-end: 24;
++
++        Label subtitle_label {
++          wrap: true;
++          wrap-mode: word_char;
++          valign: center;
++          halign: start;
++        }
++
++        TextView report_view {
++          editable: false;
++          cursor-visible: false;
++          monospace: true;
++          wrap-mode: word_char;
++          left-margin: 12;
++          right-margin: 12;
++          top-margin: 12;
++          bottom-margin: 12;
++
++          buffer: Gtk.TextBuffer {};
++        }
++      };
++    };
++  };
++}
+diff --git a/panels/privacy/telemetry/cc-telemetry-insights-example.c b/panels/privacy/telemetry/cc-telemetry-insights-example.c
+new file mode 100644
+index 0000000..c3c36b0
+--- /dev/null
++++ b/panels/privacy/telemetry/cc-telemetry-insights-example.c
+@@ -0,0 +1,102 @@
++/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
++ *
++ * Copyright (C) 2026 Canonical Ltd.
++ *
++ * Written by: Kat Kuo <kat.kuo@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <config.h>
++
++#include <glib/gi18n.h>
++
++#include "cc-telemetry-insights-example.h"
++#include "glib.h"
++#include "gtk/gtk.h"
++#include "gtk/gtkshortcut.h"
++
++#define DOCUMENTATION_URL "https://github.com/ubuntu/ubuntu-insights#example-insights-reports"
++#define INSIGHTS_CACHE_SUBDIR ".cache/ubuntu-insights"
++
++struct _CcTelemetryInsightsExample
++{
++  AdwWindow parent_instance;
++
++  GtkWidget   *subtitle_label;
++  GtkTextView *report_view;
++};
++
++G_DEFINE_TYPE (CcTelemetryInsightsExample, cc_telemetry_insights_example, ADW_TYPE_WINDOW)
++
++static void
++cc_telemetry_insights_example_class_init (CcTelemetryInsightsExampleClass *klass)
++{
++  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
++
++  gtk_widget_class_add_binding_action (widget_class, GDK_KEY_Escape, 0, "window.close", NULL);
++
++  gtk_widget_class_set_template_from_resource (widget_class,
++                                               "/org/gnome/control-center/privacy/telemetry/cc-telemetry-insights-example.ui");
++
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryInsightsExample, subtitle_label);
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryInsightsExample, report_view);
++}
++
++static void
++cc_telemetry_insights_example_init (CcTelemetryInsightsExample *self)
++{
++  g_autofree gchar *path = NULL;
++  g_autofree gchar *url = NULL;
++  g_autofree gchar *subtitle = NULL;
++  g_autofree gchar *cache_path = NULL;
++  g_autofree gchar *cache_uri = NULL;
++  g_autofree gchar *display_path = NULL;
++
++  gtk_widget_init_template (GTK_WIDGET (self));
++
++  cache_path = g_build_filename (g_get_home_dir (), INSIGHTS_CACHE_SUBDIR, NULL);
++  display_path = g_strdup_printf ("~/%s", INSIGHTS_CACHE_SUBDIR);
++
++  if (g_file_test (cache_path, G_FILE_TEST_IS_DIR))
++    {
++      cache_uri = g_filename_to_uri (cache_path, NULL, NULL);
++      path = g_strdup_printf ("<a href=\"%s\"><span face=\"monospace\" allow_breaks=\"false\">%s</span></a>",
++                              cache_uri,
++                              display_path);
++    }
++  else
++    {
++      path = g_strdup_printf ("<span face=\"monospace\" allow_breaks=\"false\">%s</span>",
++                              display_path);
++    }
++
++  /* translators: The '%s' is a file path to the local Ubuntu Insights cache directory */
++  subtitle = g_strdup_printf (_ ("This is a system report example with real data from this computer. "
++                                 "System reports are temporarily stored in %s before being sent to Canonical."),
++                              path);
++  gtk_label_set_markup (GTK_LABEL (self->subtitle_label), subtitle);
++}
++
++GtkWidget *
++cc_telemetry_insights_example_new (const gchar *report)
++{
++  CcTelemetryInsightsExample *self;
++  self = g_object_new (CC_TYPE_TELEMETRY_INSIGHTS_EXAMPLE, NULL);
++
++  gtk_text_buffer_set_text (gtk_text_view_get_buffer (self->report_view),
++                            report,
++                            -1);
++  return GTK_WIDGET (self);
++}
+diff --git a/panels/privacy/telemetry/cc-telemetry-insights-example.h b/panels/privacy/telemetry/cc-telemetry-insights-example.h
+new file mode 100644
+index 0000000..bb5f6cc
+--- /dev/null
++++ b/panels/privacy/telemetry/cc-telemetry-insights-example.h
+@@ -0,0 +1,32 @@
++/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
++ *
++ * Copyright (C) 2026 Canonical Ltd.
++ *
++ * Written by: Kat Kuo <kat.kuo@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#pragma once
++
++#include <adwaita.h>
++
++G_BEGIN_DECLS
++
++#define CC_TYPE_TELEMETRY_INSIGHTS_EXAMPLE (cc_telemetry_insights_example_get_type ())
++G_DECLARE_FINAL_TYPE (CcTelemetryInsightsExample, cc_telemetry_insights_example, CC, TELEMETRY_INSIGHTS_EXAMPLE, AdwWindow)
++
++GtkWidget *cc_telemetry_insights_example_new (const gchar *report);
++
++G_END_DECLS
 diff --git a/panels/privacy/telemetry/cc-telemetry-page.blp b/panels/privacy/telemetry/cc-telemetry-page.blp
 new file mode 100644
-index 0000000..c414fc4
+index 0000000..7cbb613
 --- /dev/null
 +++ b/panels/privacy/telemetry/cc-telemetry-page.blp
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,89 @@
 +using Gtk 4.0;
 +using Adw 1;
 +
@@ -141,11 +461,71 @@ index 0000000..c414fc4
 +          title: _("_Automatic Error Reporting");
 +          use-underline: true;
 +        }
++
 +        Adw.ComboRow whoopsie_combo_row {
 +          title: _("Send error reports to Canonical");
 +          visible: false;
 +          use-underline: true;
 +          notify::selected-item => $whoopsie_combo_row_changed_cb(template);
++        }
++
++        LinkButton diagnostics_learn_more_link_button {
++          label: _("Learn more about error reporting");
++          visible: bind $string_is_not_empty(diagnostics_learn_more_link_button.uri) as <bool>;
++          margin-top: 8;
++          halign: start;
++
++          styles [
++            "dim",
++            "body",
++            "link-label",
++          ]
++        }
++      }
++
++      Adw.PreferencesGroup insights_group {
++        title: _("System Reporting");
++        visible: false;
++
++        Adw.SwitchRow insights_linux_row {
++          title: _("Send a system report every month");
++          notify::active => $insights_switch_row_changed_cb();
++        }
++
++        Adw.SwitchRow insights_upgrade_row {
++          title: _("Send a system report when upgrading to a new Ubuntu version");
++          notify::active => $insights_switch_row_changed_cb();
++        }
++      }
++
++      Adw.PreferencesGroup insights_buttons_group {
++        separate-rows: true;
++        visible: bind insights_group.visible;
++
++        Adw.ButtonRow insights_example_report_button_row {
++          title: _("_Show Report");
++          use-underline: true;
++          end-icon-name: "go-next-symbolic";
++          activated => $insights_example_report_button_row_activated_cb(template);
++        }
++
++        Adw.ButtonRow insights_cancel_report_button_row {
++          title: _("Cancel Report");
++          visible: false;
++          activated => $insights_cancel_report_button_row_activated_cb(template);
++        }
++
++        LinkButton insights_learn_more_link_button {
++          label: _("Learn more about system reporting");
++          uri: "https://canonical.com/legal/systems-information-notice";
++          margin-top: 8;
++          halign: start;
++
++          styles [
++            "dim",
++            "body",
++            "link-label",
++          ]
 +        }
 +      }
 +    };
@@ -153,10 +533,10 @@ index 0000000..c414fc4
 +}
 diff --git a/panels/privacy/telemetry/cc-telemetry-page.c b/panels/privacy/telemetry/cc-telemetry-page.c
 new file mode 100644
-index 0000000..dcdc4d9
+index 0000000..ac30475
 --- /dev/null
 +++ b/panels/privacy/telemetry/cc-telemetry-page.c
-@@ -0,0 +1,384 @@
+@@ -0,0 +1,631 @@
 +/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
 + *
 + * Copyright (C) 2026 Canonical Ltd.
@@ -184,18 +564,26 @@ index 0000000..dcdc4d9
 +
 +#include "cc-telemetry-page.h"
 +#include "cc-util.h"
++#include "gtk/gtk.h"
 +#include "shell/cc-application.h"
 +
 +#include <gio/gdesktopappinfo.h>
 +#include <glib/gi18n.h>
++#include <stdio.h>
 +
 +#ifdef HAVE_WHOOPSIE
 +#include <whoopsie-preferences/libwhoopsie-preferences.h>
 +#endif
 +
++#ifdef HAVE_INSIGHTS
++#include "cc-telemetry-insights-example.h"
++#include <insights/insights.h>
++#include <insights/types.h>
++#endif
++
 +struct _CcTelemetryPage
 +{
-+  AdwNavigationPage    parent_instance;
++  AdwNavigationPage parent_instance;
 +
 +  AdwPreferencesGroup *diagnostics_group;
 +  AdwSwitchRow        *abrt_row;
@@ -203,15 +591,39 @@ index 0000000..dcdc4d9
 +#ifdef HAVE_WHOOPSIE
 +  AdwComboRow         *whoopsie_combo_row;
 +  WhoopsiePreferences *whoopsie;
-+  GCancellable        *cancellable;
++#endif
++  GtkLinkButton *diagnostics_learn_more_link_button;
++
++  AdwPreferencesGroup *insights_group;
++  AdwPreferencesGroup *insights_buttons_group;
++
++#ifdef HAVE_INSIGHTS
++  AdwSwitchRow *insights_linux_row;
++  AdwSwitchRow *insights_upgrade_row;
++
++  AdwButtonRow *insights_example_report_button_row;
++  AdwButtonRow *insights_cancel_report_button_row;
 +#endif
 +
-+  GSettings           *privacy_settings;
++  GCancellable *cancellable;
++
++#ifdef HAVE_INSIGHTS
++  GCancellable *insights_cancellable;
++#endif
++
++  GSettings *privacy_settings;
 +};
 +
 +G_DEFINE_TYPE (CcTelemetryPage, cc_telemetry_page, ADW_TYPE_NAVIGATION_PAGE)
 +
 +/* Static init function */
++
++static gboolean
++string_is_not_empty (CcTelemetryPage *self,
++                     const char      *string)
++{
++  return string && string[0];
++}
 +
 +static void
 +abrt_appeared_cb (GDBusConnection *connection,
@@ -219,10 +631,12 @@ index 0000000..dcdc4d9
 +                  const gchar     *name_owner,
 +                  gpointer         user_data)
 +{
-+  CcTelemetryPage *self = CC_TELEMETRY_PAGE (user_data);
++  g_autofree gchar *whoopsie_url = NULL;
++  CcTelemetryPage  *self = CC_TELEMETRY_PAGE (user_data);
 +
 +  g_debug ("ABRT appeared");
 +  gtk_widget_set_visible (GTK_WIDGET (self), TRUE);
++  gtk_widget_set_visible (GTK_WIDGET (self->diagnostics_group), TRUE);
 +}
 +
 +static void
@@ -233,7 +647,11 @@ index 0000000..dcdc4d9
 +  g_debug ("ABRT vanished");
 +#ifndef HAVE_WHOOPSIE
 +  CcTelemetryPage *self = CC_TELEMETRY_PAGE (user_data);
++  gtk_widget_set_visible (GTK_WIDGET (self->diagnostics_group), FALSE);
++
++#ifndef HAVE_INSIGHTS
 +  gtk_widget_set_visible (GTK_WIDGET (self), FALSE);
++#endif
 +#endif
 +}
 +
@@ -246,12 +664,12 @@ index 0000000..dcdc4d9
 +} WhoopsieButtonSettingType;
 +
 +static void
-+whoopsie_set_report_crashes_done (GObject *source_object,
++whoopsie_set_report_crashes_done (GObject      *source_object,
 +                                  GAsyncResult *res,
-+                                  gpointer user_data)
++                                  gpointer      user_data)
 +{
 +  CcTelemetryPage *self = CC_TELEMETRY_PAGE (user_data);
-+  g_autoptr(GError) error = NULL;
++  g_autoptr (GError) error = NULL;
 +
 +  if (!whoopsie_preferences_call_set_report_crashes_finish (self->whoopsie, res, &error))
 +    {
@@ -263,12 +681,12 @@ index 0000000..dcdc4d9
 +}
 +
 +static void
-+whoopsie_set_report_crashes_mode_done (GObject *source_object,
++whoopsie_set_report_crashes_mode_done (GObject      *source_object,
 +                                       GAsyncResult *res,
-+                                       gpointer user_data)
++                                       gpointer      user_data)
 +{
 +  CcTelemetryPage *self = CC_TELEMETRY_PAGE (user_data);
-+  g_autoptr(GError) error = NULL;
++  g_autoptr (GError) error = NULL;
 +
 +  if (!whoopsie_preferences_call_set_automatically_report_crashes_finish (self->whoopsie, res, &error))
 +    {
@@ -284,8 +702,8 @@ index 0000000..dcdc4d9
 +{
 +  g_autoptr (GObject) item = NULL;
 +  GListModel *model;
-+  gint selected_index;
-+  gint value;
++  gint        selected_index;
++  gint        value;
 +
 +  model = adw_combo_row_get_model (self->whoopsie_combo_row);
 +  selected_index = adw_combo_row_get_selected (self->whoopsie_combo_row);
@@ -313,7 +731,7 @@ index 0000000..dcdc4d9
 +{
 +  g_autoptr (GObject) new_item = NULL;
 +  GListModel *model;
-+  guint i;
++  guint       i;
 +
 +  /* try to make the UI match the setting */
 +  model = adw_combo_row_get_model (combo_row);
@@ -368,13 +786,14 @@ index 0000000..dcdc4d9
 +populate_whoopsie_button_row (AdwComboRow *combo_row)
 +{
 +  g_autoptr (GtkStringList) string_list = NULL;
-+  struct {
-+    char *name;
++  struct
++  {
++    char                     *name;
 +    WhoopsieButtonSettingType value;
 +  } actions[] = {
-+    { NC_("Whoopsie error reporting", "Never"), WHOOPSIE_BUTTON_SETTING_NEVER },
-+    { NC_("Whoopsie error reporting", "Automatic"), WHOOPSIE_BUTTON_SETTING_AUTO },
-+    { NC_("Whoopsie error reporting", "Manual"), WHOOPSIE_BUTTON_SETTING_MANUAL },
++    { NC_ ("Whoopsie error reporting", "Never"), WHOOPSIE_BUTTON_SETTING_NEVER },
++    { NC_ ("Whoopsie error reporting", "Automatic"), WHOOPSIE_BUTTON_SETTING_AUTO },
++    { NC_ ("Whoopsie error reporting", "Manual"), WHOOPSIE_BUTTON_SETTING_MANUAL },
 +  };
 +  guint item_index = 0;
 +  guint i;
@@ -384,7 +803,7 @@ index 0000000..dcdc4d9
 +    {
 +      g_autoptr (GObject) item = NULL;
 +
-+      gtk_string_list_append (string_list, _(actions[i].name));
++      gtk_string_list_append (string_list, _ (actions[i].name));
 +
 +      item = g_list_model_get_item (G_LIST_MODEL (string_list), item_index++);
 +      g_object_set_data (item, "value", GUINT_TO_POINTER (actions[i].value));
@@ -394,12 +813,12 @@ index 0000000..dcdc4d9
 +}
 +
 +static void
-+on_new_whoopsie_proxy_cb (GObject *object,
++on_new_whoopsie_proxy_cb (GObject      *object,
 +                          GAsyncResult *res,
-+                          gpointer data)
++                          gpointer      data)
 +{
 +  CcTelemetryPage *self = CC_TELEMETRY_PAGE (data);
-+  g_autoptr(GError) error = NULL;
++  g_autoptr (GError) error = NULL;
 +
 +  self->whoopsie = whoopsie_preferences_proxy_new_for_bus_finish (res, &error);
 +
@@ -418,7 +837,6 @@ index 0000000..dcdc4d9
 +  gtk_widget_set_visible (GTK_WIDGET (self->whoopsie_combo_row), TRUE);
 +  gtk_widget_set_sensitive (GTK_WIDGET (self->whoopsie_combo_row), TRUE);
 +
-+
 +  g_signal_handlers_block_by_func (self->whoopsie_combo_row,
 +                                   whoopsie_combo_row_changed_cb, self);
 +  populate_whoopsie_button_row (self->whoopsie_combo_row);
@@ -433,13 +851,161 @@ index 0000000..dcdc4d9
 +                           G_CALLBACK (whoopsie_bus_owner_changed),
 +                           self, 0);
 +
-+
 +  whoopsie_properties_changed (self);
 +}
 +#else
 +static void
 +whoopsie_combo_row_changed_cb (CcTelemetryPage *self)
-+{}
++{
++}
++#endif
++
++#ifdef HAVE_INSIGHTS
++static void update_insights_row_state (CcTelemetryPage *self, AdwSwitchRow *row);
++
++static void
++insights_switch_row_changed_cb (GObject    *object,
++                                GParamSpec *pspec,
++                                gpointer    user_data)
++{
++  AdwSwitchRow    *row = ADW_SWITCH_ROW (object);
++  gboolean         active;
++  const gchar     *source;
++  g_autofree char *error_msg = NULL;
++
++  active = adw_switch_row_get_active (row);
++  source = g_object_get_data (G_OBJECT (row), "insights-source");
++
++  if (!source)
++    return; /* Shouldn't happen */
++
++  error_msg = insights_set_consent_state (NULL,
++                                          source,
++                                          active ? INSIGHTS_CONSENT_TRUE : INSIGHTS_CONSENT_FALSE);
++  if (error_msg != NULL)
++    {
++      g_warning ("Failed to set insights consent state for source '%s': %s", source, error_msg);
++      update_insights_row_state (CC_TELEMETRY_PAGE (user_data), row);
++    }
++}
++
++static void
++update_insights_row_state (CcTelemetryPage *self,
++                           AdwSwitchRow    *row)
++{
++  const char            *source;
++  insights_consent_state state;
++
++  source = g_object_get_data (G_OBJECT (row), "insights-source");
++  if (!source)
++    return; /* Shouldn't happen */
++
++  state = insights_get_consent_state (NULL, source);
++  g_signal_handlers_block_by_func (row, insights_switch_row_changed_cb, self);
++  adw_switch_row_set_active (row, state == INSIGHTS_CONSENT_TRUE);
++  g_signal_handlers_unblock_by_func (row, insights_switch_row_changed_cb, self);
++}
++
++static void
++sync_insights_switches (CcTelemetryPage *self)
++{
++  update_insights_row_state (self, self->insights_linux_row);
++  update_insights_row_state (self, self->insights_upgrade_row);
++}
++
++static void
++on_generate_report_thread (GTask        *task,
++                           gpointer      source_object,
++                           gpointer      task_data,
++                           GCancellable *cancellable)
++{
++  g_autoptr (GError) error = NULL;
++  g_autofree char       *error_msg = NULL;
++  g_autofree char       *report = NULL;
++  insights_compile_flags flags = { 0 };
++
++  error_msg = insights_compile (NULL, &flags, &report);
++  if (error_msg != NULL)
++    {
++      g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_FAILED, "%s", error_msg);
++      return;
++    }
++
++  g_task_return_pointer (task, g_steal_pointer (&report), g_free);
++}
++
++static void
++generate_report_cb (GObject      *source_object,
++                    GAsyncResult *res,
++                    gpointer      user_data)
++{
++  CcTelemetryPage *self = CC_TELEMETRY_PAGE (user_data);
++  g_autofree char *report = NULL;
++  g_autoptr (GError) error = NULL;
++  GtkWidget *window;
++
++  gtk_widget_set_visible (GTK_WIDGET (self->insights_example_report_button_row), TRUE);
++  gtk_widget_set_visible (GTK_WIDGET (self->insights_cancel_report_button_row), FALSE);
++
++  report = g_task_propagate_pointer (G_TASK (res), &error);
++
++  if (error)
++    {
++      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
++        g_warning ("Failed to generate example report: %s", error->message);
++      return;
++    }
++
++  window = cc_telemetry_insights_example_new (report);
++  gtk_window_set_transient_for (GTK_WINDOW (window),
++                                GTK_WINDOW (gtk_widget_get_native (GTK_WIDGET (self))));
++  gtk_window_present (GTK_WINDOW (window));
++}
++
++static void
++insights_example_report_button_row_activated_cb (CcTelemetryPage *self)
++{
++  g_autoptr (GTask) task;
++
++  gtk_widget_set_visible (GTK_WIDGET (self->insights_example_report_button_row), FALSE);
++  gtk_widget_set_visible (GTK_WIDGET (self->insights_cancel_report_button_row), TRUE);
++
++  task = g_task_new (self, self->insights_cancellable, generate_report_cb, self);
++
++  g_task_set_return_on_cancel (task, TRUE);
++  g_task_run_in_thread (task, on_generate_report_thread);
++}
++
++static void
++insights_cancel_report_button_row_activated_cb (CcTelemetryPage *self)
++{
++  g_debug ("User cancelled insights report generation");
++  gtk_widget_set_visible (GTK_WIDGET (self->insights_cancel_report_button_row), FALSE);
++  gtk_widget_set_visible (GTK_WIDGET (self->insights_example_report_button_row), TRUE);
++
++  g_cancellable_cancel (self->insights_cancellable);
++  g_clear_object (&self->insights_cancellable);
++  self->insights_cancellable = g_cancellable_new ();
++}
++
++#else
++static void
++insights_switch_row_changed_cb (GObject    *object,
++                                GParamSpec *pspec,
++                                gpointer    user_data)
++{
++}
++
++static void
++insights_example_report_button_row_activated_cb (CcTelemetryPage *self)
++{
++}
++
++static void
++insights_cancel_report_button_row_activated_cb (CcTelemetryPage *self)
++{
++}
++
 +#endif
 +
 +static void
@@ -449,19 +1015,25 @@ index 0000000..dcdc4d9
 +
 +  g_clear_object (&self->privacy_settings);
 +
-+  G_OBJECT_CLASS (cc_telemetry_page_parent_class)->finalize (object);
-+
-+#if HAVE_WHOOPISE
 +  g_cancellable_cancel (self->cancellable);
 +  g_clear_object (&self->cancellable);
++
++#ifdef HAVE_WHOOPSIE
 +  g_clear_object (&self->whoopsie);
 +#endif
++
++#ifdef HAVE_INSIGHTS
++  g_cancellable_cancel (self->insights_cancellable);
++  g_clear_object (&self->insights_cancellable);
++#endif
++
++  G_OBJECT_CLASS (cc_telemetry_page_parent_class)->finalize (object);
 +}
 +
 +static void
 +cc_telemetry_page_class_init (CcTelemetryPageClass *klass)
 +{
-+  GObjectClass *oclass = G_OBJECT_CLASS (klass);
++  GObjectClass   *oclass = G_OBJECT_CLASS (klass);
 +  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 +
 +  oclass->finalize = cc_telemetry_page_finalize;
@@ -471,21 +1043,59 @@ index 0000000..dcdc4d9
 +  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, diagnostics_group);
 +  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, abrt_row);
 +
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, insights_group);
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, insights_buttons_group);
++
 +#ifdef HAVE_WHOOPSIE
 +  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, whoopsie_combo_row);
 +#endif
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, diagnostics_learn_more_link_button);
 +  gtk_widget_class_bind_template_callback (widget_class, whoopsie_combo_row_changed_cb);
++
++#ifdef HAVE_INSIGHTS
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, insights_linux_row);
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, insights_upgrade_row);
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, insights_example_report_button_row);
++  gtk_widget_class_bind_template_child (widget_class, CcTelemetryPage, insights_cancel_report_button_row);
++#endif
++  gtk_widget_class_bind_template_callback (widget_class, insights_switch_row_changed_cb);
++  gtk_widget_class_bind_template_callback (widget_class, insights_example_report_button_row_activated_cb);
++  gtk_widget_class_bind_template_callback (widget_class, insights_cancel_report_button_row_activated_cb);
++
++  gtk_widget_class_bind_template_callback (widget_class, string_is_not_empty);
 +}
++
++#ifdef HAVE_INSIGHTS
++static void
++on_unmap_cb (GtkWidget *widget,
++             gpointer   user_data)
++{
++  CcTelemetryPage *self = CC_TELEMETRY_PAGE (widget);
++
++  if (self->insights_cancellable)
++    {
++      g_cancellable_cancel (self->insights_cancellable);
++      g_object_unref (self->insights_cancellable);
++      self->insights_cancellable = g_cancellable_new ();
++    }
++}
++#endif
 +
 +static void
 +cc_telemetry_page_init (CcTelemetryPage *self)
 +{
 +  g_autofree gchar *os_name = NULL;
-+  g_autofree gchar *url = NULL;
-+  g_autofree gchar *msg = NULL;
-+  g_autofree gchar *link = NULL;
++  g_autofree gchar *whoopsie_url = NULL;
++  g_autofree gchar *whoopsie_msg = NULL;
++  g_autofree gchar *insights_msg = NULL;
++  g_autoptr (GtkCssProvider) provider = NULL;
 +
 +  gtk_widget_init_template (GTK_WIDGET (self));
++
++#ifdef HAVE_INSIGHTS
++  g_object_set_data (G_OBJECT (self->insights_linux_row), "insights-source", "linux");
++  g_object_set_data (G_OBJECT (self->insights_upgrade_row), "insights-source", "ubuntu_release_upgrader");
++#endif
 +
 +  g_bus_watch_name (G_BUS_TYPE_SYSTEM,
 +                    "org.freedesktop.problems.daemon",
@@ -503,9 +1113,12 @@ index 0000000..dcdc4d9
 +                   self->abrt_row, "active",
 +                   G_SETTINGS_BIND_DEFAULT);
 +
++#if defined(HAVE_WHOOPSIE) || defined(HAVE_INSIGHTS)
++  self->cancellable = g_cancellable_new ();
++#endif
++
 +#ifdef HAVE_WHOOPSIE
 +  /* check for whoopsie */
-+  self->cancellable = g_cancellable_new ();
 +  whoopsie_preferences_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
 +                                          G_DBUS_PROXY_FLAGS_NONE,
 +                                          "com.ubuntu.WhoopsiePreferences",
@@ -520,26 +1133,40 @@ index 0000000..dcdc4d9
 +  gtk_widget_set_sensitive (GTK_WIDGET (self->whoopsie_combo_row), FALSE);
 +#endif
 +
++#ifdef HAVE_INSIGHTS
++  self->insights_cancellable = g_cancellable_new ();
++  gtk_widget_set_visible (GTK_WIDGET (self), TRUE);
++  gtk_widget_set_visible (GTK_WIDGET (self->insights_group), TRUE);
++
++  g_signal_connect_swapped (self, "map", G_CALLBACK (sync_insights_switches), self);
++  g_signal_connect (self, "unmap", G_CALLBACK (on_unmap_cb), NULL);
++#endif
++
 +  os_name = g_get_os_info (G_OS_INFO_KEY_NAME);
 +  if (!os_name)
 +    os_name = g_strdup ("GNOME");
-+  url = g_get_os_info (G_OS_INFO_KEY_PRIVACY_POLICY_URL);
++  whoopsie_url = g_get_os_info (G_OS_INFO_KEY_PRIVACY_POLICY_URL);
++  if (whoopsie_url)
++    gtk_link_button_set_uri (self->diagnostics_learn_more_link_button, whoopsie_url);
 +
-+  if (url) {
-+    /* translators: Text used in link to privacy policy */
-+    link = g_strdup_printf ("<a href=\"%s\">%s</a>", url, _("learn more"));
++  /* translators: The '%s' is the distributor's name, such as 'Fedora' */
++  whoopsie_msg = g_strdup_printf (_ ("Help us address technical problems by sharing error reports with the "
++                                     "%s team. Reports are sent anonymously and are scrubbed of personal data."),
++                                  os_name);
++  adw_preferences_group_set_description (self->diagnostics_group, whoopsie_msg);
 +
-+    /* translators: The first '%s' is the distributor's name, such as 'Fedora', the second '%s' is a link to the privacy policy */
-+    msg = g_strdup_printf (_("Sending reports of technical problems helps us improve %s. Reports "
-+                           "are sent anonymously and are scrubbed of personal data — %s."),
-+                           os_name, link);
-+  } else {
-+    /* translators: The '%s' is the distributor's name, such as 'Fedora' */
-+    msg = g_strdup_printf (_("Sending reports of technical problems helps us improve %s. Reports "
-+                           "are sent anonymously and are scrubbed of personal data."),
-+                           os_name);
-+  }
-+  adw_preferences_group_set_description (self->diagnostics_group, msg);
++  /* translators: The '%s' is the distributor's name, such as 'Ubuntu' */
++  insights_msg = g_strdup_printf (_ ("Help us improve %s features and compatibility by sharing system reports with"
++                                     " Canonical. Reports are sent anonymously and do not contain any personal data."),
++                                  os_name);
++
++  adw_preferences_group_set_description (self->insights_group, insights_msg);
++
++  provider = gtk_css_provider_new ();
++  gtk_css_provider_load_from_resource (provider, "/org/gnome/control-center/privacy/telemetry/telemetry.css");
++  gtk_style_context_add_provider_for_display (gdk_display_get_default (),
++                                              GTK_STYLE_PROVIDER (provider),
++                                              GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 +}
 diff --git a/panels/privacy/telemetry/cc-telemetry-page.h b/panels/privacy/telemetry/cc-telemetry-page.h
 new file mode 100644
@@ -582,13 +1209,17 @@ index 0000000..acb5f1a
 +G_END_DECLS
 diff --git a/panels/privacy/telemetry/meson.build b/panels/privacy/telemetry/meson.build
 new file mode 100644
-index 0000000..648d08b
+index 0000000..dffd7e8
 --- /dev/null
 +++ b/panels/privacy/telemetry/meson.build
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,18 @@
 +ui_sources = files(
 +  'cc-telemetry-page.blp',
 +)
++
++if enable_insights
++  ui_sources += files('cc-telemetry-insights-example.blp')
++endif
 +
 +ui_compiled = []
 +foreach ui_source : ui_sources
@@ -600,3 +1231,17 @@ index 0000000..648d08b
 +  output: ui_compiled,
 +  command: [blueprint_compiler, 'batch-compile', '@OUTDIR@', '@CURRENT_SOURCE_DIR@', '@INPUT@']
 +)
+diff --git a/panels/privacy/telemetry/telemetry.css b/panels/privacy/telemetry/telemetry.css
+new file mode 100644
+index 0000000..281d579
+--- /dev/null
++++ b/panels/privacy/telemetry/telemetry.css
+@@ -0,0 +1,8 @@
++/* Emulate spacing of a label */
++.link-label {
++  padding: 0;
++  box-shadow: none;
++  border-radius: 0px;
++  min-height: 0px;
++  min-width: 0px;
++}
