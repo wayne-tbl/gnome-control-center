@@ -49,7 +49,7 @@ struct _CcUaSeeingPage
 
   AdwSwitchRow       *high_contrast_row;
   AdwSwitchRow       *status_shapes_row;
-  GtkSwitch          *animation_effects_switch;
+  GtkSwitch          *reduced_motion_switch;
   AdwSwitchRow       *large_text_row;
   CcListRow          *cursor_size_row;
   AdwSwitchRow       *sound_keys_row;
@@ -69,46 +69,6 @@ struct _CcUaSeeingPage
 G_DEFINE_TYPE (CcUaSeeingPage, cc_ua_seeing_page, ADW_TYPE_NAVIGATION_PAGE)
 
 static void
-orca_get_version_cb (GObject      *source_object,
-                     GAsyncResult *res,
-                     gpointer      data)
-{
-  g_autoptr(GVariant) val = NULL;
-  g_autoptr(GError) error = NULL;
-  CcUaSeeingPage *self = data;
-
-  g_assert (CC_IS_UA_SEEING_PAGE (self));
-
-  val = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object),
-                                  res, &error);
-  if (!val)
-    {
-      /* Orca implemented a DBus interface at the same time as ShowPreferences,
-       * so apparently this Orca version is too old. So, hide the row.
-       * No need to check the version otherwise for now.
-       */
-      g_debug ("Failed to get Orca version: %s", error->message);
-      gtk_widget_set_visible (GTK_WIDGET (self->configure_screen_reader_row), FALSE);
-      return;
-    }
-}
-
-static void
-check_orca_show_preferences_support (CcUaSeeingPage *self)
-{
-  g_assert (CC_IS_UA_SEEING_PAGE (self));
-
-  g_dbus_proxy_call (self->proxy,
-                     "GetVersion",
-                     NULL,
-                     G_DBUS_CALL_FLAGS_NONE,
-                     -1,
-                     NULL,
-                     orca_get_version_cb,
-                     self);
-}
-
-static void
 on_orca_proxy_ready (GObject      *source_object,
                      GAsyncResult *res,
                      gpointer      data)
@@ -124,10 +84,7 @@ on_orca_proxy_ready (GObject      *source_object,
     {
       g_warning ("Error creating proxy: %s", error->message);
       gtk_widget_set_visible (GTK_WIDGET  (self->configure_screen_reader_row), FALSE);
-      return;
     }
-
-  check_orca_show_preferences_support (self);
 }
 
 static gboolean
@@ -154,6 +111,38 @@ set_large_text_mapping (const GValue       *value,
     return g_variant_new_double (DPI_FACTOR_LARGE);
 
   g_settings_reset (settings, KEY_TEXT_SCALING_FACTOR);
+
+  return NULL;
+}
+
+static gboolean
+get_reduced_motion_mapping (GValue   *value,
+                            GVariant *variant,
+                            gpointer  user_data)
+{
+  guint32 val;
+
+  val = g_variant_get_uint32 (variant);
+
+  if (val == 0)
+    g_value_set_boolean (value, FALSE);
+  else
+    g_value_set_boolean (value, TRUE);
+
+  return TRUE;
+}
+
+static GVariant *
+set_reduced_motion_mapping (const GValue       *value,
+                            const GVariantType *expected_type,
+                            gpointer            user_data)
+{
+  GSettings *settings = user_data;
+
+  if (g_value_get_boolean (value))
+    return g_variant_new_uint32 (1);
+
+  g_settings_reset (settings, KEY_REDUCED_MOTION);
 
   return NULL;
 }
@@ -272,7 +261,7 @@ cc_ua_seeing_page_class_init (CcUaSeeingPageClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, high_contrast_row);
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, status_shapes_row);
-  gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, animation_effects_switch);
+  gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, reduced_motion_switch);
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, large_text_row);
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, cursor_size_row);
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, sound_keys_row);
@@ -305,10 +294,14 @@ cc_ua_seeing_page_init (CcUaSeeingPage *self)
                    self->status_shapes_row, "active",
                    G_SETTINGS_BIND_DEFAULT);
 
-  /* Enable Animations */
-  g_settings_bind (self->interface_settings, KEY_ENABLE_ANIMATIONS,
-                   self->animation_effects_switch, "active",
-                   G_SETTINGS_BIND_DEFAULT);
+  /* Reduced motion */
+  g_settings_bind_with_mapping (self->a11y_interface_settings, KEY_REDUCED_MOTION,
+                                self->reduced_motion_switch, "active",
+                                G_SETTINGS_BIND_DEFAULT,
+                                get_reduced_motion_mapping,
+                                set_reduced_motion_mapping,
+                                self->a11y_interface_settings,
+                                NULL);
 
   /* Large Text */
   g_settings_bind_with_mapping (self->interface_settings, KEY_TEXT_SCALING_FACTOR,

@@ -63,6 +63,7 @@ ui_sources = files(
   'cc-keyboard-panel.blp',
   'cc-keyboard-shortcut-dialog.blp',
   'cc-keyboard-shortcut-editor.blp',
+  'cc-keyboard-shortcut-group.blp',
   'cc-keyboard-shortcut-row.blp',
   'cc-xkb-modifier-page.blp',
 )
@@ -110,9 +111,6 @@ deps = common_deps + [
   keyboard_shortcuts_dep,
   gnome_desktop_dep,
 ]
-if have_x11_support
-  deps += [x11_dep]
-endif
 
 if enable_ibus
   deps += ibus_dep
