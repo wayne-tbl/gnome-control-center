@@ -1,3 +1,9 @@
+gnome-control-center (1:50~alpha-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Nathan Pratta Teodosio <nathan.teodosio@canonical.com>  Thu, 08 Jan 2026 10:42:09 +0100
+
 gnome-control-center (1:49.2.2-1ubuntu1) resolute; urgency=medium
 
   * Merge from Debian unstable. Remaining changes:
