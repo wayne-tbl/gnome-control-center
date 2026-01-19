@@ -32,11 +32,9 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
  .../gnome-applications-panel.desktop.in            |   2 +-
  3 files changed, 422 insertions(+), 4 deletions(-)
 
-diff --git a/panels/applications/cc-applications-panel.blp b/panels/applications/cc-applications-panel.blp
-index 139925b..ce9a6ea 100644
 --- a/panels/applications/cc-applications-panel.blp
 +++ b/panels/applications/cc-applications-panel.blp
-@@ -242,6 +242,14 @@ template $CcApplicationsPanel: $CcPanel {
+@@ -242,6 +242,14 @@ template $CcApplicationsPanel: $CcPanel
                notify::active => $background_cb(template);
              }
  
@@ -51,11 +49,9 @@ index 139925b..ce9a6ea 100644
              Adw.SwitchRow screenshots_row {
                title: _("Scr_eenshots");
                subtitle: _("Take pictures of the screen at any time");
-diff --git a/panels/applications/cc-applications-panel.c b/panels/applications/cc-applications-panel.c
-index a7d55fe..89c4fed 100644
 --- a/panels/applications/cc-applications-panel.c
 +++ b/panels/applications/cc-applications-panel.c
-@@ -56,6 +56,8 @@
+@@ -55,6 +55,8 @@
  #define GLOBAL_SHORTCUTS_APP_SCHEMA "org.gnome.settings-daemon.global-shortcuts.application"
  #define GLOBAL_SHORTCUTS_PATH "/org/gnome/settings-daemon/global-shortcuts/"
  
@@ -64,7 +60,7 @@ index a7d55fe..89c4fed 100644
  #define PORTAL_SNAP_PREFIX "snap."
  
  struct _CcApplicationsPanel
-@@ -75,6 +77,7 @@ struct _CcApplicationsPanel
+@@ -74,6 +76,7 @@ struct _CcApplicationsPanel
    GListModel      *app_model;
    GListModel      *filter_model;
    GtkFilter       *filter;
@@ -72,7 +68,7 @@ index a7d55fe..89c4fed 100644
  #ifdef HAVE_MALCONTENT
    GCancellable    *cancellable;
  
-@@ -112,6 +115,7 @@ struct _CcApplicationsPanel
+@@ -111,6 +114,7 @@ struct _CcApplicationsPanel
    AdwPreferencesGroup *permissions_group;
    AdwSwitchRow    *notifications_row;
    AdwSwitchRow    *background_row;
@@ -80,7 +76,7 @@ index a7d55fe..89c4fed 100644
    AdwSwitchRow    *wallpaper_row;
    AdwSwitchRow    *screenshots_row;
    AdwSwitchRow    *sounds_row;
-@@ -552,6 +556,288 @@ wallpaper_cb (CcApplicationsPanel *self)
+@@ -543,6 +547,288 @@ wallpaper_cb (CcApplicationsPanel *self)
      set_wallpaper_allowed (self, adw_switch_row_get_active (self->wallpaper_row));
  }
  
@@ -369,7 +365,7 @@ index a7d55fe..89c4fed 100644
  /* --- screenshot --- */
  
  static void
-@@ -964,6 +1250,7 @@ update_permissions_group (CcApplicationsPanel *self,
+@@ -954,6 +1240,7 @@ update_permissions_group (CcApplications
    g_autofree gchar *portal_app_id = get_portal_app_id (info);
    gboolean set, allowed, disabled;
    gboolean has_any = FALSE;
@@ -377,7 +373,7 @@ index a7d55fe..89c4fed 100644
  
    disabled = g_settings_get_boolean (self->search_settings, "disable-external");
    get_search_enabled (self, app_id, &set, &allowed);
-@@ -983,11 +1270,13 @@ update_permissions_group (CcApplicationsPanel *self,
+@@ -973,11 +1260,13 @@ update_permissions_group (CcApplications
        gtk_widget_set_visible (GTK_WIDGET (self->shortcuts_row), FALSE);
      }
  
@@ -392,7 +388,7 @@ index a7d55fe..89c4fed 100644
      {
        g_clear_object (&self->notification_settings);
        get_notification_allowed (self, portal_app_id, &set, &allowed);
-@@ -1000,6 +1289,11 @@ update_permissions_group (CcApplicationsPanel *self,
+@@ -990,6 +1279,11 @@ update_permissions_group (CcApplications
        gtk_widget_set_visible (GTK_WIDGET (self->background_row), set);
        has_any |= set;
  
@@ -404,7 +400,7 @@ index a7d55fe..89c4fed 100644
        get_wallpaper_allowed (self, portal_app_id, &set, &allowed);
        adw_switch_row_set_active (self->wallpaper_row, allowed);
        gtk_widget_set_visible (GTK_WIDGET (self->wallpaper_row), set);
-@@ -1046,7 +1340,13 @@ update_permissions_group (CcApplicationsPanel *self,
+@@ -1036,7 +1330,13 @@ update_permissions_group (CcApplications
        g_set_object (&self->notification_settings, get_notification_settings (app_id));
        get_notification_allowed (self, app_id, &set, &allowed);
        adw_switch_row_set_active (self->notifications_row, allowed);
@@ -419,7 +415,7 @@ index a7d55fe..89c4fed 100644
        has_any |= set;
  
        gtk_widget_set_visible (GTK_WIDGET (self->background_row), FALSE);
-@@ -1581,6 +1881,90 @@ compare_rows (gconstpointer  a,
+@@ -1620,6 +1920,90 @@ compare_rows (gconstpointer  a,
    return g_utf8_collate (key1, key2);
  }
  
@@ -510,7 +506,7 @@ index a7d55fe..89c4fed 100644
  static void
  populate_applications (CcApplicationsPanel *self)
  {
-@@ -1593,8 +1977,31 @@ populate_applications (CcApplicationsPanel *self)
+@@ -1632,8 +2016,31 @@ populate_applications (CcApplicationsPan
        g_signal_handler_block (self->manager, self->app_filter_id);
  #endif
  
@@ -542,7 +538,7 @@ index a7d55fe..89c4fed 100644
    for (l = infos; l; l = l->next)
      {
        GAppInfo *info = l->data;
-@@ -1798,12 +2205,13 @@ cc_applications_panel_finalize (GObject *object)
+@@ -1869,12 +2276,13 @@ cc_applications_panel_finalize (GObject
    g_clear_object (&self->location_settings);
    g_clear_object (&self->privacy_settings);
    g_clear_object (&self->search_settings);
@@ -557,7 +553,7 @@ index a7d55fe..89c4fed 100644
  
    G_OBJECT_CLASS (cc_applications_panel_parent_class)->finalize (object);
  }
-@@ -1877,6 +2285,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
+@@ -1948,6 +2356,7 @@ cc_applications_panel_class_init (CcAppl
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_name_label);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_search_entry);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_settings_page);
@@ -565,16 +561,14 @@ index a7d55fe..89c4fed 100644
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, required_permissions_group);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, autorun_never_row);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, builtin_row);
-@@ -1920,6 +2329,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
-   gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, general_group);
+@@ -1992,6 +2401,7 @@ cc_applications_panel_class_init (CcAppl
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, view_details_button);
+   gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, toast_overlay);
  
 +  gtk_widget_class_bind_template_callback (widget_class, autostart_cb);
    gtk_widget_class_bind_template_callback (widget_class, camera_cb);
    gtk_widget_class_bind_template_callback (widget_class, location_cb);
    gtk_widget_class_bind_template_callback (widget_class, microphone_cb);
-diff --git a/panels/applications/gnome-applications-panel.desktop.in b/panels/applications/gnome-applications-panel.desktop.in
-index 31414dd..d6babcd 100644
 --- a/panels/applications/gnome-applications-panel.desktop.in
 +++ b/panels/applications/gnome-applications-panel.desktop.in
 @@ -12,4 +12,4 @@ StartupNotify=true
