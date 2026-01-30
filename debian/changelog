@@ -1,8 +1,20 @@
-gnome-control-center (1:50~alpha-1) UNRELEASED; urgency=medium
+gnome-control-center (1:50~alpha-0ubuntu1) resolute; urgency=medium
 
   * New upstream release
+  * Drop kbd-lv3.patch, applied upstream.
+  * Rework Adapts-the-region*.patch.
+  * d/control: Depend on blueprint-compiler >= 0.19.0.
+  * d/p/u/region-Add-Language-Selector-button.patch: Partially rewritten so it
+    is closer to upstream.
+  * Refresh four patches that did not apply cleanly, namely:
+    d/p/u/multitasking-panel-Sync-workspace-and-monitor-isolation-d.patch
+    d/p/u/multitasking-panel-Sync-workspace-isolation-setting-on-ti.patch
+    d/p/u/applications-Launch-snap-store-if-it-is-installed.patch
+    d/p/u/applications-Support-controlling-the-autostart-flag-on-ap.patch
+  * d/p/u/meson:relax-malcontent-version.patch: Debian/Ubuntu do not have
+    Malcontent 0.14 Alpha yet; 0.13 is OK.
 
- -- Nathan Pratta Teodosio <nathan.teodosio@canonical.com>  Thu, 08 Jan 2026 10:42:09 +0100
+ -- Nathan Pratta Teodosio <nathan.teodosio@canonical.com>  Fri, 30 Jan 2026 09:48:53 +0100
 
 gnome-control-center (1:49.2.2-1ubuntu1) resolute; urgency=medium
 
