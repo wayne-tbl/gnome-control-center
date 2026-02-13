@@ -1,0 +1,163 @@
+From: =?utf-8?b?Ik1hcmNvIFRyZXZpc2FuIChUcmV2acOxbyki?= <mail@3v1n0.net>
+Date: Fri, 13 Feb 2026 19:13:40 +0100
+Subject: display: Add setting to configure X11 apps scaling
+
+X11 applications appearance may now be scaled by just stretching their
+look or using the X11 native scaling.
+
+This is not something we may know preemptively, so we need to add a
+configuration setting to make such old applications usable in some
+contexts.
+
+Bug-Ubuntu: https://bugs.launchpad.net/mutter/+bug/2110515
+---
+ panels/display/cc-display-panel.blp |  8 +++++++
+ panels/display/cc-display-panel.c   | 46 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+)
+
+diff --git a/panels/display/cc-display-panel.blp b/panels/display/cc-display-panel.blp
+index f40b2cf..c22576b 100644
+--- a/panels/display/cc-display-panel.blp
++++ b/panels/display/cc-display-panel.blp
+@@ -107,6 +107,14 @@ template $CcDisplayPanel: $CcPanel {
+           visible: false;
+         }
+ 
++        Adw.PreferencesGroup {
++          Adw.SwitchRow scale_legacy_apps_row {
++            title: C_("display setting", "Automatically Scale _Legacy Applications (X11)");
++            subtitle: C_("display setting", "Use built-in scaling in legacy applications for better appearance. Some apps may not scale at all.");
++            use-underline: true;
++          }
++        }
++
+         Adw.PreferencesGroup {
+           $CcListRow night_light_row {
+             /* Translators: This is the redshift functionality where we suppress blue light when the sun has gone down */
+diff --git a/panels/display/cc-display-panel.c b/panels/display/cc-display-panel.c
+index d9de82c..9763e50 100644
+--- a/panels/display/cc-display-panel.c
++++ b/panels/display/cc-display-panel.c
+@@ -43,6 +43,9 @@
+ 
+ #define DISPLAY_SCHEMA   "org.gnome.settings-daemon.plugins.color"
+ 
++#define MUTTER_WAYLAND_SCHEMA "org.gnome.mutter.wayland"
++#define MUTTER_XWAYLAND_SCALING_FACTOR "xwayland-scaling-factor"
++
+ #define DISPLAY_CONFIG_JOIN_NAME "join"
+ #define DISPLAY_CONFIG_CLONE_NAME "clone"
+ 
+@@ -73,6 +76,8 @@ struct _CcDisplayPanel
+   CcNightLightPage *night_light_page;
+   CcListRow        *night_light_row;
+ 
++  GtkWidget        *scale_legacy_apps_row;
++
+   UpClient *up_client;
+   gboolean lid_is_closed;
+ 
+@@ -101,6 +106,7 @@ struct _CcDisplayPanel
+   GtkShortcut *escape_shortcut;
+ 
+   GSettings           *display_settings;
++  GSettings           *mutter_wayland_settings;
+ };
+ 
+ enum {
+@@ -436,6 +442,7 @@ cc_display_panel_dispose (GObject *object)
+   g_clear_object (&self->up_client);
+ 
+   g_clear_object (&self->shell_proxy);
++  g_clear_object (&self->mutter_wayland_settings);
+ 
+   g_signal_handlers_disconnect_by_data (toplevel, self);
+ 
+@@ -602,6 +609,7 @@ cc_display_panel_class_init (CcDisplayPanelClass *klass)
+   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, escape_shortcut);
+   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, night_light_page);
+   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, night_light_row);
++  gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, scale_legacy_apps_row);
+   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, primary_display_row);
+   gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, single_display_settings_group);
+ 
+@@ -727,6 +735,7 @@ rebuild_ui (CcDisplayPanel *self)
+   guint n_usable_outputs;
+   GList *outputs, *l;
+   CcDisplayConfigType type;
++  gboolean any_scaled = FALSE;
+ 
+   if (!cc_display_config_manager_get_apply_allowed (self->manager))
+     {
+@@ -750,6 +759,7 @@ rebuild_ui (CcDisplayPanel *self)
+ 
+   if (!self->current_config)
+     {
++      gtk_widget_set_visible (self->scale_legacy_apps_row, FALSE);
+       self->rebuilding_counter--;
+       return;
+     }
+@@ -774,6 +784,9 @@ rebuild_ui (CcDisplayPanel *self)
+             adw_combo_row_set_selected (self->primary_display_row,
+                                         g_list_model_get_n_items (G_LIST_MODEL (self->primary_display_list)) - 1);
+ 
++          if (!G_APPROX_VALUE (cc_display_monitor_get_scale (output), 1.0, FLT_EPSILON))
++            any_scaled = TRUE;
++
+           /* Ensure that an output is selected; note that this doesn't ensure
+            * the selected output is any useful (i.e. when switching types).
+            */
+@@ -820,6 +833,8 @@ rebuild_ui (CcDisplayPanel *self)
+ 
+   cc_panel_set_selected_type (self, type);
+ 
++  gtk_widget_set_visible (self->scale_legacy_apps_row, any_scaled);
++
+   self->rebuilding_counter--;
+   update_apply_button (self);
+ }
+@@ -1053,6 +1068,28 @@ session_bus_ready (GObject        *source,
+                            G_CONNECT_SWAPPED);
+ }
+ 
++static gboolean
++get_automatic_xwayland_scaling_factor (GValue   *value,
++                                       GVariant *variant,
++                                       gpointer  data)
++{
++  gboolean enabled;
++
++  enabled = G_APPROX_VALUE (g_variant_get_double (variant), 0.0, FLT_EPSILON);
++
++  g_value_set_boolean (value, enabled);
++
++  return TRUE;
++}
++
++static GVariant *
++set_automatic_xwayland_scaling_factor (const GValue       *value,
++                                       const GVariantType *expected_type,
++                                       gpointer            data)
++{
++  return g_variant_new_double (g_value_get_boolean (value) ? 0.0 : 1.0);
++}
++
+ static void
+ cc_display_panel_init (CcDisplayPanel *self)
+ {
+@@ -1136,6 +1173,15 @@ cc_display_panel_init (CcDisplayPanel *self)
+                            self,
+                            G_CONNECT_SWAPPED);
+   on_night_light_enabled_changed_cb (self);
++
++  self->mutter_wayland_settings = g_settings_new (MUTTER_WAYLAND_SCHEMA);
++  g_settings_bind_with_mapping (self->mutter_wayland_settings,
++                                MUTTER_XWAYLAND_SCALING_FACTOR,
++                                self->scale_legacy_apps_row, "active",
++                                G_SETTINGS_BIND_DEFAULT,
++                                get_automatic_xwayland_scaling_factor,
++                                set_automatic_xwayland_scaling_factor,
++                                NULL, NULL);
+ }
+ 
+ CcDisplayConfigManager *
