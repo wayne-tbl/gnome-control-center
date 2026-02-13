@@ -14,10 +14,6 @@
 #define USBCONFIG_DBUS_PATH            "/io/FuriOS/USBConfig"
 #define USBCONFIG_DBUS_INTERFACE       "io.FuriOS.USBConfig"
 
-#define POWERCONFIG_DBUS_NAME          "io.FuriOS.BatmanPowerConfig"
-#define POWERCONFIG_DBUS_PATH          "/io/FuriOS/BatmanPowerConfig"
-#define POWERCONFIG_DBUS_INTERFACE     "io.FuriOS.BatmanPowerConfig"
-
 #define MTP_SERVER_SERVICE             "mtp-server.service"
 
 struct _CcUsbPanel {
@@ -33,7 +29,6 @@ struct _CcUsbPanel {
   char             *path;
 
   GDBusProxy       *usbconfig_proxy;
-  GDBusProxy       *powerconfig_proxy;
 };
 
 G_DEFINE_TYPE (CcUsbPanel, cc_usb_panel, CC_TYPE_PANEL)
@@ -46,7 +41,6 @@ cc_usb_panel_finalize (GObject *object)
   g_free (self->path);
 
   g_clear_object (&self->usbconfig_proxy);
-  g_clear_object (&self->powerconfig_proxy);
 
   G_OBJECT_CLASS (cc_usb_panel_parent_class)->finalize (object);
 }
@@ -150,15 +144,15 @@ usb_get_mounted_file (CcUsbPanel *self)
 }
 
 static void
-powerconfig_set (CcUsbPanel *self, const char *method, const char *mode)
+usbconfig_set (CcUsbPanel *self, const char *method, const char *mode)
 {
-  if (!self->powerconfig_proxy) {
-    g_debug ("Power config proxy not initialized");
+  if (!self->usbconfig_proxy) {
+    g_debug ("USB config proxy not initialized");
     return;
   }
 
   g_dbus_proxy_call(
-    self->powerconfig_proxy,
+    self->usbconfig_proxy,
     method,
     g_variant_new("(s)", mode),
     G_DBUS_CALL_FLAGS_NONE,
@@ -170,21 +164,21 @@ powerconfig_set (CcUsbPanel *self, const char *method, const char *mode)
 }
 
 static char *
-powerconfig_get (CcUsbPanel *self, const char *prop)
+usbconfig_get (CcUsbPanel *self, const char *prop)
 {
   GError *error = NULL;
   GVariant *result;
-  char *power_role = NULL;
+  char *value = NULL;
 
-  if (!self->powerconfig_proxy) {
-    g_debug ("Power config proxy not initialized");
+  if (!self->usbconfig_proxy) {
+    g_debug ("USB config proxy not initialized");
     return NULL;
   }
 
   result = g_dbus_proxy_call_sync(
-    self->powerconfig_proxy,
+    self->usbconfig_proxy,
     "org.freedesktop.DBus.Properties.Get",
-    g_variant_new ("(ss)", POWERCONFIG_DBUS_INTERFACE, prop),
+    g_variant_new ("(ss)", USBCONFIG_DBUS_INTERFACE, prop),
     G_DBUS_CALL_FLAGS_NONE,
     -1,
     NULL,
@@ -198,14 +192,14 @@ powerconfig_get (CcUsbPanel *self, const char *prop)
   }
 
   if (result) {
-    GVariant *role_variant;
-    g_variant_get (result, "(v)", &role_variant);
-    power_role = g_strdup (g_variant_get_string (role_variant, NULL));
-    g_variant_unref (role_variant);
+    GVariant *variant;
+    g_variant_get (result, "(v)", &variant);
+    value = g_strdup (g_variant_get_string (variant, NULL));
+    g_variant_unref (variant);
     g_variant_unref (result);
   }
 
-  return power_role;
+  return value;
 }
 
 static void
@@ -281,8 +275,9 @@ cc_usb_panel_power_role_changed (GtkCheckButton *button, CcUsbPanel *self)
     return;
 
   g_debug ("Selected USB Power Role: %s", selected_role);
-  powerconfig_set (self, "SetPowerRole", selected_role);
-  powerconfig_set (self, "SetPreferredRole", selected_role);
+
+  usbconfig_set (self, "SetPowerRole", selected_role);
+  usbconfig_set (self, "SetPreferredRole", selected_role);
 }
 
 static void
@@ -442,22 +437,6 @@ cc_usb_panel_init (CcUsbPanel *self)
     g_clear_error (&error);
   }
 
-  self->powerconfig_proxy = g_dbus_proxy_new_for_bus_sync(
-    G_BUS_TYPE_SYSTEM,
-    G_DBUS_PROXY_FLAGS_NONE,
-    NULL,
-    POWERCONFIG_DBUS_NAME,
-    POWERCONFIG_DBUS_PATH,
-    POWERCONFIG_DBUS_INTERFACE,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_debug ("Error creating power config proxy: %s", error->message);
-    g_clear_error (&error);
-  }
-
   char *current_state = usb_get_current_state (self);
   if (current_state) {
     g_signal_connect (G_OBJECT (self->usb_state_mtp), "toggled", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
@@ -487,7 +466,7 @@ cc_usb_panel_init (CcUsbPanel *self)
     gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_none), FALSE);
   }
 
-  char *preferred_role = powerconfig_get (self, "PreferredRole");
+  char *preferred_role = usbconfig_get (self, "PreferredRole");
 
   if (preferred_role) {
     g_signal_connect (G_OBJECT (self->power_role_sink), "toggled", G_CALLBACK (cc_usb_panel_power_role_changed), self);
@@ -506,7 +485,7 @@ cc_usb_panel_init (CcUsbPanel *self)
 
     g_free (preferred_role);
   } else {
-    g_debug ("Failed to get PreferredRole from PowerConfig, marking as unavailable");
+    g_debug ("Failed to get PreferredRole from USBConfig, marking as unavailable");
     gtk_widget_set_sensitive (GTK_WIDGET (self->power_role_sink), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->power_role_source), FALSE);
   }
