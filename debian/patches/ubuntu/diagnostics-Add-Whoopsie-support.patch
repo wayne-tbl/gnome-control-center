@@ -12,10 +12,10 @@ Subject: diagnostics: Add Whoopsie support
  6 files changed, 268 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index d4ed8e2..9e456ea 100644
+index 696d30c..7b10e6c 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -313,6 +313,14 @@ config_h.set('HAVE_LOCATION_SERVICES', location_services.enabled(),
+@@ -329,6 +329,14 @@ config_h.set('HAVE_LOCATION_SERVICES', location_services.enabled(),
  # Snap support and wellbeing panel
  json_glib_dep = dependency('json-glib-1.0')
  
@@ -30,7 +30,7 @@ index d4ed8e2..9e456ea 100644
  if host_is_linux
    # ModemManager
    mm_dep =  dependency('mm-glib', version: '>= 0.7')
-@@ -419,6 +427,7 @@ summary({
+@@ -434,6 +442,7 @@ summary({
      'IBus': enable_ibus,
      'Snap': enable_snap,
      'Malcontent': enable_malcontent,
@@ -39,10 +39,10 @@ index d4ed8e2..9e456ea 100644
    section: 'Optional Dependencies',
    bool_yn: true,
 diff --git a/meson_options.txt b/meson_options.txt
-index 9f39e84..a7513c5 100644
+index 89d11be..4e1f5d9 100644
 --- a/meson_options.txt
 +++ b/meson_options.txt
-@@ -10,3 +10,4 @@ option('profile', type: 'combo', choices: ['default','development'], value: 'def
+@@ -9,3 +9,4 @@ option('profile', type: 'combo', choices: ['default','development'], value: 'def
  option('malcontent', type: 'boolean', value: false, description: 'build with malcontent support')
  option('distributor_logo', type: 'string', description: 'absolute path to distributor logo for the About panel')
  option('dark_mode_distributor_logo', type: 'string', description: 'absolute path to distributor logo dark mode variant')

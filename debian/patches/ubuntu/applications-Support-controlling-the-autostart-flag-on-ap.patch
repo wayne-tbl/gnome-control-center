@@ -32,9 +32,11 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
  .../gnome-applications-panel.desktop.in            |   2 +-
  3 files changed, 422 insertions(+), 4 deletions(-)
 
+diff --git a/panels/applications/cc-applications-panel.blp b/panels/applications/cc-applications-panel.blp
+index e000d1e..f92ece4 100644
 --- a/panels/applications/cc-applications-panel.blp
 +++ b/panels/applications/cc-applications-panel.blp
-@@ -242,6 +242,14 @@ template $CcApplicationsPanel: $CcPanel
+@@ -242,6 +242,14 @@ template $CcApplicationsPanel: $CcPanel {
                notify::active => $background_cb(template);
              }
  
@@ -49,6 +51,8 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
              Adw.SwitchRow screenshots_row {
                title: _("Scr_eenshots");
                subtitle: _("Take pictures of the screen at any time");
+diff --git a/panels/applications/cc-applications-panel.c b/panels/applications/cc-applications-panel.c
+index 71cb54e..02a4ebf 100644
 --- a/panels/applications/cc-applications-panel.c
 +++ b/panels/applications/cc-applications-panel.c
 @@ -55,6 +55,8 @@
@@ -365,7 +369,7 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
  /* --- screenshot --- */
  
  static void
-@@ -954,6 +1240,7 @@ update_permissions_group (CcApplications
+@@ -954,6 +1240,7 @@ update_permissions_group (CcApplicationsPanel *self,
    g_autofree gchar *portal_app_id = get_portal_app_id (info);
    gboolean set, allowed, disabled;
    gboolean has_any = FALSE;
@@ -373,7 +377,7 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
  
    disabled = g_settings_get_boolean (self->search_settings, "disable-external");
    get_search_enabled (self, app_id, &set, &allowed);
-@@ -973,11 +1260,13 @@ update_permissions_group (CcApplications
+@@ -973,11 +1260,13 @@ update_permissions_group (CcApplicationsPanel *self,
        gtk_widget_set_visible (GTK_WIDGET (self->shortcuts_row), FALSE);
      }
  
@@ -388,7 +392,7 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
      {
        g_clear_object (&self->notification_settings);
        get_notification_allowed (self, portal_app_id, &set, &allowed);
-@@ -990,6 +1279,11 @@ update_permissions_group (CcApplications
+@@ -990,6 +1279,11 @@ update_permissions_group (CcApplicationsPanel *self,
        gtk_widget_set_visible (GTK_WIDGET (self->background_row), set);
        has_any |= set;
  
@@ -400,7 +404,7 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
        get_wallpaper_allowed (self, portal_app_id, &set, &allowed);
        adw_switch_row_set_active (self->wallpaper_row, allowed);
        gtk_widget_set_visible (GTK_WIDGET (self->wallpaper_row), set);
-@@ -1036,7 +1330,13 @@ update_permissions_group (CcApplications
+@@ -1036,7 +1330,13 @@ update_permissions_group (CcApplicationsPanel *self,
        g_set_object (&self->notification_settings, get_notification_settings (app_id));
        get_notification_allowed (self, app_id, &set, &allowed);
        adw_switch_row_set_active (self->notifications_row, allowed);
@@ -506,7 +510,7 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
  static void
  populate_applications (CcApplicationsPanel *self)
  {
-@@ -1632,8 +2016,31 @@ populate_applications (CcApplicationsPan
+@@ -1632,8 +2016,31 @@ populate_applications (CcApplicationsPanel *self)
        g_signal_handler_block (self->manager, self->app_filter_id);
  #endif
  
@@ -538,7 +542,7 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
    for (l = infos; l; l = l->next)
      {
        GAppInfo *info = l->data;
-@@ -1869,12 +2276,13 @@ cc_applications_panel_finalize (GObject
+@@ -1869,12 +2276,13 @@ cc_applications_panel_finalize (GObject *object)
    g_clear_object (&self->location_settings);
    g_clear_object (&self->privacy_settings);
    g_clear_object (&self->search_settings);
@@ -553,7 +557,7 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
  
    G_OBJECT_CLASS (cc_applications_panel_parent_class)->finalize (object);
  }
-@@ -1948,6 +2356,7 @@ cc_applications_panel_class_init (CcAppl
+@@ -1948,6 +2356,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_name_label);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_search_entry);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_settings_page);
@@ -561,7 +565,7 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, required_permissions_group);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, autorun_never_row);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, builtin_row);
-@@ -1992,6 +2401,7 @@ cc_applications_panel_class_init (CcAppl
+@@ -1992,6 +2401,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, view_details_button);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, toast_overlay);
  
@@ -569,6 +573,8 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
    gtk_widget_class_bind_template_callback (widget_class, camera_cb);
    gtk_widget_class_bind_template_callback (widget_class, location_cb);
    gtk_widget_class_bind_template_callback (widget_class, microphone_cb);
+diff --git a/panels/applications/gnome-applications-panel.desktop.in b/panels/applications/gnome-applications-panel.desktop.in
+index 31414dd..d6babcd 100644
 --- a/panels/applications/gnome-applications-panel.desktop.in
 +++ b/panels/applications/gnome-applications-panel.desktop.in
 @@ -12,4 +12,4 @@ StartupNotify=true

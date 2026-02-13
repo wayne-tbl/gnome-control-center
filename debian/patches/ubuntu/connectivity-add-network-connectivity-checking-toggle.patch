@@ -376,7 +376,7 @@ index e8e2863..3d9612c 100644
      <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-boot-dialog.ui</file>
      <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-dialog.ui</file>
 diff --git a/po/POTFILES.in b/po/POTFILES.in
-index 8ac5fc2..6eb9999 100644
+index f732210..7e660fb 100644
 --- a/po/POTFILES.in
 +++ b/po/POTFILES.in
 @@ -158,6 +158,7 @@ panels/privacy/bolt/cc-bolt-device-entry.c

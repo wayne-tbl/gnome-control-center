@@ -42,7 +42,7 @@ functionality to generate and show an example report is also present.
  create mode 100644 panels/privacy/telemetry/telemetry.css
 
 diff --git a/meson.build b/meson.build
-index 6d9b3f9..384ffdc 100644
+index 129ac6b..e0f943d 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -337,6 +337,14 @@ endif

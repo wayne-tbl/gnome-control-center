@@ -2440,7 +2440,7 @@ index 0000000..a636e9c
 +  </gresource>
 +</gresources>
 diff --git a/po/POTFILES.in b/po/POTFILES.in
-index 5f3be5d..8ac5fc2 100644
+index e910c9e..f732210 100644
 --- a/po/POTFILES.in
 +++ b/po/POTFILES.in
 @@ -242,6 +242,11 @@ panels/system/users/org.gnome.controlcenter.user-accounts.policy.in

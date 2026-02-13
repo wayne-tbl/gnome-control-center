@@ -7,6 +7,8 @@ Subject: multitasking-panel: Sync workspace isolation setting on tiling
  panels/multitasking/cc-multitasking-panel.c | 42 +++++++++++++++++++++++++++++
  1 file changed, 42 insertions(+)
 
+diff --git a/panels/multitasking/cc-multitasking-panel.c b/panels/multitasking/cc-multitasking-panel.c
+index 74dccbf..59a34c7 100644
 --- a/panels/multitasking/cc-multitasking-panel.c
 +++ b/panels/multitasking/cc-multitasking-panel.c
 @@ -33,6 +33,7 @@ struct _CcMultitaskingPanel
@@ -17,7 +19,7 @@ Subject: multitasking-panel: Sync workspace isolation setting on tiling
    GSettings       *wm_settings;
  
    CcIllustratedRow *active_screen_edges_row;
-@@ -136,6 +137,25 @@ check_session_supports_save_restore (CcM
+@@ -136,6 +137,25 @@ check_session_supports_save_restore (CcMultitaskingPanel *self)
                            self);
  }
  
@@ -43,7 +45,7 @@ Subject: multitasking-panel: Sync workspace isolation setting on tiling
  /* GObject overrides */
  
  static void
-@@ -148,6 +168,7 @@ cc_multitasking_panel_finalize (GObject
+@@ -148,6 +168,7 @@ cc_multitasking_panel_finalize (GObject *object)
    g_clear_object (&self->session_settings);
    g_clear_object (&self->shell_settings);
    g_clear_object (&self->dock_settings);
@@ -51,7 +53,7 @@ Subject: multitasking-panel: Sync workspace isolation setting on tiling
    g_clear_object (&self->wm_settings);
  
    G_OBJECT_CLASS (cc_multitasking_panel_parent_class)->finalize (object);
-@@ -294,5 +315,26 @@ cc_multitasking_panel_init (CcMultitaski
+@@ -294,5 +315,26 @@ cc_multitasking_panel_init (CcMultitaskingPanel *self)
                         self->dock_each_monitor_radio,
                         "active",
                         G_SETTINGS_BIND_DEFAULT);

@@ -16,9 +16,11 @@ Forwarded: not-need
  panels/multitasking/cc-multitasking-panel.c   | 56 +++++++++++++++++++++++++++
  2 files changed, 77 insertions(+)
 
+diff --git a/panels/multitasking/cc-multitasking-panel.blp b/panels/multitasking/cc-multitasking-panel.blp
+index 2564ac3..7fba646 100644
 --- a/panels/multitasking/cc-multitasking-panel.blp
 +++ b/panels/multitasking/cc-multitasking-panel.blp
-@@ -139,6 +139,27 @@ template $CcMultitaskingPanel: $CcPanel
+@@ -139,6 +139,27 @@ template $CcMultitaskingPanel: $CcPanel {
              group: all_workspaces_radio;
            }
          }
@@ -46,6 +48,8 @@ Forwarded: not-need
        }
      };
    };
+diff --git a/panels/multitasking/cc-multitasking-panel.c b/panels/multitasking/cc-multitasking-panel.c
+index 372f463..74dccbf 100644
 --- a/panels/multitasking/cc-multitasking-panel.c
 +++ b/panels/multitasking/cc-multitasking-panel.c
 @@ -32,6 +32,7 @@ struct _CcMultitaskingPanel
@@ -65,10 +69,11 @@ Forwarded: not-need
    CcIllustratedRow *hot_corner_row;
    GtkSwitch       *hot_corner_switch;
    AdwSpinRow      *number_of_workspaces_spin_row;
-@@ -53,6 +56,24 @@ struct _CcMultitaskingPanel
+@@ -52,6 +55,24 @@ struct _CcMultitaskingPanel
+ 
  CC_PANEL_REGISTER (CcMultitaskingPanel, cc_multitasking_panel)
  
- static void
++static void
 +keep_dock_settings_in_sync (CcMultitaskingPanel *self)
 +{
 +  gboolean switcher_isolate_workspaces;
@@ -86,11 +91,10 @@ Forwarded: not-need
 +    }
 +}
 +
-+static void
+ static void
  fixed_workspaces_changed_cb (CcMultitaskingPanel *self)
  {
-   gboolean multi_workspaces, fixed_workspaces;
-@@ -126,6 +147,7 @@ cc_multitasking_panel_finalize (GObject
+@@ -126,6 +147,7 @@ cc_multitasking_panel_finalize (GObject *object)
    g_clear_object (&self->mutter_settings);
    g_clear_object (&self->session_settings);
    g_clear_object (&self->shell_settings);
@@ -98,7 +102,7 @@ Forwarded: not-need
    g_clear_object (&self->wm_settings);
  
    G_OBJECT_CLASS (cc_multitasking_panel_parent_class)->finalize (object);
-@@ -158,12 +180,18 @@ cc_multitasking_panel_class_init (CcMult
+@@ -158,12 +180,18 @@ cc_multitasking_panel_class_init (CcMultitaskingPanelClass *klass)
    gtk_widget_class_bind_template_child (widget_class, CcMultitaskingPanel, workspaces_primary_display_radio);
    gtk_widget_class_bind_template_child (widget_class, CcMultitaskingPanel, workspaces_span_displays_radio);
  
@@ -117,7 +121,7 @@ Forwarded: not-need
    g_resources_register (cc_multitasking_get_resource ());
  
    gtk_widget_init_template (GTK_WIDGET (self));
-@@ -239,4 +267,32 @@ cc_multitasking_panel_init (CcMultitaski
+@@ -239,4 +267,32 @@ cc_multitasking_panel_init (CcMultitaskingPanel *self)
        cc_illustrated_row_set_resource (self->active_screen_edges_row,
                                         "/org/gnome/control-center/multitasking/assets/active-screen-edges-rtl.svg");
      }
