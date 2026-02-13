@@ -1,8 +1,27 @@
-gnome-control-center (1:50~beta-1) UNRELEASED; urgency=medium
+gnome-control-center (1:50~beta-0ubuntu1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * d/p: Refresh
+  * d/p: Remove fractional scaling configuration option
+  * d/p: Add patch to configure X11 legacy apps (LP: #2110515)
+  * debian/control: Bump build dependencies as per 50 update.
+    Adding new dependencies introduced by 50.alpha
+  * d/p: Revert code requiring newer malcontent
+  * d/control: Lower malcontent requirement
+  * d/p/telemetry: Add new telemetry pages to POTFILE
+  * d/p/telemetry: Use a different icon and adjust strings
+  * d/p/ubuntu: Add security panel action row to open the Ubuntu Security Center
 
- -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Fri, 13 Feb 2026 13:05:00 +0100
+  [ kkuo ]
+  * d/p/u: Rename diagnostics panel to telemetry
+  * d/p/u: Add Ubuntu Insights support to the telemetry panel.
+    This allows the user to control Ubuntu Insights consent via the
+    telemetry panel, and allows the user to generate and preview an example
+    report.
+    Some overall changes were also made to the telemetry panel to improve
+    accessibility and to make way for the new Ubuntu Insights integration.
+
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Sat, 14 Feb 2026 04:15:14 +0100
 
 gnome-control-center (1:50~alpha-0ubuntu1) resolute; urgency=medium
 
