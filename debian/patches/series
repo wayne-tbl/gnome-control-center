@@ -26,3 +26,4 @@ ubuntu/applications-Support-controlling-the-autostart-flag-on-ap.patch
 ubuntu/remove-donate.patch
 ubuntu/meson:relax-malcontent-version.patch
 ubuntu/telemetry-Repurpose-diagnostics-panel-for-all-telemetry-a.patch
+ubuntu/Revert-wellbeing-Synchronize-settings-with-malcontent.patch
