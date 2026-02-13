@@ -1,6 +1,6 @@
 project(
   'gnome-control-center', 'c',
-        version : '50.alpha',
+        version : '50.beta',
         license : 'GPL2+',
   meson_version : '>= 0.60.0'
 )
@@ -220,7 +220,7 @@ gnome_desktop_dep = dependency('gnome-desktop-4')
 gnome_bg_dep = dependency('gnome-bg-4')
 gnome_settings_dep = dependency('gnome-settings-daemon', version: '>= 48.rc', fallback: 'gsd')
 goa_dep = dependency('goa-1.0', version: goa_req_version, fallback: 'goa')
-gsettings_desktop_dep = dependency('gsettings-desktop-schemas', version: '>= 48.alpha')  # actually requires commit 9d55553, just after alpha
+gsettings_desktop_dep = dependency('gsettings-desktop-schemas', version: '>= 50.alpha')
 libxml_dep = dependency('libxml-2.0')
 pulse_dep = dependency('libpulse', version: pulse_req_version)
 pulse_mainloop_dep = dependency('libpulse-mainloop-glib', version: pulse_req_version)

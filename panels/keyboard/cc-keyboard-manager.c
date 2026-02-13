@@ -601,7 +601,7 @@ reload_sections (CcKeyboardManager *self)
   GDir *dir;
   gchar *default_wm_keybindings[] = { "Mutter", "GNOME Shell", NULL };
   /* Load WM keybindings */
-  g_auto(GStrv) wm_keybindings = g_strdupv (default_wm_keybindings);;
+  g_auto(GStrv) wm_keybindings = g_strdupv (default_wm_keybindings);
   const gchar * const * data_dirs;
   guint i;
 

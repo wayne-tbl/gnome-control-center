@@ -1,4 +1,36 @@
 ================
+Version 50.beta
+================
+
+- Various translation updates
+
+Build
+- Update libgnome-volume-control revision (fixing sound/bluetooth crash)
+
+Accessibility
+- Add new text-size setting with slider
+- Map crosshairs length nonlinearly and set new default
+
+Date & Time
+- Add first day of week settings
+
+Keyboard
+- Set system keyboard mapping on single user systems
+
+Power
+- Fix infinite loop when switching battery charge modes
+
+Remote Desktop
+- Handle when keyring is locked
+
+Wacom
+- Show link to mouse settings for pucks
+
+Wellbeing
+- Disable info button when using malcontent
+- Synchronize settings with malcontent
+
+================
 Version 50.alpha
 ================
 

@@ -6,7 +6,7 @@
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -19,7 +19,7 @@
  * Authors:
  *  - Philip Withnall <pwithnall@gnome.org>
  *
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
 #include "config.h"
@@ -117,6 +117,7 @@ static void disable_screen_time_recording_button_clicked_cb (GtkButton *button,
                                                              gpointer   user_data);
 static void update_screen_time_limits_enabled (CcWellbeingPanel *self);
 static void update_daily_time_limit_and_grayscale_row_sensitivity (CcWellbeingPanel *self);
+static void update_settings_bindings (CcWellbeingPanel *self);
 
 static void movement_break_schedule_notify_selected_item_cb (GObject    *object,
                                                              GParamSpec *pspec,
@@ -245,6 +246,7 @@ get_session_limits_cb (GObject          *source,
       !g_error_matches (error, MCT_MANAGER_ERROR, MCT_MANAGER_ERROR_DISABLED))
     g_warning ("Error retrieving session limits: %s", error->message);
 
+  update_settings_bindings (self);
   update_daily_time_limit_and_grayscale_row_sensitivity (self);
 }
 
@@ -325,6 +327,55 @@ is_parental_controls_enabled (CcWellbeingPanel *self)
 #endif
 
 static void
+update_settings_bindings (CcWellbeingPanel *self)
+{
+#ifdef HAVE_MALCONTENT
+  if (is_parental_controls_enabled (self))
+    {
+      gboolean daily_limit;
+      unsigned int limit_secs;
+
+      g_settings_unbind (self->screen_time_limit_row, "active");
+      g_settings_unbind (self->daily_time_limit_row, "duration");
+      g_settings_unbind (self->grayscale_row, "active");
+
+      g_clear_signal_handler (&self->screen_time_limits_settings_writable_changed_daily_limit_seconds_id, self->screen_time_limits_settings);
+
+      daily_limit = mct_session_limits_get_daily_limit (self->limits, &limit_secs);
+
+      adw_switch_row_set_active (self->screen_time_limit_row, daily_limit);
+      cc_duration_row_set_duration (CC_DURATION_ROW (self->daily_time_limit_row), limit_secs / 60);
+      adw_switch_row_set_active (self->grayscale_row, FALSE);
+
+      return;
+    }
+#endif
+  g_settings_bind (self->screen_time_limits_settings,
+                   "daily-limit-enabled",
+                   self->screen_time_limit_row,
+                   "active",
+                   G_SETTINGS_BIND_DEFAULT | G_SETTINGS_BIND_NO_SENSITIVITY);
+  g_settings_bind_with_mapping (self->screen_time_limits_settings,
+                                "daily-limit-seconds",
+                                self->daily_time_limit_row,
+                                "duration",
+                                G_SETTINGS_BIND_DEFAULT | G_SETTINGS_BIND_NO_SENSITIVITY,
+                                seconds_to_minutes,
+                                minutes_to_seconds,
+                                NULL,
+                                NULL);
+  g_settings_bind (self->screen_time_limits_settings,
+                   "grayscale",
+                   self->grayscale_row,
+                   "active",
+                   G_SETTINGS_BIND_DEFAULT | G_SETTINGS_BIND_NO_SENSITIVITY);
+
+  self->screen_time_limits_settings_changed_history_enabled_id =
+      g_signal_connect_swapped (self->screen_time_limits_settings, "changed::history-enabled",
+                                G_CALLBACK (update_screen_time_limits_enabled), self);
+}
+
+static void
 cc_wellbeing_panel_init (CcWellbeingPanel *self)
 {
   g_autoptr(GtkCssProvider) provider = NULL;
@@ -377,30 +428,7 @@ cc_wellbeing_panel_init (CcWellbeingPanel *self)
   /* Set up settings bindings for screen time limits. */
   self->screen_time_limits_settings = g_settings_new ("org.gnome.desktop.screen-time-limits");
 
-  g_settings_bind (self->screen_time_limits_settings,
-                   "daily-limit-enabled",
-                   self->screen_time_limit_row,
-                   "active",
-                   G_SETTINGS_BIND_DEFAULT | G_SETTINGS_BIND_NO_SENSITIVITY);
-  g_settings_bind_with_mapping (self->screen_time_limits_settings,
-                                "daily-limit-seconds",
-                                self->daily_time_limit_row,
-                                "duration",
-                                G_SETTINGS_BIND_DEFAULT | G_SETTINGS_BIND_NO_SENSITIVITY,
-                                seconds_to_minutes,
-                                minutes_to_seconds,
-                                NULL,
-                                NULL);
-  g_settings_bind (self->screen_time_limits_settings,
-                   "grayscale",
-                   self->grayscale_row,
-                   "active",
-                   G_SETTINGS_BIND_DEFAULT | G_SETTINGS_BIND_NO_SENSITIVITY);
-
-  self->screen_time_limits_settings_changed_history_enabled_id =
-      g_signal_connect_swapped (self->screen_time_limits_settings, "changed::history-enabled",
-                                G_CALLBACK (update_screen_time_limits_enabled), self);
-
+  update_settings_bindings (self);
   update_screen_time_limits_enabled (self);
 
   /* Sensitivity has to be handled separately for the screen time settings
@@ -560,6 +588,8 @@ update_daily_time_limit_and_grayscale_row_sensitivity (CcWellbeingPanel *self)
   gtk_widget_set_sensitive (GTK_WIDGET (self->grayscale_row),
                             !session_limits_enabled &&
                             history_enabled && daily_limit_enabled && grayscale_writable);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->screen_time_statistics_info_button),
+                            !session_limits_enabled);
 }
 
 static void

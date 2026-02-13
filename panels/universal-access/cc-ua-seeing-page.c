@@ -36,6 +36,7 @@
 # include "config.h"
 #endif
 
+#include <math.h>
 #include <glib/gi18n-lib.h>
 
 #include "cc-list-row.h"
@@ -50,7 +51,8 @@ struct _CcUaSeeingPage
   AdwSwitchRow       *high_contrast_row;
   AdwSwitchRow       *status_shapes_row;
   GtkSwitch          *reduced_motion_switch;
-  AdwSwitchRow       *large_text_row;
+  CcListRow          *text_size_row;
+  GtkScale           *text_size_scale;
   CcListRow          *cursor_size_row;
   AdwSwitchRow       *sound_keys_row;
   AdwSwitchRow       *show_scrollbars_row;
@@ -60,6 +62,11 @@ struct _CcUaSeeingPage
 
   GDBusProxy         *proxy;
 
+  AdwDialog          *text_size_dialog;
+  GtkLabel           *text_size_preview_label;
+  GtkLabel           *text_size_label_small;
+  GtkLabel           *text_size_label_large;
+
   GSettings          *kb_settings;
   GSettings          *interface_settings;
   GSettings          *application_settings;
@@ -67,6 +74,77 @@ struct _CcUaSeeingPage
 };
 
 G_DEFINE_TYPE (CcUaSeeingPage, cc_ua_seeing_page, ADW_TYPE_NAVIGATION_PAGE)
+
+static void
+set_label_scale (CcUaSeeingPage *self,
+                 GtkLabel       *label,
+                 double          scale)
+{
+  PangoContext *pango_ctx;
+  PangoFontDescription *font_desc;
+  double default_font_size;
+  g_autoptr(PangoAttribute) attr = NULL;
+  g_autoptr(PangoAttrList) new_attrs = NULL;
+
+  pango_ctx = gtk_widget_get_pango_context (GTK_WIDGET (label));
+  font_desc = pango_context_get_font_description (pango_ctx);
+
+  if (font_desc)
+    {
+      default_font_size = pango_font_description_get_size (font_desc);
+
+      /* We need absolute size without text scaling applied */
+      if (pango_font_description_get_size_is_absolute (font_desc))
+        default_font_size /= g_settings_get_double (self->interface_settings,
+                                                    KEY_TEXT_SCALING_FACTOR);
+      else
+        default_font_size *= 96.0 / 72; /* 96 dpi */
+    }
+  else
+    {
+      default_font_size = 11 * PANGO_SCALE * 96.0 / 72; /* Assuming 11 pt, 96 dpi */
+    }
+
+  attr = pango_attr_size_new_absolute (round (scale * default_font_size));
+  new_attrs = pango_attr_list_new ();
+  pango_attr_list_insert (new_attrs, g_steal_pointer (&attr));
+
+  gtk_label_set_attributes (label, new_attrs);
+}
+
+static void
+update_text_size_row_label (CcUaSeeingPage *self)
+{
+  const gchar *label = NULL;
+  double text_scaling_factor;
+
+  text_scaling_factor = g_settings_get_double (self->interface_settings,
+                                               KEY_TEXT_SCALING_FACTOR);
+  label = text_scaling_factor > DPI_FACTOR_NORMAL ? _("Large") : _("Default");
+  cc_list_row_set_secondary_label (self->text_size_row, label);
+}
+
+static void
+apply_text_size_changes (CcUaSeeingPage *self)
+{
+  g_settings_set_double (self->interface_settings, KEY_TEXT_SCALING_FACTOR,
+                         gtk_range_get_value (GTK_RANGE (self->text_size_scale)));
+  adw_dialog_close (self->text_size_dialog);
+
+  update_text_size_row_label (self);
+}
+
+static void
+ua_text_size_value_changed (GtkRange      *text_size_range,
+                            gpointer       user_data)
+{
+  CcUaSeeingPage *self = CC_UA_SEEING_PAGE (user_data);
+  double value = gtk_range_get_value (text_size_range);
+
+  gtk_range_set_value (text_size_range, value);
+
+  set_label_scale (self, self->text_size_preview_label, value);
+}
 
 static void
 on_orca_proxy_ready (GObject      *source_object,
@@ -85,34 +163,6 @@ on_orca_proxy_ready (GObject      *source_object,
       g_warning ("Error creating proxy: %s", error->message);
       gtk_widget_set_visible (GTK_WIDGET  (self->configure_screen_reader_row), FALSE);
     }
-}
-
-static gboolean
-get_large_text_mapping (GValue   *value,
-                        GVariant *variant,
-                        gpointer  user_data)
-{
-  gdouble factor;
-
-  factor = g_variant_get_double (variant);
-  g_value_set_boolean (value, factor > DPI_FACTOR_NORMAL);
-
-  return TRUE;
-}
-
-static GVariant *
-set_large_text_mapping (const GValue       *value,
-                        const GVariantType *expected_type,
-                        gpointer            user_data)
-{
-  GSettings *settings = user_data;
-
-  if (g_value_get_boolean (value))
-    return g_variant_new_double (DPI_FACTOR_LARGE);
-
-  g_settings_reset (settings, KEY_TEXT_SCALING_FACTOR);
-
-  return NULL;
 }
 
 static gboolean
@@ -203,6 +253,16 @@ ua_cursor_row_activated_cb (CcUaSeeingPage *self)
 }
 
 static void
+ua_text_size_row_activated_cb (CcUaSeeingPage *self)
+{
+  /* Intiialize scale with the current value. */
+  gtk_range_set_value (GTK_RANGE (self->text_size_scale),
+                       g_settings_get_double (self->interface_settings,
+                                              KEY_TEXT_SCALING_FACTOR));
+  adw_dialog_present (self->text_size_dialog, GTK_WIDGET (self));
+}
+
+static void
 orca_show_preferences_cb (GObject      *source_object,
                           GAsyncResult *res,
                           gpointer      data)
@@ -262,7 +322,8 @@ cc_ua_seeing_page_class_init (CcUaSeeingPageClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, high_contrast_row);
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, status_shapes_row);
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, reduced_motion_switch);
-  gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, large_text_row);
+  gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, text_size_row);
+  gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, text_size_scale);
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, cursor_size_row);
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, sound_keys_row);
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, show_scrollbars_row);
@@ -271,7 +332,14 @@ cc_ua_seeing_page_class_init (CcUaSeeingPageClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, configure_screen_reader_row);
 
   gtk_widget_class_bind_template_callback (widget_class, ua_cursor_row_activated_cb);
+  gtk_widget_class_bind_template_callback (widget_class, ua_text_size_row_activated_cb);
   gtk_widget_class_bind_template_callback (widget_class, configure_screen_reader_activated_cb);
+  gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, text_size_dialog);
+  gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, text_size_preview_label);
+  gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, text_size_label_small);
+  gtk_widget_class_bind_template_child (widget_class, CcUaSeeingPage, text_size_label_large);
+
+  gtk_widget_class_bind_template_callback (widget_class, apply_text_size_changes);
 }
 
 static void
@@ -303,14 +371,15 @@ cc_ua_seeing_page_init (CcUaSeeingPage *self)
                                 self->a11y_interface_settings,
                                 NULL);
 
-  /* Large Text */
-  g_settings_bind_with_mapping (self->interface_settings, KEY_TEXT_SCALING_FACTOR,
-                                self->large_text_row,
-                                "active", G_SETTINGS_BIND_DEFAULT,
-                                get_large_text_mapping,
-                                set_large_text_mapping,
-                                self->interface_settings,
-                                NULL);
+  /* Text Size */
+  gtk_range_set_value (GTK_RANGE (self->text_size_scale),
+                       g_settings_get_double (self->interface_settings,
+                                              KEY_TEXT_SCALING_FACTOR));
+  g_signal_connect (GTK_RANGE (self->text_size_scale), "value-changed",
+                    G_CALLBACK (ua_text_size_value_changed), self);
+  update_text_size_row_label (self);
+  set_label_scale (self, self->text_size_label_small, 1.0);
+  set_label_scale (self, self->text_size_label_large, 2.0);
 
   /* Sound Keys */
   g_settings_bind (self->kb_settings, KEY_TOGGLEKEYS_ENABLED,

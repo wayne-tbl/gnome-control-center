@@ -1114,7 +1114,7 @@ add_scheme (CcApplicationsPanel *self,
   g_autofree gchar *title = NULL;
   GtkWidget *button;
   GtkWidget *row;
-  gchar *scheme;
+  const gchar *scheme;
 
   scheme = strrchr (type, '/') + 1;
   title = g_strdup_printf ("%s://", scheme);
