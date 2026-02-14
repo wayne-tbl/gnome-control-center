@@ -1,4 +1,4 @@
-gnome-control-center (1:50~beta-0ubuntu1) UNRELEASED; urgency=medium
+gnome-control-center (1:50~beta-0ubuntu1) resolute; urgency=medium
 
   * New upstream release
   * d/p: Refresh
@@ -21,7 +21,7 @@ gnome-control-center (1:50~beta-0ubuntu1) UNRELEASED; urgency=medium
     Some overall changes were also made to the telemetry panel to improve
     accessibility and to make way for the new Ubuntu Insights integration.
 
- -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Sat, 14 Feb 2026 04:15:14 +0100
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Sat, 14 Feb 2026 04:35:12 +0100
 
 gnome-control-center (1:50~alpha-0ubuntu1) resolute; urgency=medium
 
