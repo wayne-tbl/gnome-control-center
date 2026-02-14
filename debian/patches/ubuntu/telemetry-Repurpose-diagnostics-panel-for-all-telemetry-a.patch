@@ -30,7 +30,8 @@ functionality to generate and show an example report is also present.
  panels/privacy/telemetry/cc-telemetry-page.h       |  33 ++
  panels/privacy/telemetry/meson.build               |  18 +
  panels/privacy/telemetry/telemetry.css             |   8 +
- 15 files changed, 1025 insertions(+), 11 deletions(-)
+ po/POTFILES.in                                     |   4 +
+ 16 files changed, 1029 insertions(+), 11 deletions(-)
  create mode 100644 panels/privacy/privacy.gresource.xml.in
  create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.blp
  create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.c
@@ -1245,3 +1246,18 @@ index 0000000..281d579
 +  min-height: 0px;
 +  min-width: 0px;
 +}
+diff --git a/po/POTFILES.in b/po/POTFILES.in
+index 7e660fb..dfb6294 100644
+--- a/po/POTFILES.in
++++ b/po/POTFILES.in
+@@ -173,6 +173,10 @@ panels/privacy/firmware-security/cc-firmware-security-utils.c
+ panels/privacy/gnome-privacy-panel.desktop.in
+ panels/privacy/location/cc-location-page.blp
+ panels/privacy/screen/cc-screen-page.blp
++panels/privacy/telemetry/cc-telemetry-insights-example.blp
++panels/privacy/telemetry/cc-telemetry-insights-example.c
++panels/privacy/telemetry/cc-telemetry-page.blp
++panels/privacy/telemetry/cc-telemetry-page.c
+ panels/privacy/usage/cc-usage-page.blp
+ panels/search/cc-search-locations-page.blp
+ panels/search/cc-search-locations-page.c
