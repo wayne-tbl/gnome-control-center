@@ -1,0 +1,119 @@
+From: =?utf-8?b?Ik1hcmNvIFRyZXZpc2FuIChUcmV2acOxbyki?= <mail@3v1n0.net>
+Date: Sat, 14 Feb 2026 04:12:29 +0100
+Subject: cc-privacy-panel: Add action row to launch the Ubuntu Security
+ Center
+
+---
+ panels/privacy/cc-privacy-panel.blp | 16 ++++++++++++++++
+ panels/privacy/cc-privacy-panel.c   | 36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 52 insertions(+)
+
+diff --git a/panels/privacy/cc-privacy-panel.blp b/panels/privacy/cc-privacy-panel.blp
+index 6c3d801..c9af09e 100644
+--- a/panels/privacy/cc-privacy-panel.blp
++++ b/panels/privacy/cc-privacy-panel.blp
+@@ -60,6 +60,22 @@ template $CcPrivacyPanel: $CcPanel {
+             action-name: "navigation.push";
+             action-target: "'connectivity'";
+           }
++
++          $CcListRow security_center_row {
++            title: _("Ubuntu _Security Center");
++            subtitle: _("Configure more security settings");
++            icon-name: "device-security-symbolic";
++            show-arrow: false;
++            action-name: "launch.application";
++            action-target: "'desktop-security-center_desktop-security-center.desktop'";
++
++            [suffix]
++            Image {
++              valign: center;
++              icon-name: "external-link-symbolic";
++              accessible-role: presentation;
++            }
++          }
+         }
+ 
+         Adw.PreferencesGroup {
+diff --git a/panels/privacy/cc-privacy-panel.c b/panels/privacy/cc-privacy-panel.c
+index efae061..fcd1df8 100644
+--- a/panels/privacy/cc-privacy-panel.c
++++ b/panels/privacy/cc-privacy-panel.c
+@@ -20,6 +20,8 @@
+ 
+ #include <config.h>
+ 
++#include <gio/gdesktopappinfo.h>
++
+ #include "cc-privacy-panel.h"
+ 
+ #ifdef BUILD_THUNDERBOLT
+@@ -41,6 +43,7 @@ struct _CcPrivacyPanel
+ 
+   CcListRow         *bolt_row;
+   CcListRow         *location_row;
++  CcListRow         *security_center_row;
+ };
+ 
+ CC_PANEL_REGISTER (CcPrivacyPanel, cc_privacy_panel)
+@@ -59,6 +62,31 @@ cc_privacy_panel_get_help_uri (CcPanel *panel)
+     return "help:gnome-help/privacy";
+ }
+ 
++static void
++launch_application_cb (CcPanel     *panel,
++                       const gchar *action_name,
++                       GVariant    *params)
++{
++  g_autoptr (GdkAppLaunchContext) context = NULL;
++  g_autoptr (GDesktopAppInfo) app_info = NULL;
++  g_autoptr (GError) error = NULL;
++  const char *desktop_id = g_variant_get_string (params, NULL);
++
++  app_info = g_desktop_app_info_new (desktop_id);
++  if (!app_info)
++    {
++      g_warning ("Impossible to find %s application", desktop_id);
++      return;
++    }
++
++  context = gdk_display_get_app_launch_context (gtk_widget_get_display (GTK_WIDGET (panel)));
++
++  gdk_app_launch_context_set_timestamp (context, GDK_CURRENT_TIME);
++
++  if (!g_app_info_launch (G_APP_INFO (app_info), NULL, G_APP_LAUNCH_CONTEXT ( context), &error))
++    g_warning ("Launching failed: %s", error->message);
++}
++
+ static void
+ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
+ {
+@@ -69,8 +97,12 @@ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
+ 
+   gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/control-center/privacy/cc-privacy-panel.ui");
+ 
++  gtk_widget_class_install_action (widget_class, "launch.application", "s",
++                                   (GtkWidgetActionActivateFunc) launch_application_cb);
++
+   gtk_widget_class_bind_template_child (widget_class, CcPrivacyPanel, bolt_row);
+   gtk_widget_class_bind_template_child (widget_class, CcPrivacyPanel, location_row);
++  gtk_widget_class_bind_template_child (widget_class, CcPrivacyPanel, security_center_row);
+ 
+   g_type_ensure (CC_TYPE_CAMERA_PAGE);
+   g_type_ensure (CC_TYPE_CONNECTIVITY_PAGE);
+@@ -84,6 +116,7 @@ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
+ static void
+ cc_privacy_panel_init (CcPrivacyPanel *self)
+ {
++  g_autoptr (GDesktopAppInfo) security_center = NULL;
+   g_resources_register (cc_privacy_get_resource ());
+ 
+   gtk_widget_init_template (GTK_WIDGET (self));
+@@ -105,4 +138,7 @@ cc_privacy_panel_init (CcPrivacyPanel *self)
+   g_object_bind_property (location_page, "visible",
+                           self->location_row, "visible", G_BINDING_SYNC_CREATE);
+ #endif
++
++  security_center = g_desktop_app_info_new ("desktop-security-center_desktop-security-center.desktop");
++  gtk_widget_set_visible (GTK_WIDGET (self->security_center_row), !!security_center);
+ }

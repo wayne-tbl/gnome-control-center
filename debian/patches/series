@@ -27,3 +27,4 @@ ubuntu/remove-donate.patch
 ubuntu/meson:relax-malcontent-version.patch
 ubuntu/telemetry-Repurpose-diagnostics-panel-for-all-telemetry-a.patch
 ubuntu/Revert-wellbeing-Synchronize-settings-with-malcontent.patch
+ubuntu/cc-privacy-panel-Add-action-row-to-launch-the-Ubuntu-Secu.patch
