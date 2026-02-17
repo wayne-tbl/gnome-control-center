@@ -11,9 +11,9 @@ contexts.
 
 Bug-Ubuntu: https://bugs.launchpad.net/mutter/+bug/2110515
 ---
- panels/display/cc-display-panel.blp |  8 +++++++
- panels/display/cc-display-panel.c   | 48 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 56 insertions(+)
+ panels/display/cc-display-panel.blp |  8 +++++
+ panels/display/cc-display-panel.c   | 64 ++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 71 insertions(+), 1 deletion(-)
 
 diff --git a/panels/display/cc-display-panel.blp b/panels/display/cc-display-panel.blp
 index f40b2cf..85fad92 100644
@@ -35,7 +35,7 @@ index f40b2cf..85fad92 100644
            $CcListRow night_light_row {
              /* Translators: This is the redshift functionality where we suppress blue light when the sun has gone down */
 diff --git a/panels/display/cc-display-panel.c b/panels/display/cc-display-panel.c
-index d9de82c..d2205ca 100644
+index d9de82c..3333683 100644
 --- a/panels/display/cc-display-panel.c
 +++ b/panels/display/cc-display-panel.c
 @@ -43,6 +43,9 @@
@@ -91,9 +91,12 @@ index d9de82c..d2205ca 100644
  
    if (!cc_display_config_manager_get_apply_allowed (self->manager))
      {
-@@ -750,6 +761,7 @@ rebuild_ui (CcDisplayPanel *self)
+@@ -748,8 +759,9 @@ rebuild_ui (CcDisplayPanel *self)
+       self->monitor_rows = g_list_remove_link (self->monitor_rows, self->monitor_rows);
+     }
  
-   if (!self->current_config)
+-  if (!self->current_config)
++  if (!self->current_config && self->scale_legacy_apps_row_group)
      {
 +      gtk_widget_set_visible (self->scale_legacy_apps_row_group, FALSE);
        self->rebuilding_counter--;
@@ -109,16 +112,17 @@ index d9de82c..d2205ca 100644
            /* Ensure that an output is selected; note that this doesn't ensure
             * the selected output is any useful (i.e. when switching types).
             */
-@@ -820,6 +835,8 @@ rebuild_ui (CcDisplayPanel *self)
+@@ -820,6 +835,9 @@ rebuild_ui (CcDisplayPanel *self)
  
    cc_panel_set_selected_type (self, type);
  
-+  gtk_widget_set_visible (self->scale_legacy_apps_row_group, any_scaled);
++  if (self->scale_legacy_apps_row_group)
++    gtk_widget_set_visible (self->scale_legacy_apps_row_group, any_scaled);
 +
    self->rebuilding_counter--;
    update_apply_button (self);
  }
-@@ -1053,6 +1070,28 @@ session_bus_ready (GObject        *source,
+@@ -1053,6 +1071,28 @@ session_bus_ready (GObject        *source,
                             G_CONNECT_SWAPPED);
  }
  
@@ -147,12 +151,25 @@ index d9de82c..d2205ca 100644
  static void
  cc_display_panel_init (CcDisplayPanel *self)
  {
-@@ -1136,6 +1175,15 @@ cc_display_panel_init (CcDisplayPanel *self)
+@@ -1136,6 +1176,28 @@ cc_display_panel_init (CcDisplayPanel *self)
                             self,
                             G_CONNECT_SWAPPED);
    on_night_light_enabled_changed_cb (self);
 +
 +  self->mutter_wayland_settings = g_settings_new (MUTTER_WAYLAND_SCHEMA);
++
++  g_autoptr(GSettingsSchema) mutter_wayland_schema = NULL;
++  g_object_get (self->mutter_wayland_settings, "settings-schema",
++                &mutter_wayland_schema, NULL);
++
++  if (!g_settings_schema_has_key (mutter_wayland_schema, MUTTER_XWAYLAND_SCALING_FACTOR))
++    {
++      /* FIXME: Remove this when we can rely on mutter 50 schemas. */
++      gtk_widget_set_visible (self->scale_legacy_apps_row_group, FALSE);
++      self->scale_legacy_apps_row_group = NULL;
++      return;
++    }
++
 +  g_settings_bind_with_mapping (self->mutter_wayland_settings,
 +                                MUTTER_XWAYLAND_SCALING_FACTOR,
 +                                self->scale_legacy_apps_row, "active",
