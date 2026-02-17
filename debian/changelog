@@ -1,4 +1,4 @@
-gnome-control-center (1:50~beta-1ubuntu1) UNRELEASED; urgency=medium
+gnome-control-center (1:50~beta-1ubuntu1) resolute; urgency=medium
 
   * d/p: Merge with debian
   * d/p/ubuntu/display: Hide the whole preferences group.
@@ -6,7 +6,7 @@ gnome-control-center (1:50~beta-1ubuntu1) UNRELEASED; urgency=medium
   * d/p/ubuntu/display: Do not crash if mutter 50 is not installed.
     (LP: #2141837)
 
- -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Tue, 17 Feb 2026 04:17:08 +0100
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Tue, 17 Feb 2026 04:17:43 +0100
 
 gnome-control-center (1:50~beta-1) unstable; urgency=medium
 
