@@ -12,18 +12,18 @@ contexts.
 Bug-Ubuntu: https://bugs.launchpad.net/mutter/+bug/2110515
 ---
  panels/display/cc-display-panel.blp |  8 +++++++
- panels/display/cc-display-panel.c   | 46 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+)
+ panels/display/cc-display-panel.c   | 48 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+)
 
 diff --git a/panels/display/cc-display-panel.blp b/panels/display/cc-display-panel.blp
-index f40b2cf..c22576b 100644
+index f40b2cf..85fad92 100644
 --- a/panels/display/cc-display-panel.blp
 +++ b/panels/display/cc-display-panel.blp
 @@ -107,6 +107,14 @@ template $CcDisplayPanel: $CcPanel {
            visible: false;
          }
  
-+        Adw.PreferencesGroup {
++        Adw.PreferencesGroup scale_legacy_apps_row_group {
 +          Adw.SwitchRow scale_legacy_apps_row {
 +            title: C_("display setting", "Automatically Scale _Legacy Applications (X11)");
 +            subtitle: C_("display setting", "Use built-in scaling in legacy applications for better appearance. Some apps may not scale at all.");
@@ -35,7 +35,7 @@ index f40b2cf..c22576b 100644
            $CcListRow night_light_row {
              /* Translators: This is the redshift functionality where we suppress blue light when the sun has gone down */
 diff --git a/panels/display/cc-display-panel.c b/panels/display/cc-display-panel.c
-index d9de82c..9763e50 100644
+index d9de82c..d2205ca 100644
 --- a/panels/display/cc-display-panel.c
 +++ b/panels/display/cc-display-panel.c
 @@ -43,6 +43,9 @@
@@ -48,16 +48,17 @@ index d9de82c..9763e50 100644
  #define DISPLAY_CONFIG_JOIN_NAME "join"
  #define DISPLAY_CONFIG_CLONE_NAME "clone"
  
-@@ -73,6 +76,8 @@ struct _CcDisplayPanel
+@@ -73,6 +76,9 @@ struct _CcDisplayPanel
    CcNightLightPage *night_light_page;
    CcListRow        *night_light_row;
  
 +  GtkWidget        *scale_legacy_apps_row;
++  GtkWidget        *scale_legacy_apps_row_group;
 +
    UpClient *up_client;
    gboolean lid_is_closed;
  
-@@ -101,6 +106,7 @@ struct _CcDisplayPanel
+@@ -101,6 +107,7 @@ struct _CcDisplayPanel
    GtkShortcut *escape_shortcut;
  
    GSettings           *display_settings;
@@ -65,7 +66,7 @@ index d9de82c..9763e50 100644
  };
  
  enum {
-@@ -436,6 +442,7 @@ cc_display_panel_dispose (GObject *object)
+@@ -436,6 +443,7 @@ cc_display_panel_dispose (GObject *object)
    g_clear_object (&self->up_client);
  
    g_clear_object (&self->shell_proxy);
@@ -73,15 +74,16 @@ index d9de82c..9763e50 100644
  
    g_signal_handlers_disconnect_by_data (toplevel, self);
  
-@@ -602,6 +609,7 @@ cc_display_panel_class_init (CcDisplayPanelClass *klass)
+@@ -602,6 +610,8 @@ cc_display_panel_class_init (CcDisplayPanelClass *klass)
    gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, escape_shortcut);
    gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, night_light_page);
    gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, night_light_row);
 +  gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, scale_legacy_apps_row);
++  gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, scale_legacy_apps_row_group);
    gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, primary_display_row);
    gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, single_display_settings_group);
  
-@@ -727,6 +735,7 @@ rebuild_ui (CcDisplayPanel *self)
+@@ -727,6 +737,7 @@ rebuild_ui (CcDisplayPanel *self)
    guint n_usable_outputs;
    GList *outputs, *l;
    CcDisplayConfigType type;
@@ -89,15 +91,15 @@ index d9de82c..9763e50 100644
  
    if (!cc_display_config_manager_get_apply_allowed (self->manager))
      {
-@@ -750,6 +759,7 @@ rebuild_ui (CcDisplayPanel *self)
+@@ -750,6 +761,7 @@ rebuild_ui (CcDisplayPanel *self)
  
    if (!self->current_config)
      {
-+      gtk_widget_set_visible (self->scale_legacy_apps_row, FALSE);
++      gtk_widget_set_visible (self->scale_legacy_apps_row_group, FALSE);
        self->rebuilding_counter--;
        return;
      }
-@@ -774,6 +784,9 @@ rebuild_ui (CcDisplayPanel *self)
+@@ -774,6 +786,9 @@ rebuild_ui (CcDisplayPanel *self)
              adw_combo_row_set_selected (self->primary_display_row,
                                          g_list_model_get_n_items (G_LIST_MODEL (self->primary_display_list)) - 1);
  
@@ -107,16 +109,16 @@ index d9de82c..9763e50 100644
            /* Ensure that an output is selected; note that this doesn't ensure
             * the selected output is any useful (i.e. when switching types).
             */
-@@ -820,6 +833,8 @@ rebuild_ui (CcDisplayPanel *self)
+@@ -820,6 +835,8 @@ rebuild_ui (CcDisplayPanel *self)
  
    cc_panel_set_selected_type (self, type);
  
-+  gtk_widget_set_visible (self->scale_legacy_apps_row, any_scaled);
++  gtk_widget_set_visible (self->scale_legacy_apps_row_group, any_scaled);
 +
    self->rebuilding_counter--;
    update_apply_button (self);
  }
-@@ -1053,6 +1068,28 @@ session_bus_ready (GObject        *source,
+@@ -1053,6 +1070,28 @@ session_bus_ready (GObject        *source,
                             G_CONNECT_SWAPPED);
  }
  
@@ -145,7 +147,7 @@ index d9de82c..9763e50 100644
  static void
  cc_display_panel_init (CcDisplayPanel *self)
  {
-@@ -1136,6 +1173,15 @@ cc_display_panel_init (CcDisplayPanel *self)
+@@ -1136,6 +1175,15 @@ cc_display_panel_init (CcDisplayPanel *self)
                             self,
                             G_CONNECT_SWAPPED);
    on_night_light_enabled_changed_cb (self);
