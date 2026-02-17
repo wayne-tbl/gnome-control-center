@@ -1,3 +1,13 @@
+gnome-control-center (1:50~beta-1ubuntu1) UNRELEASED; urgency=medium
+
+  * d/p: Merge with debian
+  * d/p/ubuntu/display: Hide the whole preferences group.
+    We were hiding only the switch row, which was causing a visual glitch
+  * d/p/ubuntu/display: Do not crash if mutter 50 is not installed.
+    (LP: #2141837)
+
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Tue, 17 Feb 2026 04:17:08 +0100
+
 gnome-control-center (1:50~beta-1) unstable; urgency=medium
 
   * New upstream release
