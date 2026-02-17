@@ -1,3 +1,21 @@
+gnome-control-center (1:50~beta-1) unstable; urgency=medium
+
+  * New upstream release
+  * Drop kbd-lv3.patch, applied upstream.
+  * Rework Adapts-the-region*.patch.
+  * d/control: Depend on blueprint-compiler >= 0.19.0.
+  * d/p/u/region-Add-Language-Selector-button.patch: Partially rewritten so it
+    is closer to upstream.
+  * Refresh four patches that did not apply cleanly, namely:
+    d/p/u/multitasking-panel-Sync-workspace-and-monitor-isolation-d.patch
+    d/p/u/multitasking-panel-Sync-workspace-isolation-setting-on-ti.patch
+    d/p/u/applications-Launch-snap-store-if-it-is-installed.patch
+    d/p/u/applications-Support-controlling-the-autostart-flag-on-ap.patch
+  * d/p/u/meson:relax-malcontent-version.patch: Debian/Ubuntu do not have
+    Malcontent 0.14 Alpha yet; 0.13 is OK.
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Mon, 16 Feb 2026 18:02:30 -0500
+
 gnome-control-center (1:50~beta-0ubuntu1) resolute; urgency=medium
 
   * New upstream release
@@ -40,6 +58,24 @@ gnome-control-center (1:50~alpha-0ubuntu1) resolute; urgency=medium
     Malcontent 0.14 Alpha yet; 0.13 is OK.
 
  -- Nathan Pratta Teodosio <nathan.teodosio@canonical.com>  Fri, 30 Jan 2026 09:48:53 +0100
+
+gnome-control-center (1:49.4-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Tue, 27 Jan 2026 17:15:47 -0500
+
+gnome-control-center (1:49.3-1) unstable; urgency=medium
+
+  [ Jeremy Bícha ]
+  * New upstream release
+  * Enable malcontent on all Linux architectures
+  * Bump Standards Version to 4.7.3
+
+  [ Alessandro Astone ]
+  * Enable malcontent for Ubuntu as well
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Mon, 05 Jan 2026 09:56:54 -0500
 
 gnome-control-center (1:49.2.2-1ubuntu1) resolute; urgency=medium
 
@@ -7550,7 +7586,7 @@ control-center (1:2.6.0.2-1) experimental; urgency=low
     + Updated dependencies to libnautilus2 2.6.0.
     + Added a conflict on acme, since it's now a part of control-center
     + Changed the build dependency on libxrender-dev to libxcursor-dev
-    (Closes #240483)
+    (Closes: #240483)
 
  -- Arnaud Patard <arnaud.patard@rtp-net.org>  Thu,  1 Apr 2004 00:09:52 +0200
 
