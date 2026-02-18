@@ -24,7 +24,7 @@ Forwarded: not-needed
  panels/ubuntu/cc-ubuntu-dock-dialog.blp     |   73 ++
  panels/ubuntu/cc-ubuntu-dock-dialog.c       |  103 ++
  panels/ubuntu/cc-ubuntu-dock-dialog.h       |   31 +
- panels/ubuntu/cc-ubuntu-panel.blp           |  201 ++++
+ panels/ubuntu/cc-ubuntu-panel.blp           |  196 +++
  panels/ubuntu/cc-ubuntu-panel.c             | 1728 +++++++++++++++++++++++++++
  panels/ubuntu/cc-ubuntu-panel.h             |   33 +
  panels/ubuntu/gnome-ubuntu-panel.desktop.in |   13 +
@@ -33,7 +33,7 @@ Forwarded: not-needed
  po/POTFILES.in                              |    5 +
  shell/cc-panel-list.c                       |    1 +
  shell/cc-panel-loader.c                     |    3 +
- 16 files changed, 2316 insertions(+)
+ 16 files changed, 2311 insertions(+)
  create mode 100644 panels/ubuntu/assets/colors/color.svg.in
  create mode 100644 panels/ubuntu/assets/theme-dark.svg
  create mode 100644 panels/ubuntu/assets/theme-light.svg
@@ -313,10 +313,10 @@ index 0000000..cd84651
 +G_END_DECLS
 diff --git a/panels/ubuntu/cc-ubuntu-panel.blp b/panels/ubuntu/cc-ubuntu-panel.blp
 new file mode 100644
-index 0000000..a8736d8
+index 0000000..0fbd977
 --- /dev/null
 +++ b/panels/ubuntu/cc-ubuntu-panel.blp
-@@ -0,0 +1,201 @@
+@@ -0,0 +1,196 @@
 +using Gtk 4.0;
 +using Adw 1;
 +
@@ -360,12 +360,7 @@ index 0000000..a8736d8
 +          wrap: true;
 +          label: _("Oops, something has gone wrong. Please report a bug in Launchpad.");
 +
-+          /*
-+          attributes {
-+            // FIXME: Set scale attribute to 1.42.
-+            // See: https://gitlab.gnome.org/GNOME/blueprint-compiler/-/issues/11
-+          }
-+          */
++          attributes: "scale 1.42";
 +        }
 +      }
 +
