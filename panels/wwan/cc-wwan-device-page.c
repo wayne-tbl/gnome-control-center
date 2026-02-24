@@ -225,7 +225,7 @@ wwan_data_show_mms_dialog (CcWwanDevicePage *self)
 static void
 cc_wwan_open_stk_tool (CcWwanDevicePage *self)
 {
-  g_spawn_command_line_async ("dex /usr/share/applications/io.FuriOS.StkTool.desktop", NULL);
+  g_spawn_command_line_async ("dex /usr/share/applications/io.furios.StkTool.desktop", NULL);
 }
 
 static GcrPrompt *
