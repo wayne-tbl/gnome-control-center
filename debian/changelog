@@ -1,3 +1,9 @@
+gnome-control-center (1:50~beta-1ubuntu3) resolute; urgency=medium
+
+  * d/p: Fix crash when entering remote-dekstop settings
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Thu, 26 Feb 2026 12:57:03 +0100
+
 gnome-control-center (1:50~beta-1ubuntu2) resolute; urgency=medium
 
   * d/p: Drop patches requiring malcontent 0.14
