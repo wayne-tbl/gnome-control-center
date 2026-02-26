@@ -1,0 +1,481 @@
+From: Mitchell Augustin <mitchell.augustin@canonical.com>
+Date: Thu, 26 Feb 2025 11:31:00 -0600
+Subject: remote-desktop, desktop-sharing: Handle when keyring is locked
+The desktop sharing credentials can't be loaded neither stored when the
+session keyring is locked.
+
+So let's show a permission banner asking the user to "Unlock" and keep
+the Login Details widgets sensitive when locked.
+
+This will prevent the password from being incorrectly overwritten with
+a randomly generated default once it has already been set.
+
+Origin: backport, https://gitlab.gnome.org/GNOME/gnome-control-center/-/commit/334c2a076e22295dbf46b7d1849e1ebb1f8d897d
+Origin: backport, https://gitlab.gnome.org/aleasto/gnome-control-center/-/commit/5940af5b204d62de68e67258ea7551abb1d8219b
+Bug: https://gitlab.gnome.org/GNOME/gnome-control-center/-/issues/3547
+Author: Mitchell Augustin <mitchell.augustin@canonical.com>
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/2000063
+Forwarded: not-needed
+Last-Update: 2026-02-26
+---
+
+--- gnome-control-center-46.7.orig/panels/system/remote-desktop/cc-desktop-sharing-page.c
++++ gnome-control-center-46.7/panels/system/remote-desktop/cc-desktop-sharing-page.c
+@@ -63,10 +63,12 @@ struct _CcDesktopSharingPage {
+ 
+   GsdRemoteDesktopRdpServer *rdp_server;
+ 
++  AdwBanner *keyring_infobar;
+   AdwSwitchRow *desktop_sharing_row;
+   AdwSwitchRow *remote_control_row;
+   AdwActionRow *hostname_row;
+   AdwActionRow *port_row;
++  GtkWidget *login_details_group;
+   GtkWidget *username_entry;
+   GtkWidget *password_entry;
+   GtkWidget *generate_password_button;
+@@ -394,16 +396,10 @@ on_password_copy_clicked (CcDesktopShari
+ }
+ 
+ static void
+-setup_desktop_sharing_page (CcDesktopSharingPage *self)
++load_credentials (CcDesktopSharingPage *self)
+ {
+-  const gchar *username = NULL;
+-  const gchar *password = NULL;
+-  g_autofree char *hostname = NULL;
+-
+-  self->rdp_settings = g_settings_new (GNOME_REMOTE_DESKTOP_RDP_SCHEMA_ID);
+-
+-  hostname = get_hostname ();
+-  adw_action_row_set_subtitle (self->hostname_row, hostname);
++  g_autofree gchar *username = NULL;
++  g_autofree gchar *password = NULL;
+ 
+   username = cc_grd_lookup_rdp_username (self->cancellable);
+   password = cc_grd_lookup_rdp_password (self->cancellable);
+@@ -412,14 +408,7 @@ setup_desktop_sharing_page (CcDesktopSha
+   if (password != NULL)
+     gtk_editable_set_text (GTK_EDITABLE (self->password_entry), password);
+ 
+-  g_signal_connect_swapped (self->username_entry,
+-                            "notify::text",
+-                            G_CALLBACK (on_credentials_changed),
+-                            self);
+-  g_signal_connect_swapped (self->password_entry,
+-                            "notify::text",
+-                            G_CALLBACK (on_credentials_changed),
+-                            self);
++  /* No credentials available. Let's create them. */
+   if (username == NULL)
+     {
+       struct passwd *pw = getpwuid (getuid ());
+@@ -436,7 +425,127 @@ setup_desktop_sharing_page (CcDesktopSha
+       if (pw != NULL)
+         gtk_editable_set_text (GTK_EDITABLE (self->password_entry), pw);
+     }
++}
++
++static void
++unlock_gnome_keyring_cb (GObject      *source_object,
++                         GAsyncResult *res,
++                         gpointer      user_data)
++{
++  CcDesktopSharingPage *self = CC_DESKTOP_SHARING_PAGE (user_data);
++  g_autoptr(GList) unlocked = NULL;
++
++  secret_service_unlock_finish (NULL, res, &unlocked, NULL);
++  /* If the keyring is locked,  */
++  if (unlocked == NULL)
++      return;
++
++  adw_banner_set_revealed (self->keyring_infobar, FALSE);
++  gtk_widget_set_sensitive (self->login_details_group, TRUE);
++  gtk_widget_set_sensitive (GTK_WIDGET (self->generate_password_button), TRUE);
++
++  load_credentials (self);
++}
++
++static void
++unlock_gnome_keyring (CcDesktopSharingPage *self)
++{
++  g_autoptr(SecretService) service = NULL;
++  g_autoptr(GList) collections_to_unlock = NULL;
++  g_autoptr(SecretCollection) collection = NULL;
++  g_autoptr(GError) error = NULL;
++
++  service = secret_service_get_sync (SECRET_SERVICE_LOAD_COLLECTIONS, NULL, &error);
++  if (!service)
++    {
++      g_debug ("Can't connect to secret service: %s", error->message);
++      return;
++    }
++
++  collection = secret_collection_for_alias_sync (service,
++                                                 SECRET_COLLECTION_DEFAULT,
++                                                 SECRET_COLLECTION_LOAD_ITEMS,
++                                                 NULL, &error);
++  if (!collection)
++    {
++      g_debug ("Can't load secret collection: %s", error->message);
++      return;
++    }
++
++  collections_to_unlock = g_list_append (collections_to_unlock, collection);
++  secret_service_unlock (NULL,
++                         collections_to_unlock,
++                         self->cancellable,
++                         (GAsyncReadyCallback) unlock_gnome_keyring_cb,
++                         self);
++}
+ 
++static void
++setup_login_details_group (GObject      *source_object,
++                           GAsyncResult *result,
++                           gpointer      user_data)
++{
++  CcDesktopSharingPage *self = CC_DESKTOP_SHARING_PAGE (user_data);
++  g_autoptr(SecretCollection) collection = NULL;
++  gboolean locked = TRUE;
++  g_autoptr(SecretService) service = NULL;
++  g_autoptr(GError) error = NULL;
++
++  service = secret_service_get_finish (result, &error);
++  if (!service)
++    {
++      g_debug ("Can't connect to secret service: %s", error->message);
++      return;
++    }
++
++  collection = secret_collection_for_alias_sync (service,
++                                                 SECRET_COLLECTION_DEFAULT,
++                                                 SECRET_COLLECTION_LOAD_ITEMS,
++                                                 NULL, &error);
++  if (!collection)
++    {
++      const char *msg = error ? error->message : "No such collection";
++
++      g_debug ("Can't load secret collection: %s", msg);
++      return;
++    }
++
++  locked = secret_collection_get_locked (collection);
++  g_debug ("Secret collection locked: %s", locked ? "yes" : "no");
++
++  adw_banner_set_revealed (self->keyring_infobar, locked);
++  gtk_widget_set_sensitive (self->login_details_group, !locked);
++  gtk_widget_set_sensitive (GTK_WIDGET (self->generate_password_button), !locked);
++
++  if (!locked)
++      load_credentials (self);
++}
++
++static void
++setup_desktop_sharing_page (CcDesktopSharingPage *self)
++{
++  g_autofree char *hostname = NULL;
++
++  self->rdp_settings = g_settings_new (GNOME_REMOTE_DESKTOP_RDP_SCHEMA_ID);
++
++  hostname = get_hostname ();
++  adw_action_row_set_subtitle (self->hostname_row, hostname);
++
++  /* Initialize credentials only when keyring is accessible.
++  * See https://gitlab.gnome.org/GNOME/gnome-control-center/-/issues/3547 */
++  secret_service_get (SECRET_SERVICE_LOAD_COLLECTIONS,
++                      self->cancellable,
++                      (GAsyncReadyCallback)setup_login_details_group,
++                      self);
++
++  g_signal_connect_swapped (self->username_entry,
++                            "notify::text",
++                            G_CALLBACK (on_credentials_changed),
++                            self);
++  g_signal_connect_swapped (self->password_entry,
++                            "notify::text",
++                            G_CALLBACK (on_credentials_changed),
++                            self);
+   g_signal_connect_object (self->desktop_sharing_row, "notify::active",
+                            G_CALLBACK (on_desktop_sharing_active_changed), self,
+                            G_CONNECT_SWAPPED);
+@@ -523,14 +632,17 @@ cc_desktop_sharing_page_class_init (CcDe
+ 
+   gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, toast_overlay);
+ 
++  gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, keyring_infobar);
+   gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, desktop_sharing_row);
+   gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, remote_control_row);
+   gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, hostname_row);
+   gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, port_row);
++  gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, login_details_group);
+   gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, username_entry);
+   gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, password_entry);
+   gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, generate_password_button);
+   gtk_widget_class_bind_template_child (widget_class, CcDesktopSharingPage, verify_encryption_button);
++  gtk_widget_class_bind_template_callback (widget_class, unlock_gnome_keyring);
+ 
+   gtk_widget_class_bind_template_callback (widget_class, on_address_copy_clicked);
+   gtk_widget_class_bind_template_callback (widget_class, on_port_copy_clicked);
+--- gnome-control-center-46.7.orig/panels/system/remote-desktop/cc-desktop-sharing-page.ui
++++ gnome-control-center-46.7/panels/system/remote-desktop/cc-desktop-sharing-page.ui
+@@ -4,142 +4,155 @@
+     <child>
+       <object class="AdwToastOverlay" id="toast_overlay">
+         <property name="child">
+-          <object class="AdwPreferencesPage">
++          <object class="GtkBox">
++            <property name="orientation">vertical</property>
+             <child>
+-              <object class="AdwPreferencesGroup">
+-                <child>
+-                  <object class="GtkLabel">
+-                    <property name="label" translatable="yes">Share your existing desktop with other devices. The remote connection uses the existing screen resolution</property>
+-                    <property name="hexpand">True</property>
+-                    <property name="wrap">True</property>
+-                    <property name="justify">center</property>
+-                    <style>
+-                      <class name="dim-label"/>
+-                    </style>
+-                  </object>
+-                </child>
+-              </object>
+-            </child>
+-            <child>
+-              <object class="AdwPreferencesGroup">
+-                <child>
+-                  <object class="AdwSwitchRow" id="desktop_sharing_row">
+-                    <property name="title" translatable="yes">_Desktop Sharing</property>
+-                    <property name="use-underline">True</property>
+-                  </object>
+-                </child>
+-                <child>
+-                  <object class="AdwSwitchRow" id="remote_control_row">
+-                    <property name="title" translatable="yes">Remote _Control</property>
+-                    <property name="use-underline">True</property>
+-                    <property name="subtitle" translatable="yes">Allows desktop shares to control the screen</property>
+-                  </object>
+-                </child>
++              <object class="AdwBanner" id="keyring_infobar">
++                <property name="title" translatable="yes">Some settings are locked</property>
++                <property name="button-label" translatable="yes">Unlock…</property>
++                <signal name="button-clicked" handler="unlock_gnome_keyring" swapped="yes"/>
+               </object>
+             </child>
+             <child>
+-              <object class="AdwPreferencesGroup">
+-                <property name="title" translatable="yes">How to Connect</property>
+-                <property name="description" translatable="yes">Use a remote desktop app to connect using the RDP protocol. Additional information about the device’s network location may also be required.</property>
++              <object class="AdwPreferencesPage">
+                 <child>
+-                  <object class="AdwActionRow" id="hostname_row">
+-                    <property name="title" translatable="yes">_Hostname</property>
+-                    <property name="use-underline">True</property>
+-                    <style>
+-                      <class name="property"/>
+-                    </style>
+-                    <child type="suffix">
+-                      <object class="GtkButton">
+-                        <property name="tooltip-text" translatable="yes">Copy</property>
+-                        <property name="valign">center</property>
+-                        <property name="icon-name">edit-copy-symbolic</property>
+-                        <signal name="clicked" handler="on_address_copy_clicked" swapped="yes"/>
++                  <object class="AdwPreferencesGroup">
++                    <child>
++                      <object class="GtkLabel">
++                        <property name="label" translatable="yes">Share your existing desktop with other devices. The remote connection uses the existing screen resolution</property>
++                        <property name="hexpand">True</property>
++                        <property name="wrap">True</property>
++                        <property name="justify">center</property>
+                         <style>
+-                          <class name="flat"/>
++                          <class name="dim-label"/>
+                         </style>
+                       </object>
+                     </child>
+                   </object>
+                 </child>
+                 <child>
+-                  <object class="AdwActionRow" id="port_row">
+-                    <property name="title" translatable="yes">_Port</property>
+-                    <property name="use-underline">True</property>
+-                    <style>
+-                      <class name="property"/>
+-                    </style>
+-                    <child type="suffix">
+-                      <object class="GtkButton">
+-                        <property name="tooltip-text" translatable="yes">Copy</property>
+-                        <property name="valign">center</property>
+-                        <property name="icon-name">edit-copy-symbolic</property>
+-                        <signal name="clicked" handler="on_port_copy_clicked" swapped="yes"/>
+-                        <style>
+-                          <class name="flat"/>
+-                        </style>
++                  <object class="AdwPreferencesGroup">
++                    <child>
++                      <object class="AdwSwitchRow" id="desktop_sharing_row">
++                        <property name="title" translatable="yes">_Desktop Sharing</property>
++                        <property name="use-underline">True</property>
++                      </object>
++                    </child>
++                    <child>
++                      <object class="AdwSwitchRow" id="remote_control_row">
++                        <property name="title" translatable="yes">Remote _Control</property>
++                        <property name="use-underline">True</property>
++                        <property name="subtitle" translatable="yes">Allows desktop shares to control the screen</property>
+                       </object>
+                     </child>
+                   </object>
+                 </child>
+-              </object>
+-            </child>
+-            <child>
+-              <object class="AdwPreferencesGroup">
+-                <property name="title" translatable="yes">Login Details</property>
+                 <child>
+-                  <object class="AdwEntryRow" id="username_entry">
+-                    <property name="title" translatable="yes">Username</property>
+-                    <child type="suffix">
+-                      <object class="GtkButton">
+-                        <property name="tooltip-text" translatable="yes">Copy</property>
+-                        <property name="valign">center</property>
+-                        <property name="icon-name">edit-copy-symbolic</property>
+-                        <signal name="clicked" handler="on_username_copy_clicked" swapped="yes"/>
++                  <object class="AdwPreferencesGroup">
++                    <property name="title" translatable="yes">How to Connect</property>
++                    <property name="description" translatable="yes">Use a remote desktop app to connect using the RDP protocol. Additional information about the device’s network location may also be required.</property>
++                    <child>
++                      <object class="AdwActionRow" id="hostname_row">
++                        <property name="title" translatable="yes">_Hostname</property>
++                        <property name="use-underline">True</property>
+                         <style>
+-                          <class name="flat"/>
++                          <class name="property"/>
+                         </style>
++                        <child type="suffix">
++                          <object class="GtkButton">
++                            <property name="tooltip-text" translatable="yes">Copy</property>
++                            <property name="valign">center</property>
++                            <property name="icon-name">edit-copy-symbolic</property>
++                            <signal name="clicked" handler="on_address_copy_clicked" swapped="yes"/>
++                            <style>
++                              <class name="flat"/>
++                            </style>
++                          </object>
++                        </child>
+                       </object>
+                     </child>
+-                  </object>
+-                </child>
+-                <child>
+-                  <object class="AdwPasswordEntryRow" id="password_entry">
+-                    <property name="title" translatable="yes">Password</property>
+-                    <child type="suffix">
+-                      <object class="GtkButton">
+-                        <property name="tooltip-text" translatable="yes">Copy</property>
+-                        <property name="valign">center</property>
+-                        <property name="icon-name">edit-copy-symbolic</property>
+-                        <signal name="clicked" handler="on_password_copy_clicked" swapped="yes"/>
++                    <child>
++                      <object class="AdwActionRow" id="port_row">
++                        <property name="title" translatable="yes">_Port</property>
++                        <property name="use-underline">True</property>
+                         <style>
+-                          <class name="flat"/>
++                          <class name="property"/>
+                         </style>
++                        <child type="suffix">
++                          <object class="GtkButton">
++                            <property name="tooltip-text" translatable="yes">Copy</property>
++                            <property name="valign">center</property>
++                            <property name="icon-name">edit-copy-symbolic</property>
++                            <signal name="clicked" handler="on_port_copy_clicked" swapped="yes"/>
++                            <style>
++                              <class name="flat"/>
++                            </style>
++                          </object>
++                        </child>
+                       </object>
+                     </child>
+                   </object>
+                 </child>
+                 <child>
+-                  <object class="GtkBox">
+-                    <property name="margin-top">24</property>
+-                    <property name="spacing">10</property>
+-                    <child>
+-                      <object class="GtkButton" id="generate_password_button">
+-                        <property name="sensitive">False</property>
+-                        <property name="can-shrink">True</property>
+-                        <property name="label" translatable="yes">_Generate New Password</property>
+-                        <property name="use-underline">True</property>
+-                        <signal name="clicked" handler="on_generate_password_button_clicked" swapped="yes"/>
++                  <object class="AdwPreferencesGroup" id="login_details_group">
++                    <property name="title" translatable="yes">Login Details</property>
++                    <child>
++                      <object class="AdwEntryRow" id="username_entry">
++                        <property name="title" translatable="yes">Username</property>
++                        <child type="suffix">
++                          <object class="GtkButton">
++                            <property name="tooltip-text" translatable="yes">Copy</property>
++                            <property name="valign">center</property>
++                            <property name="icon-name">edit-copy-symbolic</property>
++                            <signal name="clicked" handler="on_username_copy_clicked" swapped="yes"/>
++                            <style>
++                              <class name="flat"/>
++                            </style>
++                          </object>
++                        </child>
+                       </object>
+                     </child>
+                     <child>
+-                      <object class="GtkButton" id="verify_encryption_button">
+-                        <property name="sensitive">False</property>
+-                        <property name="hexpand">True</property>
+-                        <property name="halign">end</property>
+-                        <property name="can-shrink">True</property>
+-                        <property name="label" translatable="yes">_Verify Encryption</property>
+-                        <property name="use-underline">True</property>
+-                        <signal name="clicked" handler="on_verify_encryption_button_clicked" swapped="yes"/>
++                      <object class="AdwPasswordEntryRow" id="password_entry">
++                        <property name="title" translatable="yes">Password</property>
++                        <child type="suffix">
++                          <object class="GtkButton">
++                            <property name="tooltip-text" translatable="yes">Copy</property>
++                            <property name="valign">center</property>
++                            <property name="icon-name">edit-copy-symbolic</property>
++                            <signal name="clicked" handler="on_password_copy_clicked" swapped="yes"/>
++                            <style>
++                              <class name="flat"/>
++                            </style>
++                          </object>
++                        </child>
++                      </object>
++                    </child>
++                    <child>
++                      <object class="GtkBox">
++                        <property name="orientation">vertical</property>
++                        <property name="margin-top">24</property>
++                        <property name="spacing">10</property>
++                        <child>
++                          <object class="GtkButton" id="generate_password_button">
++                            <property name="sensitive">False</property>
++                            <property name="can-shrink">True</property>
++                            <property name="label" translatable="yes">_Generate New Password</property>
++                            <property name="use-underline">True</property>
++                            <signal name="clicked" handler="on_generate_password_button_clicked" swapped="yes"/>
++                          </object>
++                        </child>
++                        <child>
++                          <object class="GtkButton" id="verify_encryption_button">
++                            <property name="sensitive">False</property>
++                            <property name="hexpand">True</property>
++                            <property name="halign">end</property>
++                            <property name="can-shrink">True</property>
++                            <property name="label" translatable="yes">_Verify Encryption</property>
++                            <property name="use-underline">True</property>
++                            <signal name="clicked" handler="on_verify_encryption_button_clicked" swapped="yes"/>
++                          </object>
++                        </child>
+                       </object>
+                     </child>
+                   </object>

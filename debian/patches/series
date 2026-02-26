@@ -36,3 +36,4 @@ a11y-Add-role-to-the-panel-list-elements.patch
 a11y-Specify-what-is-being-selected-in-avatar.patch
 a11y-Add-button-role-to-avatars.patch
 a11y-fix-accessibility-when-choosing-a-background.patch
+ubuntu/remote-desktop-sharing-handle-locked-keyring.patch
