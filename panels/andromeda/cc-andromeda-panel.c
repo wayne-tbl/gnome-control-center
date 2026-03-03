@@ -241,7 +241,7 @@ andromeda_toggle_nfc (void)
 
   g_dbus_proxy_call_sync(
     andromeda_proxy,
-    "NfcToggle",
+    "ToggleNfc",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
     -1,
@@ -284,7 +284,7 @@ andromeda_get_ip (void)
 
   result = g_dbus_proxy_call_sync(
     andromeda_proxy,
-    "IpAddress",
+    "GetIpAddress",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
     G_MAXINT,
@@ -332,7 +332,7 @@ andromeda_get_version (void)
 
   result = g_dbus_proxy_call_sync(
     andromeda_proxy,
-    "LineageVersion",
+    "GetLineageVersion",
     NULL,
     G_DBUS_CALL_FLAGS_NONE,
     G_MAXINT,
@@ -433,6 +433,54 @@ andromeda_umount_shared (void)
   }
 
   g_object_unref (andromeda_proxy);
+}
+
+static gboolean
+andromeda_get_shared_folder_status (void)
+{
+  GDBusProxy *andromeda_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  gboolean status = FALSE;
+
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s", error->message);
+    g_clear_error (&error);
+    return FALSE;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    andromeda_proxy,
+    "GetSharedFolderStatus",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    G_MAXINT,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling GetSharedFolderStatus: %s", error->message);
+    g_clear_error (&error);
+  } else {
+    g_variant_get (result, "(b)", &status);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (andromeda_proxy);
+
+  return status;
 }
 
 static void
@@ -732,49 +780,6 @@ andromeda_enable_notification_server (gboolean enable)
   }
 
   g_object_unref (andromeda_proxy);
-}
-
-static int
-is_mounted (const char *path)
-{
-  FILE *fp;
-  char *line = NULL;
-  size_t len = 0;
-  int found = 0;
-
-  fp = fopen ("/proc/mounts", "r");
-  if (fp == NULL) {
-    perror ("Failed to open /proc/mounts");
-    return -1;
-  }
-
-  while (getline (&line, &len, fp) != -1) {
-    char *mount_point;
-
-    char *line_copy = strdup (line);
-    if (line_copy == NULL) {
-      perror ("Failed to allocate memory");
-      free (line);
-      fclose (fp);
-      return -1;
-    }
-
-    strtok (line_copy, " ");
-    mount_point = strtok (NULL, " ");
-
-    if (mount_point != NULL && strcmp (mount_point, path) == 0) {
-      found = 1;
-      free (line_copy);
-      break;
-    }
-
-    free (line_copy);
-  }
-
-  free (line);
-  fclose (fp);
-
-  return found;
 }
 
 static void
@@ -1238,10 +1243,7 @@ check_andromeda_shared_folder (gpointer user_data)
 {
   CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
 
-  const gchar *home_dir = g_get_home_dir ();
-  gchar *android_dir_path = g_strdup_printf ("%s/Android", home_dir);
-  self->andromeda_shared_folder_enabled = is_mounted (android_dir_path);
-  g_free (android_dir_path);
+  self->andromeda_shared_folder_enabled = andromeda_get_shared_folder_status ();
 
   g_idle_add (check_shared_folder_idle, self);
 
@@ -1453,6 +1455,7 @@ enable_idle (gpointer data)
                          GTK_WIDGET (self->app_selector),
                          GTK_WIDGET (self->store_button),
                          GTK_WIDGET (self->refresh_app_list_button),
+                         GTK_WIDGET (self->andromeda_shared_folder_switch),
                          GTK_WIDGET (self->andromeda_nfc_switch),
                          GTK_WIDGET (self->andromeda_notification_switch),
                          GTK_WIDGET (self->clear_app_data_button),
@@ -1519,6 +1522,7 @@ cc_andromeda_panel_enable_andromeda (GtkSwitch *widget, gboolean state, CcAndrom
                            GTK_WIDGET (self->app_selector),
                            GTK_WIDGET (self->store_button),
                            GTK_WIDGET (self->refresh_app_list_button),
+                           GTK_WIDGET (self->andromeda_shared_folder_switch),
                            GTK_WIDGET (self->andromeda_nfc_switch),
                            GTK_WIDGET (self->andromeda_notification_switch),
                            GTK_WIDGET (self->clear_app_data_button),
@@ -1689,6 +1693,7 @@ cc_andromeda_panel_init (CcAndromedaPanel *self)
       gtk_label_set_text (GTK_LABEL (self->andromeda_version_label), "");
 
       set_widgets_sensitive (FALSE,
+                             GTK_WIDGET (self->andromeda_shared_folder_switch),
                              GTK_WIDGET (self->andromeda_nfc_switch),
                              GTK_WIDGET (self->andromeda_notification_switch),
                              GTK_WIDGET (self->launch_app_button),
