@@ -97,6 +97,21 @@ template $CcAndromedaPanel: $CcPanel {
                 }
 
                 Adw.ActionRow {
+                  title: _("Contacts Sync");
+                  subtitle: _("Sync contacts between host and Android");
+                  use-underline: true;
+
+                  [suffix]
+                  Switch andromeda_contacts_sync_switch {
+                    valign: center;
+
+                    accessibility {
+                      label: _("Enabled");
+                    }
+                  }
+                }
+
+                Adw.ActionRow {
                   title: _("Android IP");
                   subtitle: _("IP Address of Android");
                   activatable: false;

@@ -28,6 +28,7 @@ struct _CcAndromedaPanel {
   GtkWidget        *andromeda_shared_folder_switch;
   GtkWidget        *andromeda_nfc_switch;
   GtkWidget        *andromeda_notification_switch;
+  GtkWidget        *andromeda_contacts_sync_switch;
   GtkWidget        *andromeda_ip_label;
   GtkWidget        *andromeda_version_label;
   AdwExpanderRow   *app_selector;
@@ -55,6 +56,7 @@ struct _CcAndromedaPanel {
   gboolean         andromeda_notification_active;
   gboolean         andromeda_nfc_active;
   gboolean         andromeda_shared_folder_enabled;
+  gboolean         andromeda_contacts_sync_enabled;
 };
 
 G_DEFINE_TYPE (CcAndromedaPanel, cc_andromeda_panel, CC_TYPE_PANEL)
@@ -783,6 +785,95 @@ andromeda_enable_notification_server (gboolean enable)
 }
 
 static void
+andromeda_set_contacts_sync_enabled (gboolean enabled)
+{
+  GDBusProxy *andromeda_proxy;
+  GError *error = NULL;
+
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s", error->message);
+    g_clear_error (&error);
+    return;
+  }
+
+  g_dbus_proxy_call_sync(
+    andromeda_proxy,
+    "SetContactsSyncEnabled",
+    g_variant_new ("(b)", enabled),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling SetContactsSyncEnabled: %s", error->message);
+    g_clear_error (&error);
+  }
+
+  g_object_unref (andromeda_proxy);
+}
+
+static gboolean
+andromeda_get_contacts_sync_enabled (void)
+{
+  GDBusProxy *andromeda_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  gboolean enabled = FALSE;
+
+  andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    ANDROMEDA_CONTAINER_DBUS_NAME,
+    ANDROMEDA_CONTAINER_DBUS_PATH,
+    ANDROMEDA_CONTAINER_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s", error->message);
+    g_clear_error (&error);
+    return FALSE;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    andromeda_proxy,
+    "GetContactsSyncEnabled",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    G_MAXINT,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling GetContactsSyncEnabled: %s", error->message);
+    g_clear_error (&error);
+  } else {
+    g_variant_get (result, "(b)", &enabled);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (andromeda_proxy);
+
+  return enabled;
+}
+
+static void
 cc_andromeda_panel_nfc (GtkSwitch *widget, gboolean state, CcAndromedaPanel *self)
 {
   andromeda_toggle_nfc ();
@@ -796,6 +887,14 @@ cc_andromeda_panel_notification (GtkSwitch *widget, gboolean state, CcAndromedaP
   andromeda_enable_notification_server (state);
   gtk_switch_set_state (GTK_SWITCH (self->andromeda_notification_switch), state);
   gtk_switch_set_active (GTK_SWITCH (self->andromeda_notification_switch), state);
+}
+
+static void
+cc_andromeda_panel_contacts_sync (GtkSwitch *widget, gboolean state, CcAndromedaPanel *self)
+{
+  andromeda_set_contacts_sync_enabled (state);
+  gtk_switch_set_state (GTK_SWITCH (self->andromeda_contacts_sync_switch), state);
+  gtk_switch_set_active (GTK_SWITCH (self->andromeda_contacts_sync_switch), state);
 }
 
 static void
@@ -874,6 +973,37 @@ static void
 update_andromeda_ip_threaded (CcAndromedaPanel *self)
 {
   g_thread_new ("update_andromeda_ip", update_andromeda_ip, self);
+}
+
+static gboolean
+check_contacts_sync_idle (gpointer user_data)
+{
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
+
+  g_signal_handlers_block_by_func (self->andromeda_contacts_sync_switch, cc_andromeda_panel_contacts_sync, self);
+  gtk_switch_set_state (GTK_SWITCH (self->andromeda_contacts_sync_switch), self->andromeda_contacts_sync_enabled);
+  gtk_switch_set_active (GTK_SWITCH (self->andromeda_contacts_sync_switch), self->andromeda_contacts_sync_enabled);
+  g_signal_handlers_unblock_by_func (self->andromeda_contacts_sync_switch, cc_andromeda_panel_contacts_sync, self);
+
+  return G_SOURCE_REMOVE;
+}
+
+static gpointer
+check_andromeda_contacts_sync (gpointer user_data)
+{
+  CcAndromedaPanel *self = (CcAndromedaPanel *) user_data;
+
+  self->andromeda_contacts_sync_enabled = andromeda_get_contacts_sync_enabled ();
+
+  g_idle_add (check_contacts_sync_idle, self);
+
+  return NULL;
+}
+
+static void
+check_andromeda_contacts_sync_threaded (CcAndromedaPanel *self)
+{
+  g_thread_new ("check_andromeda_contacts_sync", check_andromeda_contacts_sync, self);
 }
 
 static GtkWidget *
@@ -1265,6 +1395,7 @@ update_andromeda_info (CcAndromedaPanel *self)
   check_andromeda_notification_threaded (self);
   check_andromeda_nfc_threaded (self);
   check_andromeda_shared_folder_threaded (self);
+  check_andromeda_contacts_sync_threaded (self);
 }
 
 static gboolean
@@ -1470,6 +1601,7 @@ enable_idle (gpointer data)
                          GTK_WIDGET (self->andromeda_shared_folder_switch),
                          GTK_WIDGET (self->andromeda_nfc_switch),
                          GTK_WIDGET (self->andromeda_notification_switch),
+                         GTK_WIDGET (self->andromeda_contacts_sync_switch),
                          GTK_WIDGET (self->clear_app_data_button),
                          GTK_WIDGET (self->kill_app_button),
                          NULL);
@@ -1529,6 +1661,7 @@ cc_andromeda_panel_enable_andromeda (GtkSwitch *widget, gboolean state, CcAndrom
                            GTK_WIDGET (self->andromeda_shared_folder_switch),
                            GTK_WIDGET (self->andromeda_nfc_switch),
                            GTK_WIDGET (self->andromeda_notification_switch),
+                           GTK_WIDGET (self->andromeda_contacts_sync_switch),
                            GTK_WIDGET (self->clear_app_data_button),
                            GTK_WIDGET (self->kill_app_button),
                            NULL);
@@ -1581,6 +1714,10 @@ cc_andromeda_panel_class_init (CcAndromedaPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class,
                                         CcAndromedaPanel,
                                         andromeda_notification_switch);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcAndromedaPanel,
+                                        andromeda_contacts_sync_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcAndromedaPanel,
@@ -1643,6 +1780,7 @@ cc_andromeda_panel_init (CcAndromedaPanel *self)
   self->andromeda_notification_active = FALSE;
   self->andromeda_nfc_active = FALSE;
   self->andromeda_shared_folder_enabled = FALSE;
+  self->andromeda_contacts_sync_enabled = FALSE;
   self->refreshing = FALSE;
 
   if (g_file_test ("/usr/bin/andromeda", G_FILE_TEST_EXISTS)) {
@@ -1651,6 +1789,7 @@ cc_andromeda_panel_init (CcAndromedaPanel *self)
     g_signal_connect (G_OBJECT (self->andromeda_shared_folder_switch), "state-set", G_CALLBACK (cc_andromeda_panel_shared_folder), self);
     g_signal_connect (G_OBJECT (self->andromeda_nfc_switch), "state-set", G_CALLBACK (cc_andromeda_panel_nfc), self);
     g_signal_connect (G_OBJECT (self->andromeda_notification_switch), "state-set", G_CALLBACK (cc_andromeda_panel_notification), self);
+    g_signal_connect (G_OBJECT (self->andromeda_contacts_sync_switch), "state-set", G_CALLBACK (cc_andromeda_panel_contacts_sync), self);
     g_signal_connect (G_OBJECT (self->factory_reset_button), "clicked", G_CALLBACK (cc_andromeda_factory_reset_threaded), self);
 
     connect_andromeda_action_signals (self);
@@ -1689,6 +1828,7 @@ cc_andromeda_panel_init (CcAndromedaPanel *self)
                              GTK_WIDGET (self->andromeda_shared_folder_switch),
                              GTK_WIDGET (self->andromeda_nfc_switch),
                              GTK_WIDGET (self->andromeda_notification_switch),
+                             GTK_WIDGET (self->andromeda_contacts_sync_switch),
                              GTK_WIDGET (self->clear_app_data_button),
                              GTK_WIDGET (self->kill_app_button),
                              NULL);
@@ -1709,6 +1849,7 @@ cc_andromeda_panel_init (CcAndromedaPanel *self)
                              GTK_WIDGET (self->andromeda_shared_folder_switch),
                              GTK_WIDGET (self->andromeda_nfc_switch),
                              GTK_WIDGET (self->andromeda_notification_switch),
+                             GTK_WIDGET (self->andromeda_contacts_sync_switch),
                              GTK_WIDGET (self->launch_app_button),
                              GTK_WIDGET (self->remove_app_button),
                              GTK_WIDGET (self->install_app_button),
@@ -1731,6 +1872,7 @@ cc_andromeda_panel_init (CcAndromedaPanel *self)
                            GTK_WIDGET (self->andromeda_shared_folder_switch),
                            GTK_WIDGET (self->andromeda_nfc_switch),
                            GTK_WIDGET (self->andromeda_notification_switch),
+                           GTK_WIDGET (self->andromeda_contacts_sync_switch),
                            GTK_WIDGET (self->launch_app_button),
                            GTK_WIDGET (self->remove_app_button),
                            GTK_WIDGET (self->install_app_button),
