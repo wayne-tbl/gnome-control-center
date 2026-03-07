@@ -1442,6 +1442,18 @@ set_widgets_sensitive (gboolean sensitive, ...)
   va_end (args);
 }
 
+static void
+connect_andromeda_action_signals (CcAndromedaPanel *self)
+{
+  g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_launch_app_threaded), self);
+  g_signal_connect (G_OBJECT (self->remove_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_uninstall_app), self);
+  g_signal_connect (G_OBJECT (self->install_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_install_app), self);
+  g_signal_connect (G_OBJECT (self->store_button), "clicked", G_CALLBACK (cc_andromeda_panel_open_store), self);
+  g_signal_connect (G_OBJECT (self->refresh_app_list_button), "clicked", G_CALLBACK (cc_andromeda_refresh_button), self);
+  g_signal_connect (G_OBJECT (self->clear_app_data_button), "clicked", G_CALLBACK (cc_andromeda_panel_clear_app_data), self);
+  g_signal_connect (G_OBJECT (self->kill_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_kill_app), self);
+}
+
 static gboolean
 enable_idle (gpointer data)
 {
@@ -1465,14 +1477,6 @@ enable_idle (gpointer data)
   set_widgets_sensitive (FALSE,
                          GTK_WIDGET (self->factory_reset_button),
                          NULL);
-
-  g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_launch_app_threaded), self);
-  g_signal_connect (G_OBJECT (self->remove_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_uninstall_app), self);
-  g_signal_connect (G_OBJECT (self->install_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_install_app), self);
-  g_signal_connect (G_OBJECT (self->store_button), "clicked", G_CALLBACK (cc_andromeda_panel_open_store), self);
-  g_signal_connect (self->refresh_app_list_button, "clicked", G_CALLBACK (cc_andromeda_refresh_button), self);
-  g_signal_connect (G_OBJECT (self->clear_app_data_button), "clicked", G_CALLBACK (cc_andromeda_panel_clear_app_data), self);
-  g_signal_connect (G_OBJECT (self->kill_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_kill_app), self);
 
   g_idle_add (update_andromeda_info_idle, self);
 
@@ -1649,6 +1653,8 @@ cc_andromeda_panel_init (CcAndromedaPanel *self)
     g_signal_connect (G_OBJECT (self->andromeda_notification_switch), "state-set", G_CALLBACK (cc_andromeda_panel_notification), self);
     g_signal_connect (G_OBJECT (self->factory_reset_button), "clicked", G_CALLBACK (cc_andromeda_factory_reset_threaded), self);
 
+    connect_andromeda_action_signals (self);
+
     gchar *file_path = g_build_filename (g_get_home_dir (), ".android_enable", NULL);
     if (g_file_test (file_path, G_FILE_TEST_EXISTS)) {
       g_signal_handlers_block_by_func (self->andromeda_autostart_switch, cc_andromeda_panel_autostart, self);
@@ -1672,17 +1678,24 @@ cc_andromeda_panel_init (CcAndromedaPanel *self)
       gtk_switch_set_active (GTK_SWITCH (self->andromeda_enabled_switch), TRUE);
       g_signal_handlers_unblock_by_func (self->andromeda_enabled_switch, cc_andromeda_panel_enable_andromeda, self);
 
+      set_widgets_sensitive (TRUE,
+                             GTK_WIDGET (self->andromeda_enabled_switch),
+                             GTK_WIDGET (self->launch_app_button),
+                             GTK_WIDGET (self->remove_app_button),
+                             GTK_WIDGET (self->install_app_button),
+                             GTK_WIDGET (self->app_selector),
+                             GTK_WIDGET (self->store_button),
+                             GTK_WIDGET (self->refresh_app_list_button),
+                             GTK_WIDGET (self->andromeda_shared_folder_switch),
+                             GTK_WIDGET (self->andromeda_nfc_switch),
+                             GTK_WIDGET (self->andromeda_notification_switch),
+                             GTK_WIDGET (self->clear_app_data_button),
+                             GTK_WIDGET (self->kill_app_button),
+                             NULL);
+
       set_widgets_sensitive (FALSE,
                              GTK_WIDGET (self->factory_reset_button),
                              NULL);
-
-      g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_launch_app_threaded), self);
-      g_signal_connect (G_OBJECT (self->remove_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_uninstall_app), self);
-      g_signal_connect (G_OBJECT (self->install_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_install_app), self);
-      g_signal_connect (G_OBJECT (self->store_button), "clicked", G_CALLBACK (cc_andromeda_panel_open_store), self);
-      g_signal_connect (self->refresh_app_list_button, "clicked", G_CALLBACK (cc_andromeda_refresh_button), self);
-      g_signal_connect (G_OBJECT (self->clear_app_data_button), "clicked", G_CALLBACK (cc_andromeda_panel_clear_app_data), self);
-      g_signal_connect (G_OBJECT (self->kill_app_button), "clicked", G_CALLBACK (cc_andromeda_panel_kill_app), self);
 
       g_idle_add (update_andromeda_info_idle, self);
     } else {
