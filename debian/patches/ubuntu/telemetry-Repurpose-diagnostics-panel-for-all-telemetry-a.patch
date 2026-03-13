@@ -43,10 +43,10 @@ functionality to generate and show an example report is also present.
  create mode 100644 panels/privacy/telemetry/telemetry.css
 
 diff --git a/meson.build b/meson.build
-index 7b10e6c..2d20b40 100644
+index 26245f9..12bfda2 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -337,6 +337,14 @@ endif
+@@ -353,6 +353,14 @@ endif
  config_h.set('HAVE_WHOOPSIE', enable_whoopsie,
               description: 'Define to 1 if Whoopsie is enabled')
  
@@ -61,7 +61,7 @@ index 7b10e6c..2d20b40 100644
  if host_is_linux
    # ModemManager
    mm_dep =  dependency('mm-glib', version: '>= 0.7')
-@@ -443,6 +451,7 @@ summary({
+@@ -459,6 +467,7 @@ summary({
      'Snap': enable_snap,
      'Malcontent': enable_malcontent,
      'Whoopsie': enable_whoopsie,

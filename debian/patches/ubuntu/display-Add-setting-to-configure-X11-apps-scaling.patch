@@ -35,7 +35,7 @@ index f40b2cf..85fad92 100644
            $CcListRow night_light_row {
              /* Translators: This is the redshift functionality where we suppress blue light when the sun has gone down */
 diff --git a/panels/display/cc-display-panel.c b/panels/display/cc-display-panel.c
-index d9de82c..3333683 100644
+index 8a4f5dc..b001e37 100644
 --- a/panels/display/cc-display-panel.c
 +++ b/panels/display/cc-display-panel.c
 @@ -43,6 +43,9 @@
