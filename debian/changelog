@@ -1,3 +1,9 @@
+gnome-control-center (1:50~rc-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Fri, 13 Mar 2026 10:00:02 +0100
+
 gnome-control-center (1:50~beta-1ubuntu3) resolute; urgency=medium
 
   * d/p: Fix crash when entering remote-dekstop settings
