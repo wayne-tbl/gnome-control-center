@@ -12,42 +12,43 @@ include dock-specifc settings to control multi-monitor behavior.
 
 Forwarded: not-need
 ---
- panels/multitasking/cc-multitasking-panel.blp | 21 ++++++++++
+ panels/multitasking/cc-multitasking-panel.blp | 22 +++++++++++
  panels/multitasking/cc-multitasking-panel.c   | 56 +++++++++++++++++++++++++++
- 2 files changed, 77 insertions(+)
+ 2 files changed, 78 insertions(+)
 
 diff --git a/panels/multitasking/cc-multitasking-panel.blp b/panels/multitasking/cc-multitasking-panel.blp
-index 2564ac3..7fba646 100644
+index 2564ac3..4ecede2 100644
 --- a/panels/multitasking/cc-multitasking-panel.blp
 +++ b/panels/multitasking/cc-multitasking-panel.blp
-@@ -139,6 +139,27 @@ template $CcMultitaskingPanel: $CcPanel {
-             group: all_workspaces_radio;
+@@ -140,6 +140,28 @@ template $CcMultitaskingPanel: $CcPanel {
            }
          }
-+        Adw.PreferencesGroup monitor_isolation_group {
-+          Adw.ActionRow {
-+            activatable-widget: dock_monitors_isolation_radio;
-+            title: _("Include apps from all _monitors");
-+            use-underline: true;
-+            [prefix]
-+            CheckButton dock_monitors_isolation_radio {
-+              valign: center;
-+            }
-+          }
-+          Adw.ActionRow {
-+            activatable-widget: dock_each_monitor_radio;
-+            title: _("Include apps from _each monitor only");
-+            use-underline: true;
-+            [prefix]
-+            CheckButton dock_each_monitor_radio {
-+              valign: center;
-+              group: dock_monitors_isolation_radio;
-+            }
+       }
++
++      Adw.PreferencesGroup monitor_isolation_group {
++        Adw.ActionRow {
++          activatable-widget: dock_monitors_isolation_radio;
++          title: _("Include apps from all _monitors");
++          use-underline: true;
++          [prefix]
++          CheckButton dock_monitors_isolation_radio {
++            valign: center;
 +          }
 +        }
-       }
++        Adw.ActionRow {
++          activatable-widget: dock_each_monitor_radio;
++          title: _("Include apps from _each monitor only");
++          use-underline: true;
++          [prefix]
++          CheckButton dock_each_monitor_radio {
++            valign: center;
++            group: dock_monitors_isolation_radio;
++          }
++        }
++      }
      };
    };
+ }
 diff --git a/panels/multitasking/cc-multitasking-panel.c b/panels/multitasking/cc-multitasking-panel.c
 index 372f463..74dccbf 100644
 --- a/panels/multitasking/cc-multitasking-panel.c
