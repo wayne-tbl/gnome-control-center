@@ -6,11 +6,11 @@ Ubuntu search provider extensions cannot be controlled from settings, so
 add an option for this
 ---
  panels/search/cc-search-panel-row.blp |   4 +-
- panels/search/cc-search-panel-row.c   |  29 +++++-
- panels/search/cc-search-panel-row.h   |   5 +
- panels/search/cc-search-panel.c       | 184 ++++++++++++++++++++++++++++++++++
+ panels/search/cc-search-panel-row.c   |  23 +++-
+ panels/search/cc-search-panel-row.h   |   3 +
+ panels/search/cc-search-panel.c       | 246 ++++++++++++++++++++++++++++++++++
  po/POTFILES.in                        |   1 +
- 4 files changed, 220 insertions(+), 3 deletions(-)
+ 5 files changed, 274 insertions(+), 3 deletions(-)
 
 diff --git a/panels/search/cc-search-panel-row.blp b/panels/search/cc-search-panel-row.blp
 index 4b6a3f4..b3d7150 100644
@@ -35,7 +35,7 @@ index 4b6a3f4..b3d7150 100644
      valign: center;
      icon-name: "view-more-symbolic";
 diff --git a/panels/search/cc-search-panel-row.c b/panels/search/cc-search-panel-row.c
-index c223572..166b31c 100644
+index c223572..6b1a7ca 100644
 --- a/panels/search/cc-search-panel-row.c
 +++ b/panels/search/cc-search-panel-row.c
 @@ -31,6 +31,9 @@ struct _CcSearchPanelRow
@@ -58,7 +58,7 @@ index c223572..166b31c 100644
    signals[SIGNAL_MOVE_ROW] =
      g_signal_new ("move-row",
                    G_TYPE_FROM_CLASS (object_class),
-@@ -219,12 +225,24 @@ const GActionEntry row_entries[] = {
+@@ -219,12 +225,25 @@ const GActionEntry row_entries[] = {
  
  static void
  cc_search_panel_row_init (CcSearchPanelRow *self)
@@ -74,7 +74,8 @@ index c223572..166b31c 100644
    GSimpleActionGroup *group;
  
 -  gtk_widget_init_template (GTK_WIDGET (self));
-+  if (cc_search_panel_row_is_snap_search_provider (self))
++  if (!G_IS_DESKTOP_APP_INFO (self->app_info) ||
++      !g_app_info_get_id (self->app_info))
 +    {
 +      gtk_widget_set_sensitive (self->drag_handle, FALSE);
 +      gtk_widget_set_sensitive (self->menu_button, FALSE);
@@ -84,7 +85,7 @@ index c223572..166b31c 100644
  
    drag_source = gtk_drag_source_new ();
    gtk_drag_source_set_actions (drag_source, GDK_ACTION_MOVE);
-@@ -264,6 +282,8 @@ cc_search_panel_row_new (GAppInfo *app_info)
+@@ -264,6 +283,8 @@ cc_search_panel_row_new (GAppInfo *app_info)
    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (self),
                                   g_app_info_get_name (app_info));
  
@@ -93,19 +94,8 @@ index c223572..166b31c 100644
    return self;
  }
  
-@@ -278,3 +298,10 @@ cc_search_panel_row_get_switch (CcSearchPanelRow *self)
- {
-   return GTK_WIDGET (self->switcher);
- }
-+
-+gboolean
-+cc_search_panel_row_is_snap_search_provider (CcSearchPanelRow *row)
-+{
-+  return (g_strcmp0 (g_app_info_get_id (row->app_info), SNAP_STORE_DESKTOP_ID) == 0 ||
-+          g_strcmp0 (g_app_info_get_executable (row->app_info), SNAP_BINARY) == 0);
-+}
 diff --git a/panels/search/cc-search-panel-row.h b/panels/search/cc-search-panel-row.h
-index bbec876..6543e61 100644
+index bbec876..2e9fa6c 100644
 --- a/panels/search/cc-search-panel-row.h
 +++ b/panels/search/cc-search-panel-row.h
 @@ -27,6 +27,9 @@ G_BEGIN_DECLS
@@ -118,15 +108,8 @@ index bbec876..6543e61 100644
  
  CcSearchPanelRow *cc_search_panel_row_new          (GAppInfo *app_info);
  
-@@ -34,4 +37,6 @@ GAppInfo         *cc_search_panel_row_get_app_info (CcSearchPanelRow *row);
- 
- GtkWidget        *cc_search_panel_row_get_switch   (CcSearchPanelRow *row);
- 
-+gboolean          cc_search_panel_row_is_snap_search_provider (CcSearchPanelRow *row);
-+
- G_END_DECLS
 diff --git a/panels/search/cc-search-panel.c b/panels/search/cc-search-panel.c
-index 5362b67..e7cfa7d 100644
+index 5362b67..155720b 100644
 --- a/panels/search/cc-search-panel.c
 +++ b/panels/search/cc-search-panel.c
 @@ -25,6 +25,9 @@
@@ -148,7 +131,7 @@ index 5362b67..e7cfa7d 100644
    CcSearchLocationsPage *locations_page;
  };
  
-@@ -49,6 +54,11 @@ CC_PANEL_REGISTER (CcSearchPanel, cc_search_panel)
+@@ -49,6 +54,12 @@ CC_PANEL_REGISTER (CcSearchPanel, cc_search_panel)
  #define SHELL_PROVIDER_GROUP "Shell Search Provider"
  #define SEARCH_LOCATIONS_PAGE_PARAM "locations"
  
@@ -156,33 +139,41 @@ index 5362b67..e7cfa7d 100644
 +#define GNOME_SHELL_ENABLED_EXTENSIONS "enabled-extensions"
 +#define GNOME_SHELL_DISABLED_EXTENSIONS "disabled-extensions"
 +#define SNAP_SEARCH_EXTENSION_UUID "snapd-search-provider@canonical.com"
++#define WEB_SEARCH_EXTENSION_UUID "web-search-provider@ubuntu.com"
 +
  static gint
  list_sort_func (gconstpointer a,
                  gconstpointer b,
-@@ -60,6 +70,12 @@ list_sort_func (gconstpointer a,
-   gint idx_a, idx_b;
-   gpointer lookup;
+@@ -66,6 +77,12 @@ list_sort_func (gconstpointer a,
+   id_a = g_app_info_get_id (app_a);
+   id_b = g_app_info_get_id (app_b);
  
-+  if (cc_search_panel_row_is_snap_search_provider (CC_SEARCH_PANEL_ROW ((gpointer*)a)))
++  if (!G_IS_DESKTOP_APP_INFO (app_a) || !id_a)
 +    return -1;
 +
-+  if (cc_search_panel_row_is_snap_search_provider (CC_SEARCH_PANEL_ROW ((gpointer*)b)))
++  if (!G_IS_DESKTOP_APP_INFO (app_b) || !id_b)
 +    return 1;
 +
-   app_a = cc_search_panel_row_get_app_info (CC_SEARCH_PANEL_ROW ((gpointer*)a));
-   app_b = cc_search_panel_row_get_app_info (CC_SEARCH_PANEL_ROW ((gpointer*)b));
- 
-@@ -589,12 +605,117 @@ populate_search_providers (CcSearchPanel *self)
+   /* find the index of the application in the GSettings preferences */
+   idx_a = -1;
+   idx_b = -1;
+@@ -589,12 +606,148 @@ populate_search_providers (CcSearchPanel *self)
    g_task_run_in_thread (task, search_providers_discover_thread);
  }
  
++typedef struct
++{
++  CcSearchPanel *self;
++  CcSearchPanelRow *snapd_row;
++  CcSearchPanelRow *browser_row;
++} ShellExtensionData;
++
 +static void
 +on_extensions_listed (GObject *source_object,
 +                      GAsyncResult *res,
 +                      gpointer user_data)
 +{
-+  CcSearchPanelRow *row = user_data;
++  g_autofree ShellExtensionData *data = user_data;
 +  g_autoptr (GError) error = NULL;
 +  g_autoptr (GVariant) response = NULL;
 +  g_autoptr (GVariant) extensions = NULL;
@@ -202,6 +193,7 @@ index 5362b67..e7cfa7d 100644
 +  extensions = g_variant_get_child_value (response, 0);
 +
 +  double snapd_search_state = CC_UBUNTU_PANEL_SHELL_EXTENSION_STATE_UNINSTALLED;
++  double web_search_state = CC_UBUNTU_PANEL_SHELL_EXTENSION_STATE_UNINSTALLED;
 +
 +  g_variant_iter_init (&iter, extensions);
 +  while (g_variant_iter_loop (&iter, "{&s@a{sv}}", &uuid, &value))
@@ -213,20 +205,31 @@ index 5362b67..e7cfa7d 100644
 +          info = g_variant_dict_new (value);
 +          g_variant_dict_lookup (info, "state", "d", &snapd_search_state);
 +        }
++      else if (g_str_equal (uuid, WEB_SEARCH_EXTENSION_UUID))
++        {
++          info = g_variant_dict_new (value);
++          g_variant_dict_lookup (info, "state", "d", &web_search_state);
++        }
 +    }
 +
-+  cc_ubuntu_panel_update_extension_widgets (GTK_WIDGET (row),
-+                                            cc_search_panel_row_get_switch (row),
-+                                            SNAP_SEARCH_EXTENSION_UUID,
-+                                            snapd_search_state,
-+                                            TRUE);
-+}
++  if (data->snapd_row)
++    {
++      cc_ubuntu_panel_update_extension_widgets (GTK_WIDGET (data->snapd_row),
++                                                cc_search_panel_row_get_switch (data->snapd_row),
++                                                SNAP_SEARCH_EXTENSION_UUID,
++                                                snapd_search_state,
++                                                TRUE);
++    }
 +
-+typedef struct
-+{
-+  CcSearchPanel *self;
-+  CcSearchPanelRow *row;
-+} ShellExtensionData;
++  if (data->browser_row)
++    {
++      cc_ubuntu_panel_update_extension_widgets (GTK_WIDGET (data->browser_row),
++                                                cc_search_panel_row_get_switch (data->browser_row),
++                                                WEB_SEARCH_EXTENSION_UUID,
++                                                web_search_state,
++                                                TRUE);
++    }
++}
 +
 +static void
 +shell_extensions_proxy_ready (GObject            *source,
@@ -234,6 +237,7 @@ index 5362b67..e7cfa7d 100644
 +                              gpointer            user_data)
 +{
 +  g_autofree ShellExtensionData *data = user_data;
++  CcSearchPanel *self = data->self;
 +  g_autoptr(GDBusProxy) proxy = NULL;
 +  g_autoptr(GError) error = NULL;
 +
@@ -245,25 +249,30 @@ index 5362b67..e7cfa7d 100644
 +      return;
 +    }
 +
-+  g_object_set_data_full (G_OBJECT (data->self), "shell-proxy",
++  g_object_set_data_full (G_OBJECT (self), "shell-proxy",
 +                          g_object_ref (proxy), g_object_unref);
 +
 +  g_dbus_proxy_call (proxy,
 +                     "ListExtensions",
 +                     NULL, G_DBUS_CALL_FLAGS_NONE,
-+                     -1, cc_panel_get_cancellable (CC_PANEL (data->self)),
-+                     (GAsyncReadyCallback) on_extensions_listed, data->row);
++                     -1, cc_panel_get_cancellable (CC_PANEL (self)),
++                     (GAsyncReadyCallback) on_extensions_listed,
++                     g_steal_pointer (&data));
 +}
 +
 +static void
-+update_snapd_search_provider_status (CcSearchPanelRow *row,
-+                                     const char *key,
-+                                     GSettings *gnome_shell_settings)
++update_extension_search_provider_status (CcSearchPanelRow *row,
++                                         const char *key,
++                                         GSettings *gnome_shell_settings)
 +{
 +  gboolean extension_enabled = TRUE;
++  const char *extension_uuid;
++
++  extension_uuid = g_object_get_data (G_OBJECT (row), "extension-uuid");
++  g_assert (extension_uuid);
 +
 +  if (cc_ubuntu_panel_util_is_extension_disabled (gnome_shell_settings,
-+                                                  SNAP_SEARCH_EXTENSION_UUID))
++                                                  extension_uuid))
 +    extension_enabled = FALSE;
 +
 +  gtk_switch_set_active (GTK_SWITCH (cc_search_panel_row_get_switch (row)),
@@ -271,14 +280,20 @@ index 5362b67..e7cfa7d 100644
 +}
 +
 +static void
-+on_snapd_search_switch_changed (CcSearchPanel *self,
-+                                GParamSpec *pspec,
-+                                GtkSwitch *widget)
++on_extension_switch_changed (CcSearchPanelRow *row,
++                                GParamSpec       *pspec,
++                                GtkSwitch        *widget)
 +{
++  CcSearchPanel *self;
 +  gboolean active = gtk_switch_get_active (widget);
++  const char *extension_uuid;
++
++  self = CC_SEARCH_PANEL (g_object_get_data (G_OBJECT (row), "self"));
++  extension_uuid = g_object_get_data (G_OBJECT (row), "extension-uuid");
++  g_assert (extension_uuid);
 +
 +  cc_ubuntu_panel_util_set_extension_enabled (self->gnome_shell_settings,
-+                                              SNAP_SEARCH_EXTENSION_UUID,
++                                              extension_uuid,
 +                                              active);
 +}
  
@@ -291,31 +306,30 @@ index 5362b67..e7cfa7d 100644
    g_clear_object (&self->search_settings);
    g_hash_table_destroy (self->sort_order);
  
-@@ -639,6 +760,69 @@ cc_search_panel_init (CcSearchPanel *self)
+@@ -639,6 +792,99 @@ cc_search_panel_init (CcSearchPanel *self)
    search_panel_invalidate_sort_order (self);
  
    populate_search_providers (self);
 +
 +  CcSearchPanelRow *row;
-+  g_autoptr(GAppInfo) app_info = NULL;
-+  g_autoptr(GDesktopAppInfo) desktop_app_info = NULL;
++  g_autoptr(GAppInfo) snap_search_app_info = NULL;
++  g_autoptr(GDesktopAppInfo) snap_store_desktop_app_info = NULL;
++  g_autoptr(GAppInfo) browser_app_info = NULL;
++  ShellExtensionData *extension_data = NULL;
 +  g_autofree char *snap_path = NULL;
 +  GSettingsSchemaSource *schema_source = g_settings_schema_source_get_default ();
 +  g_autoptr(GSettingsSchema) schema = NULL;
 +
-+  if ((desktop_app_info = g_desktop_app_info_new (SNAP_STORE_DESKTOP_ID)))
++  if ((snap_store_desktop_app_info = g_desktop_app_info_new (SNAP_STORE_DESKTOP_ID)))
 +    {
-+      app_info = G_APP_INFO (g_steal_pointer (&desktop_app_info));
++      snap_search_app_info = G_APP_INFO (g_steal_pointer (&snap_store_desktop_app_info));
 +    }
 +  else if ((snap_path = g_find_program_in_path (SNAP_BINARY)))
 +    {
-+      app_info = g_app_info_create_from_commandline (SNAP_BINARY,
-+                                                     _("Snap Search Provider"),
-+                                                     G_APP_INFO_CREATE_NONE, NULL);
++      snap_search_app_info = g_app_info_create_from_commandline (SNAP_BINARY,
++                                                                 _("Snap Search Provider"),
++                                                                 G_APP_INFO_CREATE_NONE, NULL);
 +    }
-+
-+  if (!app_info)
-+    return;
 +
 +  schema = g_settings_schema_source_lookup (schema_source, GNOME_SHELL_SCHEMA, TRUE);
 +  if (!schema)
@@ -326,19 +340,59 @@ index 5362b67..e7cfa7d 100644
 +
 +  self->gnome_shell_settings = g_settings_new_full (schema, NULL, NULL);
 +
-+  row = cc_search_panel_row_new (app_info);
-+  g_object_set_data (G_OBJECT (row), "self", self);
-+  gtk_list_box_append (GTK_LIST_BOX (self->list_box), GTK_WIDGET (row));
-+
-+  g_signal_connect_object (cc_search_panel_row_get_switch (row),
-+                           "notify::active",
-+                           G_CALLBACK (on_snapd_search_switch_changed),
-+                           self,
-+                           G_CONNECT_SWAPPED);
-+
-+  ShellExtensionData *extension_data = g_new0 (ShellExtensionData, 1);
++  extension_data = g_new0 (ShellExtensionData, 1);
 +  extension_data->self = self;
-+  extension_data->row = row;
++
++  if (snap_search_app_info)
++    {
++      row = cc_search_panel_row_new (snap_search_app_info);
++      g_object_set_data (G_OBJECT (row), "self", self);
++      g_object_set_data (G_OBJECT (row), "extension-uuid", SNAP_SEARCH_EXTENSION_UUID);
++      gtk_list_box_append (GTK_LIST_BOX (self->list_box), GTK_WIDGET (row));
++
++      g_signal_connect_object (cc_search_panel_row_get_switch (row),
++                               "notify::active",
++                               G_CALLBACK (on_extension_switch_changed),
++                               row,
++                               G_CONNECT_SWAPPED);
++
++      g_signal_connect_object (self->gnome_shell_settings,
++                               "changed::" GNOME_SHELL_DISABLED_EXTENSIONS,
++                               G_CALLBACK (update_extension_search_provider_status),
++                               row,
++                               G_CONNECT_SWAPPED);
++
++      update_extension_search_provider_status (row, GNOME_SHELL_DISABLED_EXTENSIONS,
++                                               self->gnome_shell_settings);
++
++      extension_data->snapd_row = g_steal_pointer (&row);
++    }
++
++  if ((browser_app_info = g_app_info_get_default_for_uri_scheme ("https")))
++    {
++      row = cc_search_panel_row_new (browser_app_info);
++      g_object_set_data (G_OBJECT (row), "self", self);
++      g_object_set_data (G_OBJECT (row), "extension-uuid", WEB_SEARCH_EXTENSION_UUID);
++      gtk_list_box_append (GTK_LIST_BOX (self->list_box), GTK_WIDGET (row));
++
++      g_signal_connect_object (cc_search_panel_row_get_switch (row),
++                               "notify::active",
++                               G_CALLBACK (on_extension_switch_changed),
++                               row,
++                               G_CONNECT_SWAPPED);
++
++      g_signal_connect_object (self->gnome_shell_settings,
++                               "changed::" GNOME_SHELL_DISABLED_EXTENSIONS,
++                               G_CALLBACK (update_extension_search_provider_status),
++                               row,
++                               G_CONNECT_SWAPPED);
++
++      update_extension_search_provider_status (row, GNOME_SHELL_DISABLED_EXTENSIONS,
++                                               self->gnome_shell_settings);
++
++      extension_data->browser_row = g_steal_pointer (&row);
++    }
++
 +
 +  cc_object_storage_create_dbus_proxy (G_BUS_TYPE_SESSION,
 +                                       G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES |
@@ -349,15 +403,6 @@ index 5362b67..e7cfa7d 100644
 +                                       cc_panel_get_cancellable (CC_PANEL (self)),
 +                                       (GAsyncReadyCallback) shell_extensions_proxy_ready,
 +                                       g_steal_pointer (&extension_data));
-+
-+  g_signal_connect_object (self->gnome_shell_settings,
-+                           "changed::" GNOME_SHELL_DISABLED_EXTENSIONS,
-+                           G_CALLBACK (update_snapd_search_provider_status),
-+                           row,
-+                           G_CONNECT_SWAPPED);
-+
-+  update_snapd_search_provider_status (row, GNOME_SHELL_DISABLED_EXTENSIONS,
-+                                       self->gnome_shell_settings);
  }
  
  static void
