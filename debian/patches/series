@@ -27,3 +27,4 @@ ubuntu/applications-Support-controlling-the-autostart-flag-on-ap.patch
 ubuntu/remove-donate.patch
 ubuntu/telemetry-Repurpose-diagnostics-panel-for-all-telemetry-a.patch
 ubuntu/cc-privacy-panel-Add-action-row-to-launch-the-Ubuntu-Secu.patch
+ubuntu/panels-background-Notify-users-with-OLED-screens-about-da.patch

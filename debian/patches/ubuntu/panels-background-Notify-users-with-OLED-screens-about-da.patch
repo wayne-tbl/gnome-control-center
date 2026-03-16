@@ -1,0 +1,192 @@
+From: =?utf-8?b?Ik1hcmNvIFRyZXZpc2FuIChUcmV2acOxbyki?= <mail@3v1n0.net>
+Date: Mon, 16 Mar 2026 00:57:14 +0100
+Subject: panels/background: Notify users with OLED screens about dark theming
+
+---
+ panels/background/cc-background-panel.blp | 17 ++++++
+ panels/background/cc-background-panel.c   | 97 +++++++++++++++++++++++++++++++
+ panels/background/meson.build             |  1 +
+ 3 files changed, 115 insertions(+)
+
+diff --git a/panels/background/cc-background-panel.blp b/panels/background/cc-background-panel.blp
+index ff2b3fb..029e770 100644
+--- a/panels/background/cc-background-panel.blp
++++ b/panels/background/cc-background-panel.blp
+@@ -116,6 +116,23 @@ template $CcBackgroundPanel: $CcPanel {
+             }
+           }
+ 
++          Adw.PreferencesGroup {
++            visible: bind oled_label.visible;
++
++            Label oled_label {
++              visible: false;
++              valign: start;
++              vexpand: true;
++              label: _("OLED screen detected. Dark style may save power.");
++              justify: center;
++              wrap: true;
++
++              styles [
++                "dim-label",
++              ]
++            }
++          }
++
+           Adw.PreferencesGroup {
+             title: _("Accent Color");
+ 
+diff --git a/panels/background/cc-background-panel.c b/panels/background/cc-background-panel.c
+index b2efb21..8fb7b1a 100644
+--- a/panels/background/cc-background-panel.c
++++ b/panels/background/cc-background-panel.c
+@@ -27,6 +27,10 @@
+ 
+ #include <gdesktop-enums.h>
+ 
++#include <fcntl.h>
++#include <xf86drm.h>
++#include <xf86drmMode.h>
++
+ #include "cc-background-panel.h"
+ 
+ #include "cc-background-chooser.h"
+@@ -71,6 +75,7 @@ struct _CcBackgroundPanel
+   CcBackgroundChooser *background_chooser;
+   CcBackgroundPreview *default_preview;
+   CcBackgroundPreview *dark_preview;
++  GtkWidget *oled_label;
+   GtkToggleButton *default_toggle;
+   GtkToggleButton *dark_toggle;
+ };
+@@ -543,6 +548,91 @@ cc_background_panel_get_help_uri (CcPanel *panel)
+   return "help:gnome-help/look-background";
+ }
+ 
++G_DEFINE_AUTOPTR_CLEANUP_FUNC (drmModeRes, drmModeFreeResources);
++G_DEFINE_AUTO_CLEANUP_FREE_FUNC (drmModePropertyPtr, drmModeFreeProperty, NULL);
++G_DEFINE_AUTOPTR_CLEANUP_FUNC (drmModeConnector, drmModeFreeConnector);
++
++static gboolean
++has_oled_panel (void)
++{
++  char path[48];
++
++  /* Iterate over /dev/dri/card* devices */
++  for (int i = 0; i < 16; i++)
++    {
++      g_autofd int fd = -1;
++      g_autoptr (drmModeRes) resources = NULL;
++
++      snprintf (path, sizeof (path), "/dev/dri/card%d", i);
++      fd = open (path, O_RDWR | O_CLOEXEC);
++      if (fd < 0)
++        continue;
++
++      resources = drmModeGetResources (fd);
++      if (!resources)
++        continue;
++
++      for (int j = 0; j < resources->count_connectors; j++)
++        {
++          g_autoptr (drmModeConnector) connector = NULL;
++
++          connector = drmModeGetConnector (fd, resources->connectors[j]);
++          if (!connector)
++            continue;
++
++          if (connector->connection != DRM_MODE_CONNECTED)
++            continue;
++
++          for (int k = 0; k < connector->count_props; k++)
++            {
++              g_auto(drmModePropertyPtr) prop = NULL;
++
++              prop = drmModeGetProperty (fd, connector->props[k]);
++              if (!prop)
++                continue;
++
++              if (g_str_equal (prop->name, "panel_type"))
++                {
++                  if (connector->prop_values[k] == 1)
++                    return TRUE;
++                }
++            }
++        }
++    }
++
++  return FALSE;
++}
++
++static void
++check_has_oled_page_thread (GTask *task,
++                            gpointer source_object,
++                            gpointer task_data,
++                            GCancellable *cancellable)
++{
++  g_task_return_boolean (task, has_oled_panel ());
++}
++
++static void
++on_oled_check_done (GObject      *source,
++                    GAsyncResult *res,
++                    gpointer      data)
++{
++  CcBackgroundPanel *panel = CC_BACKGROUND_PANEL (source);
++  g_autoptr (GError) error = NULL;
++  gboolean has_oled;
++
++  has_oled = g_task_propagate_boolean (G_TASK (res), &error);
++  if (error)
++    {
++      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
++        g_warning ("Error checking for OLED panel: %s", error->message);
++
++      return;
++    }
++
++  gtk_widget_set_visible (panel->oled_label, has_oled);
++}
++
+ static void
+ cc_background_panel_dispose (GObject *object)
+ {
+@@ -589,6 +679,7 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
+   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dark_preview);
+   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, default_toggle);
+   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dark_toggle);
++  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, oled_label);
+ 
+   gtk_widget_class_bind_template_callback (widget_class, on_color_scheme_toggle_active_cb);
+   gtk_widget_class_bind_template_callback (widget_class, on_chooser_background_chosen_cb);
+@@ -605,6 +696,8 @@ on_settings_changed (CcBackgroundPanel *self)
+ static void
+ cc_background_panel_init (CcBackgroundPanel *self)
+ {
++  g_autoptr (GTask) task = NULL;
++
+   g_resources_register (cc_background_get_resource ());
+ 
+   gtk_widget_init_template (GTK_WIDGET (self));
+@@ -658,5 +751,9 @@ cc_background_panel_init (CcBackgroundPanel *self)
+                             got_transition_proxy_cb,
+                             self);
+ 
++  task = g_task_new (self, NULL, on_oled_check_done, NULL);
++  g_task_set_return_on_cancel (task, TRUE);
++  g_task_run_in_thread (task, check_has_oled_page_thread);
++
+   load_custom_css (self);
+ }
+diff --git a/panels/background/meson.build b/panels/background/meson.build
+index 87c615b..1b40e9c 100644
+--- a/panels/background/meson.build
++++ b/panels/background/meson.build
+@@ -75,6 +75,7 @@ deps = common_deps + [
+   gnome_bg_dep,
+   libxml_dep,
+   dependency('cairo-gobject'),
++  dependency ('libdrm'),
+ ]
+ 
+ cflags += [
