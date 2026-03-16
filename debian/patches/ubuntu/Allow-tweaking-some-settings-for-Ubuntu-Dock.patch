@@ -25,15 +25,15 @@ Forwarded: not-needed
  panels/ubuntu/cc-ubuntu-dock-dialog.c       |  103 ++
  panels/ubuntu/cc-ubuntu-dock-dialog.h       |   31 +
  panels/ubuntu/cc-ubuntu-panel.blp           |  196 +++
- panels/ubuntu/cc-ubuntu-panel.c             | 1728 +++++++++++++++++++++++++++
- panels/ubuntu/cc-ubuntu-panel.h             |   33 +
+ panels/ubuntu/cc-ubuntu-panel.c             | 1753 +++++++++++++++++++++++++++
+ panels/ubuntu/cc-ubuntu-panel.h             |   49 +
  panels/ubuntu/gnome-ubuntu-panel.desktop.in |   13 +
  panels/ubuntu/meson.build                   |  111 ++
  panels/ubuntu/ubuntu.gresource.xml          |    6 +
  po/POTFILES.in                              |    5 +
  shell/cc-panel-list.c                       |    1 +
  shell/cc-panel-loader.c                     |    3 +
- 16 files changed, 2311 insertions(+)
+ 16 files changed, 2352 insertions(+)
  create mode 100644 panels/ubuntu/assets/colors/color.svg.in
  create mode 100644 panels/ubuntu/assets/theme-dark.svg
  create mode 100644 panels/ubuntu/assets/theme-light.svg
@@ -515,10 +515,10 @@ index 0000000..0fbd977
 +}
 diff --git a/panels/ubuntu/cc-ubuntu-panel.c b/panels/ubuntu/cc-ubuntu-panel.c
 new file mode 100644
-index 0000000..b3ce223
+index 0000000..42adada
 --- /dev/null
 +++ b/panels/ubuntu/cc-ubuntu-panel.c
-@@ -0,0 +1,1728 @@
+@@ -0,0 +1,1753 @@
 +/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*- */
 +/*
 + * Copyright (C) 2017-2022 Canonical Ltd
@@ -571,8 +571,6 @@ index 0000000..b3ce223
 +#define GNOME_SHELL_SCHEMA "org.gnome.shell"
 +#define GNOME_SHELL_ENABLED_EXTENSIONS "enabled-extensions"
 +#define GNOME_SHELL_DISABLED_EXTENSIONS "disabled-extensions"
-+
-+#define SHELL_EXTENSION_STATE_UNINSTALLED 99
 +
 +/*
 + * This allows to migrate settings from 'preferred-monitor' to
@@ -1016,7 +1014,7 @@ index 0000000..b3ce223
 +    STATE_DISABLING,
 +    STATE_ENABLING,
 +
-+    STATE_UNINSTALLED = SHELL_EXTENSION_STATE_UNINSTALLED,
++    STATE_UNINSTALLED = CC_UBUNTU_PANEL_SHELL_EXTENSION_STATE_UNINSTALLED,
 +  };
 +
 +  switch (extension_state)
@@ -1045,6 +1043,17 @@ index 0000000..b3ce223
 +    }
 +}
 +
++void
++cc_ubuntu_panel_update_extension_widgets (GtkWidget  *extension_group,
++                                          GtkWidget  *extension_switch,
++                                          const char *uuid,
++                                          int         extension_state,
++                                          gboolean    always_show_switch)
++{
++  update_extension_widgets (extension_group, extension_switch, uuid,
++                            extension_state, always_show_switch);
++}
++
 +static void
 +on_extensions_listed (GObject *source_object,
 +                      GAsyncResult *res,
@@ -1069,9 +1078,9 @@ index 0000000..b3ce223
 +
 +  extensions = g_variant_get_child_value (response, 0);
 +
-+  double ding_state = SHELL_EXTENSION_STATE_UNINSTALLED;
-+  double dock_state = SHELL_EXTENSION_STATE_UNINSTALLED;
-+  double tiling_state = SHELL_EXTENSION_STATE_UNINSTALLED;
++  double ding_state = CC_UBUNTU_PANEL_SHELL_EXTENSION_STATE_UNINSTALLED;
++  double dock_state = CC_UBUNTU_PANEL_SHELL_EXTENSION_STATE_UNINSTALLED;
++  double tiling_state = CC_UBUNTU_PANEL_SHELL_EXTENSION_STATE_UNINSTALLED;
 +
 +  g_variant_iter_init (&iter, extensions);
 +  while (g_variant_iter_loop (&iter, "{&s@a{sv}}", &uuid, &value))
@@ -1166,22 +1175,29 @@ index 0000000..b3ce223
 +    g_settings_set_int (self->dock_settings, ICONSIZE_KEY, value);
 +}
 +
-+static gboolean
-+is_extension_disabled (CcUbuntuPanel *self,
-+                       const char    *uuid)
++gboolean
++cc_ubuntu_panel_util_is_extension_disabled (GSettings *settings,
++                                            const char *uuid)
 +{
 +  g_auto(GStrv) disabled_extensions = NULL;
 +
-+  disabled_extensions = g_settings_get_strv (self->gnome_shell_settings,
++  disabled_extensions = g_settings_get_strv (settings,
 +                                             GNOME_SHELL_DISABLED_EXTENSIONS);
 +
 +  return g_strv_contains ((const gchar **) disabled_extensions, uuid);
 +}
 +
-+static void
-+set_extension_enabled (CcUbuntuPanel *self,
-+                       const char    *uuid,
-+                       gboolean       enabled)
++static gboolean
++is_extension_disabled (CcUbuntuPanel *self,
++                       const char    *uuid)
++{
++  return cc_ubuntu_panel_util_is_extension_disabled (self->gnome_shell_settings, uuid);
++}
++
++void
++cc_ubuntu_panel_util_set_extension_enabled (GSettings *gnome_shell_settings,
++                                            const char *uuid,
++                                            gboolean enabled)
 +{
 +  g_auto(GStrv) disabled_extensions = NULL;
 +  g_auto(GStrv) enabled_extensions = NULL;
@@ -1189,12 +1205,12 @@ index 0000000..b3ce223
 +  g_autoptr(GPtrArray) disabled_extensions_list = NULL;
 +  guint idx;
 +
-+  g_settings_delay (self->gnome_shell_settings);
++  g_settings_delay (gnome_shell_settings);
 +
-+  enabled_extensions = g_settings_get_strv (self->gnome_shell_settings,
++  enabled_extensions = g_settings_get_strv (gnome_shell_settings,
 +                                            GNOME_SHELL_ENABLED_EXTENSIONS);
 +
-+  disabled_extensions = g_settings_get_strv (self->gnome_shell_settings,
++  disabled_extensions = g_settings_get_strv (gnome_shell_settings,
 +                                            GNOME_SHELL_DISABLED_EXTENSIONS);
 +
 +  enabled_extensions_list = g_ptr_array_new_take_null_terminated (
@@ -1209,7 +1225,7 @@ index 0000000..b3ce223
 +        {
 +          g_ptr_array_add (enabled_extensions_list, g_strdup (uuid));
 +
-+          g_settings_set_strv (self->gnome_shell_settings,
++          g_settings_set_strv (gnome_shell_settings,
 +                               GNOME_SHELL_ENABLED_EXTENSIONS,
 +                               (const char **) enabled_extensions_list->pdata);
 +        }
@@ -1219,7 +1235,7 @@ index 0000000..b3ce223
 +        {
 +          g_ptr_array_remove_index (disabled_extensions_list, idx);
 +
-+          g_settings_set_strv (self->gnome_shell_settings,
++          g_settings_set_strv (gnome_shell_settings,
 +                               GNOME_SHELL_DISABLED_EXTENSIONS,
 +                               (const char **) disabled_extensions_list->pdata);
 +        }
@@ -1231,7 +1247,7 @@ index 0000000..b3ce223
 +        {
 +          g_ptr_array_remove_index (enabled_extensions_list, idx);
 +
-+          g_settings_set_strv (self->gnome_shell_settings,
++          g_settings_set_strv (gnome_shell_settings,
 +                               GNOME_SHELL_ENABLED_EXTENSIONS,
 +                               (const char **) enabled_extensions_list->pdata);
 +        }
@@ -1241,13 +1257,22 @@ index 0000000..b3ce223
 +        {
 +          g_ptr_array_add (disabled_extensions_list, g_strdup (uuid));
 +
-+          g_settings_set_strv (self->gnome_shell_settings,
++          g_settings_set_strv (gnome_shell_settings,
 +                               GNOME_SHELL_DISABLED_EXTENSIONS,
 +                               (const char **) disabled_extensions_list->pdata);
 +        }
 +    }
 +
-+  g_settings_apply (self->gnome_shell_settings);
++  g_settings_apply (gnome_shell_settings);
++}
++
++static void
++set_extension_enabled (CcUbuntuPanel *self,
++                       const char    *uuid,
++                       gboolean       enabled)
++{
++  cc_ubuntu_panel_util_set_extension_enabled (self->gnome_shell_settings, uuid,
++                                              enabled);
 +}
 +
 +static void
@@ -2249,10 +2274,10 @@ index 0000000..b3ce223
 +}
 diff --git a/panels/ubuntu/cc-ubuntu-panel.h b/panels/ubuntu/cc-ubuntu-panel.h
 new file mode 100644
-index 0000000..df67a97
+index 0000000..34f306a
 --- /dev/null
 +++ b/panels/ubuntu/cc-ubuntu-panel.h
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,49 @@
 +/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*- */
 +/*
 + * Copyright (C) 2017 Canonical Ltd
@@ -2283,7 +2308,23 @@ index 0000000..df67a97
 +#define CC_TYPE_UBUNTU_PANEL (cc_ubuntu_panel_get_type ())
 +G_DECLARE_FINAL_TYPE (CcUbuntuPanel, cc_ubuntu_panel, CC, UBUNTU_PANEL, CcPanel)
 +
++typedef void (*CcUbuntuPanelExtensionStateChanged) (gboolean enabled, GObject *user_data);
++
 +void cc_ubuntu_panel_static_init_func (void);
++
++#define CC_UBUNTU_PANEL_SHELL_EXTENSION_STATE_UNINSTALLED 99
++
++void cc_ubuntu_panel_update_extension_widgets (GtkWidget  *extension_group,
++                                               GtkWidget  *extension_switch,
++                                               const char *uuid,
++                                               int         extension_state,
++                                               gboolean    always_show_switch);
++
++gboolean cc_ubuntu_panel_util_is_extension_disabled (GSettings *gnome_shell_settings,
++                                                     const char *uuid);
++void cc_ubuntu_panel_util_set_extension_enabled (GSettings *gnome_shell_settings,
++                                                 const char *uuid,
++                                                 gboolean enabled);
 +
 +G_END_DECLS
 diff --git a/panels/ubuntu/gnome-ubuntu-panel.desktop.in b/panels/ubuntu/gnome-ubuntu-panel.desktop.in
