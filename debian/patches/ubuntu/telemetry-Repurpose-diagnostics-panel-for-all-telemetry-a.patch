@@ -26,7 +26,7 @@ functionality to generate and show an example report is also present.
  .../telemetry/cc-telemetry-insights-example.c      | 102 ++++
  .../telemetry/cc-telemetry-insights-example.h      |  32 ++
  panels/privacy/telemetry/cc-telemetry-page.blp     |  89 +++
- panels/privacy/telemetry/cc-telemetry-page.c       | 631 +++++++++++++++++++++
+ panels/privacy/telemetry/cc-telemetry-page.c       | 629 +++++++++++++++++++++
  panels/privacy/telemetry/cc-telemetry-page.h       |  33 ++
  panels/privacy/telemetry/meson.build               |  18 +
  panels/privacy/telemetry/telemetry.css             |   8 +
@@ -440,16 +440,17 @@ index 0000000..bb5f6cc
 +G_END_DECLS
 diff --git a/panels/privacy/telemetry/cc-telemetry-page.blp b/panels/privacy/telemetry/cc-telemetry-page.blp
 new file mode 100644
-index 0000000..8fdad5a
+index 0000000..dca5f7b
 --- /dev/null
 +++ b/panels/privacy/telemetry/cc-telemetry-page.blp
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,90 @@
 +using Gtk 4.0;
 +using Adw 1;
 +
 +template $CcTelemetryPage: Adw.NavigationPage {
 +  title: _("Telemetry");
 +  tag: "telemetry";
++  visible: false;
 +
 +  child: Adw.ToolbarView {
 +    [top]
@@ -535,10 +536,10 @@ index 0000000..8fdad5a
 +}
 diff --git a/panels/privacy/telemetry/cc-telemetry-page.c b/panels/privacy/telemetry/cc-telemetry-page.c
 new file mode 100644
-index 0000000..ac30475
+index 0000000..0085ad3
 --- /dev/null
 +++ b/panels/privacy/telemetry/cc-telemetry-page.c
-@@ -0,0 +1,631 @@
+@@ -0,0 +1,629 @@
 +/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
 + *
 + * Copyright (C) 2026 Canonical Ltd.
@@ -1106,8 +1107,6 @@ index 0000000..ac30475
 +                    abrt_vanished_cb,
 +                    self,
 +                    NULL);
-+
-+  gtk_widget_set_visible (GTK_WIDGET (self), FALSE);
 +
 +  self->privacy_settings = g_settings_new ("org.gnome.desktop.privacy");
 +
