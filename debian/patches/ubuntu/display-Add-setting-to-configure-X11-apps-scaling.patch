@@ -16,7 +16,7 @@ Bug-Ubuntu: https://bugs.launchpad.net/mutter/+bug/2110515
  2 files changed, 71 insertions(+), 1 deletion(-)
 
 diff --git a/panels/display/cc-display-panel.blp b/panels/display/cc-display-panel.blp
-index f40b2cf..85fad92 100644
+index f40b2cf..c1fc3f7 100644
 --- a/panels/display/cc-display-panel.blp
 +++ b/panels/display/cc-display-panel.blp
 @@ -107,6 +107,14 @@ template $CcDisplayPanel: $CcPanel {
@@ -25,8 +25,8 @@ index f40b2cf..85fad92 100644
  
 +        Adw.PreferencesGroup scale_legacy_apps_row_group {
 +          Adw.SwitchRow scale_legacy_apps_row {
-+            title: C_("display setting", "Automatically Scale _Legacy Applications (X11)");
-+            subtitle: C_("display setting", "Use built-in scaling in legacy applications for better appearance. Some apps may not scale at all.");
++            title: C_("display setting", "Built-in Scaling for Legacy Apps");
++            subtitle: C_("display setting", "Legacy apps that support scaling will look crisp, but some might not scale at all.");
 +            use-underline: true;
 +          }
 +        }
