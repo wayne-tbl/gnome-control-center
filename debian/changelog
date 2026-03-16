@@ -1,8 +1,19 @@
-gnome-control-center (1:50~rc-1) UNRELEASED; urgency=medium
+gnome-control-center (1:50~rc-0ubuntu1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * d/p: Refresh
+  * d/p/ubuntu/privacy-panel: Adjust Security Center icon and name
+  * d/p/ubuntu/display-panel: Improve wording for legacy apps scaling
+  * d/p/ubuntu/privacy-panel: Control telemetry panel visibility via blp file
+  * d/p/ubuntu/privacy-panel: Use a better icon for telemetry sub-page
+  * d/p/ubuntu/background-panel: Notify OLED users about dark theming
+  * d/p/ubuntu/multitasking-panel: Fix multi-monitor settings
+  * d/p/ubuntu/ubuntu-panel: Expose some extensions utilities
+  * d/p/ubuntu/search-panel: Add ability to toggle snaps search extension
+  * d/p/ubuntu/search-panel: Support toggling web search extension
+  * d/p/ubuntu/display-panel: Show a toast on legacy scale mode change
 
- -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Fri, 13 Mar 2026 10:00:02 +0100
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Mon, 16 Mar 2026 02:44:25 +0100
 
 gnome-control-center (1:50~beta-1ubuntu3) resolute; urgency=medium
 
