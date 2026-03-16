@@ -1,4 +1,4 @@
-gnome-control-center (1:50.0-0ubuntu1) UNRELEASED; urgency=medium
+gnome-control-center (1:50.0-0ubuntu1) resolute; urgency=medium
 
   * New upstream release
   * d/p: Refresh
@@ -13,7 +13,7 @@ gnome-control-center (1:50.0-0ubuntu1) UNRELEASED; urgency=medium
   * d/p/ubuntu/search-panel: Support toggling web search extension
   * d/p/ubuntu/display-panel: Show a toast on legacy scale mode change
 
- -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Mon, 16 Mar 2026 02:48:28 +0100
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Mon, 16 Mar 2026 02:58:50 +0100
 
 gnome-control-center (1:50~beta-1ubuntu3) resolute; urgency=medium
 
