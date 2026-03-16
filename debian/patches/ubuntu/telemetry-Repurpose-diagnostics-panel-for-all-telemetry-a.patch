@@ -25,13 +25,13 @@ functionality to generate and show an example report is also present.
  .../telemetry/cc-telemetry-insights-example.blp    |  47 ++
  .../telemetry/cc-telemetry-insights-example.c      | 102 ++++
  .../telemetry/cc-telemetry-insights-example.h      |  32 ++
- panels/privacy/telemetry/cc-telemetry-page.blp     |  89 +++
+ panels/privacy/telemetry/cc-telemetry-page.blp     |  90 +++
  panels/privacy/telemetry/cc-telemetry-page.c       | 629 +++++++++++++++++++++
  panels/privacy/telemetry/cc-telemetry-page.h       |  33 ++
  panels/privacy/telemetry/meson.build               |  18 +
  panels/privacy/telemetry/telemetry.css             |   8 +
  po/POTFILES.in                                     |   4 +
- 16 files changed, 1030 insertions(+), 12 deletions(-)
+ 16 files changed, 1029 insertions(+), 12 deletions(-)
  create mode 100644 panels/privacy/privacy.gresource.xml.in
  create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.blp
  create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.c
@@ -79,7 +79,7 @@ index 4e1f5d9..e88d3b3 100644
  option('whoopsie', type: 'boolean', value: false, description: 'build with Whoopsie support')
 +option('insights', type: 'boolean', value: false, description: 'build with Ubuntu Insights support')
 diff --git a/panels/privacy/cc-privacy-panel.blp b/panels/privacy/cc-privacy-panel.blp
-index 4ef1b86..6c3d801 100644
+index 4ef1b86..7e81a7e 100644
 --- a/panels/privacy/cc-privacy-panel.blp
 +++ b/panels/privacy/cc-privacy-panel.blp
 @@ -43,13 +43,13 @@ template $CcPrivacyPanel: $CcPanel {
@@ -91,7 +91,7 @@ index 4ef1b86..6c3d801 100644
 -            icon-name: "org.gnome.Settings-device-diagnostics-symbolic";
 +            title: _("Tele_metry");
 +            subtitle: _("Control error and system reporting");
-+            icon-name: "mark-chart-symbolic";
++            icon-name: "diagnostics-symbolic";
              show-arrow: true;
              action-name: "navigation.push";
 -            action-target: "'diagnostics'";
