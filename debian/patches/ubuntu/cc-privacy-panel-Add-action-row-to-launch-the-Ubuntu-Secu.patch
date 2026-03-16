@@ -9,7 +9,7 @@ Subject: cc-privacy-panel: Add action row to launch the Ubuntu Security
  2 files changed, 52 insertions(+)
 
 diff --git a/panels/privacy/cc-privacy-panel.blp b/panels/privacy/cc-privacy-panel.blp
-index 6c3d801..c9af09e 100644
+index 7e81a7e..ec1a505 100644
 --- a/panels/privacy/cc-privacy-panel.blp
 +++ b/panels/privacy/cc-privacy-panel.blp
 @@ -60,6 +60,22 @@ template $CcPrivacyPanel: $CcPanel {
@@ -18,9 +18,9 @@ index 6c3d801..c9af09e 100644
            }
 +
 +          $CcListRow security_center_row {
-+            title: _("Ubuntu _Security Center");
++            title: _("_Security Center");
 +            subtitle: _("Configure more security settings");
-+            icon-name: "device-security-symbolic";
++            icon-name: "security-medium-symbolic";
 +            show-arrow: false;
 +            action-name: "launch.application";
 +            action-target: "'desktop-security-center_desktop-security-center.desktop'";
