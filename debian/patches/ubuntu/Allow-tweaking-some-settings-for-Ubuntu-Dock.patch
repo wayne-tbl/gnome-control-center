@@ -24,7 +24,7 @@ Forwarded: not-needed
  panels/ubuntu/cc-ubuntu-dock-dialog.blp     |   73 ++
  panels/ubuntu/cc-ubuntu-dock-dialog.c       |  103 ++
  panels/ubuntu/cc-ubuntu-dock-dialog.h       |   31 +
- panels/ubuntu/cc-ubuntu-panel.blp           |  196 +++
+ panels/ubuntu/cc-ubuntu-panel.blp           |  199 +++
  panels/ubuntu/cc-ubuntu-panel.c             | 1753 +++++++++++++++++++++++++++
  panels/ubuntu/cc-ubuntu-panel.h             |   49 +
  panels/ubuntu/gnome-ubuntu-panel.desktop.in |   13 +
@@ -33,7 +33,7 @@ Forwarded: not-needed
  po/POTFILES.in                              |    5 +
  shell/cc-panel-list.c                       |    1 +
  shell/cc-panel-loader.c                     |    3 +
- 16 files changed, 2352 insertions(+)
+ 16 files changed, 2355 insertions(+)
  create mode 100644 panels/ubuntu/assets/colors/color.svg.in
  create mode 100644 panels/ubuntu/assets/theme-dark.svg
  create mode 100644 panels/ubuntu/assets/theme-light.svg
@@ -313,10 +313,10 @@ index 0000000..cd84651
 +G_END_DECLS
 diff --git a/panels/ubuntu/cc-ubuntu-panel.blp b/panels/ubuntu/cc-ubuntu-panel.blp
 new file mode 100644
-index 0000000..0fbd977
+index 0000000..4bbe6fa
 --- /dev/null
 +++ b/panels/ubuntu/cc-ubuntu-panel.blp
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,199 @@
 +using Gtk 4.0;
 +using Adw 1;
 +
@@ -325,7 +325,7 @@ index 0000000..0fbd977
 +    [top]
 +    Adw.HeaderBar {}
 +
-+    content: Adw.PreferencesPage {
++    content: Gtk.Box {
 +      CenterBox no_settings_view {
 +        hexpand: true;
 +        vexpand: true;
@@ -364,144 +364,147 @@ index 0000000..0fbd977
 +        }
 +      }
 +
-+      Adw.PreferencesGroup ding_preferences_group {
-+        /* Translators: Desktop icons settings. */
-+        title: _("Desktop Icons");
++      Adw.PreferencesPage {
 +
-+        header-suffix: Switch ding_switch {
-+          valign: center;
-+          visible: false;
-+          notify::active => $on_ding_switch_changed() swapped;
-+        };
++        Adw.PreferencesGroup ding_preferences_group {
++          /* Translators: Desktop icons settings. */
++          title: _("Desktop Icons");
 +
-+        Adw.ComboRow ding_icon_size_row {
-+          use-underline: true;
-+          can-focus: true;
-+          width-request: 100;
-+          title: C_("Desktop Icons Size", "Si_ze");
-+          sensitive: bind ding_switch.active;
-+        }
++          header-suffix: Switch ding_switch {
++            valign: center;
++            visible: false;
++            notify::active => $on_ding_switch_changed() swapped;
++          };
 +
-+        Adw.ComboRow ding_icons_new_alignment_row {
-+          use-underline: true;
-+          can-focus: true;
-+          width-request: 100;
-+          title: C_("Desktop Icons Size", "Position of _New Icons");
-+          sensitive: bind ding_switch.active;
-+        }
++          Adw.ComboRow ding_icon_size_row {
++            use-underline: true;
++            can-focus: true;
++            width-request: 100;
++            title: C_("Desktop Icons Size", "Si_ze");
++            sensitive: bind ding_switch.active;
++          }
 +
-+        Adw.SwitchRow ding_showhome_switch {
-+          title: _("Show _Home Folder");
-+          use-underline: true;
-+          sensitive: bind ding_switch.active;
-+        }
-+      }
++          Adw.ComboRow ding_icons_new_alignment_row {
++            use-underline: true;
++            can-focus: true;
++            width-request: 100;
++            title: C_("Desktop Icons Size", "Position of _New Icons");
++            sensitive: bind ding_switch.active;
++          }
 +
-+      Adw.PreferencesGroup dock_preferences_group {
-+        margin-top: 16;
-+
-+        /* Translators: Dock settings. */
-+        title: _("Dock");
-+
-+        header-suffix: Switch dock_switch {
-+          valign: center;
-+          visible: false;
-+          notify::active => $on_dock_switch_changed() swapped;
-+        };
-+
-+        Adw.SwitchRow dock_autohide_switch {
-+          title: _("_Auto-hide the Dock");
-+          subtitle: _("The dock hides when any windows overlap with it");
-+          use-underline: true;
-+          sensitive: bind dock_switch.active;
-+        }
-+
-+        Adw.SwitchRow dock_extendheight_switch {
-+          title: _("Panel _Mode");
-+          subtitle: _("The dock extends to the screen edge");
-+          use-underline: true;
-+          sensitive: bind dock_switch.active;
-+        }
-+
-+        Adw.ActionRow {
-+          use-underline: true;
-+          can-focus: true;
-+          title: _("_Icon Size");
-+          activatable: true;
-+          sensitive: bind dock_switch.active;
-+
-+          Scale icon_size_scale {
-+            adjustment: icon_size_adjustment;
-+            orientation: horizontal;
-+            draw-value: true;
-+            value-pos: left;
-+            width-request: 264;
++          Adw.SwitchRow ding_showhome_switch {
++            title: _("Show _Home Folder");
++            use-underline: true;
++            sensitive: bind ding_switch.active;
 +          }
 +        }
 +
-+        Adw.ComboRow dock_monitor_row {
-+          use-underline: true;
-+          can-focus: true;
-+          width-request: 100;
-+          title: _("_Show on");
-+          sensitive: bind dock_switch.active;
-+          notify::selected-item => $on_dock_monitor_row_changed() swapped;
-+        }
++        Adw.PreferencesGroup dock_preferences_group {
++          margin-top: 16;
 +
-+        Adw.ComboRow dock_position_row {
-+          use-underline: true;
-+          can-focus: true;
-+          width-request: 100;
-+          title: _("_Position on Screen");
-+          sensitive: bind dock_switch.active;
-+        }
++          /* Translators: Dock settings. */
++          title: _("Dock");
 +
-+        Adw.ActionRow dock_behavior_row {
-+          can-focus: true;
-+          title: _("_Configure Dock Behavior");
-+          use-underline: true;
-+          activatable: true;
-+          sensitive: bind dock_switch.active;
-+          activated => $on_dock_behavior_row_activated(template);
++          header-suffix: Switch dock_switch {
++            valign: center;
++            visible: false;
++            notify::active => $on_dock_switch_changed() swapped;
++          };
 +
-+          Image {
-+            icon-name: "go-next-symbolic";
++          Adw.SwitchRow dock_autohide_switch {
++            title: _("_Auto-hide the Dock");
++            subtitle: _("The dock hides when any windows overlap with it");
++            use-underline: true;
++            sensitive: bind dock_switch.active;
++          }
 +
-+            styles [
-+              "dim-label",
-+            ]
++          Adw.SwitchRow dock_extendheight_switch {
++            title: _("Panel _Mode");
++            subtitle: _("The dock extends to the screen edge");
++            use-underline: true;
++            sensitive: bind dock_switch.active;
++          }
++
++          Adw.ActionRow {
++            use-underline: true;
++            can-focus: true;
++            title: _("_Icon Size");
++            activatable: true;
++            sensitive: bind dock_switch.active;
++
++            Scale icon_size_scale {
++              adjustment: icon_size_adjustment;
++              orientation: horizontal;
++              draw-value: true;
++              value-pos: left;
++              width-request: 264;
++            }
++          }
++
++          Adw.ComboRow dock_monitor_row {
++            use-underline: true;
++            can-focus: true;
++            width-request: 100;
++            title: _("_Show on");
++            sensitive: bind dock_switch.active;
++            notify::selected-item => $on_dock_monitor_row_changed() swapped;
++          }
++
++          Adw.ComboRow dock_position_row {
++            use-underline: true;
++            can-focus: true;
++            width-request: 100;
++            title: _("_Position on Screen");
++            sensitive: bind dock_switch.active;
++          }
++
++          Adw.ActionRow dock_behavior_row {
++            can-focus: true;
++            title: _("_Configure Dock Behavior");
++            use-underline: true;
++            activatable: true;
++            sensitive: bind dock_switch.active;
++            activated => $on_dock_behavior_row_activated(template);
++
++            Image {
++              icon-name: "go-next-symbolic";
++
++              styles [
++                "dim-label",
++              ]
++            }
 +          }
 +        }
-+      }
 +
-+      Adw.PreferencesGroup tiling_assistant_preferences_group {
-+        margin-top: 16;
-+        margin-bottom: 16;
++        Adw.PreferencesGroup tiling_assistant_preferences_group {
++          margin-top: 16;
++          margin-bottom: 16;
 +
-+        /* Translators: Tiling Assistant extension settings. */
-+        title: _("Enhanced Tiling");
++          /* Translators: Tiling Assistant extension settings. */
++          title: _("Enhanced Tiling");
 +
-+        header-suffix: Switch tiling_assistant_switch {
-+          valign: center;
-+          notify::active => $on_tiling_assistant_switch_changed() swapped;
-+        };
++          header-suffix: Switch tiling_assistant_switch {
++            valign: center;
++            notify::active => $on_tiling_assistant_switch_changed() swapped;
++          };
 +
-+        Adw.SwitchRow tiling_assistant_popup_switch {
-+          title: _("_Tiling Popup");
++          Adw.SwitchRow tiling_assistant_popup_switch {
++            title: _("_Tiling Popup");
 +
-+          /* Translators: Tiling Assistant Tiling Popup feature explanation. */
-+          subtitle: _("Show a list of open apps to fill empty screen space after tiling a window");
-+          use-underline: true;
-+          sensitive: bind tiling_assistant_switch.active;
-+        }
++            /* Translators: Tiling Assistant Tiling Popup feature explanation. */
++            subtitle: _("Show a list of open apps to fill empty screen space after tiling a window");
++            use-underline: true;
++            sensitive: bind tiling_assistant_switch.active;
++          }
 +
-+        Adw.SwitchRow tiling_assistant_tiling_group {
-+          title: _("Tile _Groups");
++          Adw.SwitchRow tiling_assistant_tiling_group {
++            title: _("Tile _Groups");
 +
-+          /* Translators: Tiling Assistant Tile Groups feature explanation */
-+          subtitle: _("Keep windows grouped together when tiled, so that raising one brings up the group");
-+          use-underline: true;
-+          sensitive: bind tiling_assistant_switch.active;
++            /* Translators: Tiling Assistant Tile Groups feature explanation */
++            subtitle: _("Keep windows grouped together when tiled, so that raising one brings up the group");
++            use-underline: true;
++            sensitive: bind tiling_assistant_switch.active;
++          }
 +        }
 +      }
 +    };
