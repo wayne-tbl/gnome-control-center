@@ -1,9 +1,9 @@
-gnome-control-center (1:50.0-0ubuntu3) UNRELEASED; urgency=medium
+gnome-control-center (1:50.0-0ubuntu3) resolute; urgency=medium
 
   * d/p: Only show details for apps through snap store for snaps (LP: #2058923)
   * d/p: Fix handling of portal permissions for snap applications (LP: #2145050)
 
- -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Fri, 20 Mar 2026 21:25:19 +0100
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Fri, 20 Mar 2026 21:26:57 +0100
 
 gnome-control-center (1:50.0-0ubuntu2) resolute; urgency=medium
 
