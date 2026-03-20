@@ -52,7 +52,7 @@ index e000d1e..f92ece4 100644
                title: _("Scr_eenshots");
                subtitle: _("Take pictures of the screen at any time");
 diff --git a/panels/applications/cc-applications-panel.c b/panels/applications/cc-applications-panel.c
-index cd3fc99..89e0982 100644
+index ae28380..67c096d 100644
 --- a/panels/applications/cc-applications-panel.c
 +++ b/panels/applications/cc-applications-panel.c
 @@ -55,6 +55,8 @@
@@ -80,7 +80,7 @@ index cd3fc99..89e0982 100644
    AdwSwitchRow    *wallpaper_row;
    AdwSwitchRow    *screenshots_row;
    AdwSwitchRow    *sounds_row;
-@@ -549,6 +553,288 @@ wallpaper_cb (CcApplicationsPanel *self)
+@@ -573,6 +577,288 @@ wallpaper_cb (CcApplicationsPanel *self)
      set_wallpaper_allowed (self, adw_switch_row_get_active (self->wallpaper_row));
  }
  
@@ -369,15 +369,15 @@ index cd3fc99..89e0982 100644
  /* --- screenshot --- */
  
  static void
-@@ -960,6 +1246,7 @@ update_permissions_group (CcApplicationsPanel *self,
-   g_autofree gchar *portal_app_id = get_portal_app_id (info);
+@@ -985,6 +1271,7 @@ update_permissions_group (CcApplicationsPanel *self,
+   g_autofree gchar *portal_app_id = cc_util_app_get_portal_id (info);
    gboolean set, allowed, disabled;
    gboolean has_any = FALSE;
 +  gboolean autostart_only_app;
  
    disabled = g_settings_get_boolean (self->search_settings, "disable-external");
    get_search_enabled (self, app_id, &set, &allowed);
-@@ -979,11 +1266,13 @@ update_permissions_group (CcApplicationsPanel *self,
+@@ -1004,11 +1291,13 @@ update_permissions_group (CcApplicationsPanel *self,
        gtk_widget_set_visible (GTK_WIDGET (self->shortcuts_row), FALSE);
      }
  
@@ -392,7 +392,7 @@ index cd3fc99..89e0982 100644
      {
        g_clear_object (&self->notification_settings);
        get_notification_allowed (self, portal_app_id, &set, &allowed);
-@@ -996,6 +1285,11 @@ update_permissions_group (CcApplicationsPanel *self,
+@@ -1021,6 +1310,11 @@ update_permissions_group (CcApplicationsPanel *self,
        gtk_widget_set_visible (GTK_WIDGET (self->background_row), set);
        has_any |= set;
  
@@ -404,7 +404,7 @@ index cd3fc99..89e0982 100644
        get_wallpaper_allowed (self, portal_app_id, &set, &allowed);
        adw_switch_row_set_active (self->wallpaper_row, allowed);
        gtk_widget_set_visible (GTK_WIDGET (self->wallpaper_row), set);
-@@ -1042,7 +1336,13 @@ update_permissions_group (CcApplicationsPanel *self,
+@@ -1067,7 +1361,13 @@ update_permissions_group (CcApplicationsPanel *self,
        g_set_object (&self->notification_settings, get_notification_settings (app_id));
        get_notification_allowed (self, app_id, &set, &allowed);
        adw_switch_row_set_active (self->notifications_row, allowed);
@@ -419,7 +419,7 @@ index cd3fc99..89e0982 100644
        has_any |= set;
  
        gtk_widget_set_visible (GTK_WIDGET (self->background_row), FALSE);
-@@ -1631,6 +1931,90 @@ compare_rows (gconstpointer  a,
+@@ -1659,6 +1959,90 @@ compare_rows (gconstpointer  a,
    return g_utf8_collate (key1, key2);
  }
  
@@ -510,7 +510,7 @@ index cd3fc99..89e0982 100644
  static void
  populate_applications (CcApplicationsPanel *self)
  {
-@@ -1643,8 +2027,31 @@ populate_applications (CcApplicationsPanel *self)
+@@ -1671,8 +2055,31 @@ populate_applications (CcApplicationsPanel *self)
        g_signal_handler_block (self->manager, self->app_filter_id);
  #endif
  
@@ -542,7 +542,7 @@ index cd3fc99..89e0982 100644
    for (l = infos; l; l = l->next)
      {
        GAppInfo *info = l->data;
-@@ -1880,12 +2287,13 @@ cc_applications_panel_finalize (GObject *object)
+@@ -1908,12 +2315,13 @@ cc_applications_panel_finalize (GObject *object)
    g_clear_object (&self->location_settings);
    g_clear_object (&self->privacy_settings);
    g_clear_object (&self->search_settings);
@@ -557,7 +557,7 @@ index cd3fc99..89e0982 100644
  
    G_OBJECT_CLASS (cc_applications_panel_parent_class)->finalize (object);
  }
-@@ -1959,6 +2367,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
+@@ -1987,6 +2395,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_name_label);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_search_entry);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_settings_page);
@@ -565,7 +565,7 @@ index cd3fc99..89e0982 100644
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, required_permissions_group);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, autorun_never_row);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, builtin_row);
-@@ -2003,6 +2412,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
+@@ -2031,6 +2440,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, view_details_button);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, toast_overlay);
  

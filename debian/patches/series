@@ -1,3 +1,11 @@
+location-page-Do-not-leak-app-info-and-time.patch
+camera-page-Do-not-leak-AppInfo.patch
+applications-Take-care-of-the-snap-app-name-if-set-for-po.patch
+applications-panel-Use-portal-app-ID-to-store-portal-sett.patch
+cc-util-Add-function-to-get-the-portal-ID-for-an-applicat.patch
+utils-Move-utility-to-compute-the-APP-Id-to-a-more-global.patch
+notifications-Try-to-use-the-portal-ID-for-an-application.patch
+camera-location-Add-snap-support-to-find-app-ID-from-port.patch
 remote-desktop-Correctly-handle-missing-secret-collection.patch
 debian/Debian-s-adduser-doesn-t-allow-uppercase-letters-by-defau.patch
 debian/Ignore-result-of-test-network-panel.patch

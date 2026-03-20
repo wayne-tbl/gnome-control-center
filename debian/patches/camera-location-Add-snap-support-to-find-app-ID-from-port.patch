@@ -1,0 +1,267 @@
+From: =?utf-8?b?Ik1hcmNvIFRyZXZpc2FuIChUcmV2acOxbyki?= <mail@3v1n0.net>
+Date: Fri, 20 Mar 2026 19:40:43 +0100
+Subject: camera, location: Add snap support to find app ID from portal ID
+
+Snap portal ID is not matching the application ID desktop file, or it
+may not, depending how the snap is created.
+
+But in general the permission ID is in the form:
+ - snap.snap-name
+ - snap.snap-name_app-name
+
+To find out the relative desktop file we have to look through the
+installed applications and find out the desktop file that provides it.
+
+So add an utility function that allows to do that.
+
+Ideally this should be done inside a cc-apps-manager global object that
+monitors installed apps and that is re-used by the various panels, but
+this is the simplest implementation for now.
+
+Origin: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/3353
+---
+ panels/common/cc-util.c                    | 100 +++++++++++++++++++++++++++++
+ panels/common/cc-util.h                    |   3 +
+ panels/privacy/camera/cc-camera-page.c     |   9 +--
+ panels/privacy/location/cc-location-page.c |  16 ++---
+ 4 files changed, 115 insertions(+), 13 deletions(-)
+
+diff --git a/panels/common/cc-util.c b/panels/common/cc-util.c
+index 76741fb..f137602 100644
+--- a/panels/common/cc-util.c
++++ b/panels/common/cc-util.c
+@@ -307,3 +307,103 @@ cc_util_app_get_portal_id (GAppInfo *info)
+ 
+   return NULL;
+ }
++
++static void
++collect_snap_app_infos (GHashTable **snaps_app_ids_cache_ptr)
++{
++  g_autolist(GAppInfo) app_infos = NULL;
++  GHashTable *snaps_app_ids;
++
++  g_return_if_fail (snaps_app_ids_cache_ptr != NULL);
++
++  if (*snaps_app_ids_cache_ptr)
++    return;
++
++  snaps_app_ids = g_hash_table_new_full (g_str_hash, g_str_equal,
++                                         g_free, g_object_unref);
++  *snaps_app_ids_cache_ptr = snaps_app_ids;
++
++  app_infos = g_app_info_get_all ();
++  for (GList *l = app_infos; l != NULL; l = l->next)
++    {
++      g_autofree gchar *snap_name = NULL;
++      g_autofree gchar *snap_app_name = NULL;
++      GDesktopAppInfo *app_info = l->data;
++
++      if (!G_IS_DESKTOP_APP_INFO (app_info))
++        continue;
++
++      snap_name = g_desktop_app_info_get_string (app_info, "X-SnapInstanceName");
++      snap_app_name = g_desktop_app_info_get_string (app_info, "X-SnapAppName");
++
++      if (snap_name == NULL)
++        continue;
++
++      if (g_strcmp0 (snap_name, snap_app_name) == 0 || !snap_app_name)
++         {
++           g_hash_table_insert (snaps_app_ids,
++                                g_strdup (snap_name),
++                                g_object_ref (app_info));
++        }
++      else
++        {
++          g_hash_table_insert (snaps_app_ids,
++                               g_strconcat (snap_name, "_", snap_app_name, NULL),
++                               g_object_ref (app_info));
++        }
++    }
++
++  if (!g_log_writer_default_would_drop (G_LOG_LEVEL_DEBUG, G_LOG_DOMAIN))
++    {
++      GHashTableIter iter;
++      gpointer key, app_info;
++      g_hash_table_iter_init (&iter, snaps_app_ids);
++
++      while (g_hash_table_iter_next (&iter, (gpointer *) &key, (gpointer *) &app_info))
++        {
++          g_debug ("Cached snap app id '%s' for desktop file %s", (char *) key,
++                   g_desktop_app_info_get_filename (G_DESKTOP_APP_INFO (app_info)));
++        }
++    }
++}
++
++GAppInfo *
++cc_util_lookup_app_info_by_portal_id (GHashTable  **snaps_app_ids_cache_ptr,
++                                      const gchar  *portal_app_id)
++{
++  g_autolist(GAppInfo) app_infos = NULL;
++  g_autoptr(GDesktopAppInfo) app_info = NULL;
++  g_autoptr(GHashTable) snaps_app_ids_cache = NULL;
++  g_autofree gchar *desktop_id = NULL;
++  g_autofree gchar *snap_app_id = NULL;
++  const char *snap_id;
++
++  g_return_val_if_fail (portal_app_id != NULL, NULL);
++
++  if (!g_str_has_prefix (portal_app_id, PORTAL_SNAP_PREFIX))
++    {
++      desktop_id = g_strdup_printf ("%s.desktop", portal_app_id);
++      return G_APP_INFO (g_desktop_app_info_new (desktop_id));
++    }
++
++  snap_id = portal_app_id + strlen (PORTAL_SNAP_PREFIX);
++  if (strchr (snap_id, '_'))
++    snap_app_id = g_strdup (snap_id);
++  else
++    snap_app_id = g_strconcat (snap_id, "_", snap_id, NULL);
++
++  g_debug ("Looking up desktop file %s for snap '%s'\n", desktop_id, portal_app_id);
++  desktop_id = g_strconcat (snap_app_id, ".desktop", NULL);
++
++  app_info = g_desktop_app_info_new (desktop_id);
++  if (app_info)
++    return G_APP_INFO (g_steal_pointer (&app_info));
++
++  if (!snaps_app_ids_cache_ptr)
++    snaps_app_ids_cache_ptr = &snaps_app_ids_cache;
++
++  collect_snap_app_infos (snaps_app_ids_cache_ptr);
++  g_set_object (&app_info, g_hash_table_lookup (*snaps_app_ids_cache_ptr, snap_id));
++
++  return (GAppInfo *) g_steal_pointer (&app_info);
++}
+diff --git a/panels/common/cc-util.h b/panels/common/cc-util.h
+index 8c4eab2..409a9aa 100644
+--- a/panels/common/cc-util.h
++++ b/panels/common/cc-util.h
+@@ -32,3 +32,6 @@ char * cc_util_get_localized_weekday_name      (gint iso_weekday_number);
+ 
+ char * cc_util_app_get_app_id                  (GAppInfo *app_info);
+ char * cc_util_app_get_portal_id               (GAppInfo *app_info);
++
++GAppInfo * cc_util_lookup_app_info_by_portal_id (GHashTable  **snaps_app_ids_cache_ptr,
++                                                 const gchar  *portal_app_id);
+diff --git a/panels/privacy/camera/cc-camera-page.c b/panels/privacy/camera/cc-camera-page.c
+index 3feb175..c0e5512 100644
+--- a/panels/privacy/camera/cc-camera-page.c
++++ b/panels/privacy/camera/cc-camera-page.c
+@@ -21,7 +21,6 @@
+ #include "cc-camera-page.h"
+ #include "cc-util.h"
+ 
+-#include <gio/gdesktopappinfo.h>
+ #include <glib/gi18n.h>
+ 
+ #define APP_PERMISSIONS_TABLE "devices"
+@@ -43,6 +42,8 @@ struct _CcCameraPage
+   GHashTable   *camera_app_switches;
+   GHashTable   *camera_app_rows;
+ 
++  GHashTable   *snaps_app_ids;
++
+   GtkSizeGroup *camera_icon_size_group;
+ };
+ 
+@@ -180,7 +181,7 @@ add_camera_app (CcCameraPage *self,
+ {
+   g_autofree gchar *desktop_id = NULL;
+   CameraAppStateData *data;
+-  g_autoptr(GDesktopAppInfo) app_info = NULL;
++  g_autoptr(GAppInfo) app_info = NULL;
+   GtkWidget *row, *w;
+   GIcon *icon;
+ 
+@@ -191,8 +192,7 @@ add_camera_app (CcCameraPage *self,
+       return;
+     }
+ 
+-  desktop_id = g_strdup_printf ("%s.desktop", app_id);
+-  app_info = g_desktop_app_info_new (desktop_id);
++  app_info = cc_util_lookup_app_info_by_portal_id (&self->snaps_app_ids, app_id);
+   if (!app_info)
+     return;
+ 
+@@ -400,6 +400,7 @@ cc_camera_page_finalize (GObject *object)
+   g_clear_pointer (&self->camera_apps_data, g_variant_unref);
+   g_clear_pointer (&self->camera_app_switches, g_hash_table_unref);
+   g_clear_pointer (&self->camera_app_rows, g_hash_table_unref);
++  g_clear_pointer (&self->snaps_app_ids, g_hash_table_unref);
+ 
+   G_OBJECT_CLASS (cc_camera_page_parent_class)->finalize (object);
+ }
+diff --git a/panels/privacy/location/cc-location-page.c b/panels/privacy/location/cc-location-page.c
+index b169c1c..242cf34 100644
+--- a/panels/privacy/location/cc-location-page.c
++++ b/panels/privacy/location/cc-location-page.c
+@@ -21,8 +21,6 @@
+ #include "cc-location-page.h"
+ #include "cc-util.h"
+ 
+-#include <gio/gdesktopappinfo.h>
+-
+ #define LOCATION_ENABLED "enabled"
+ #define APP_PERMISSIONS_TABLE "location"
+ #define APP_PERMISSIONS_ID "location"
+@@ -43,6 +41,8 @@ struct _CcLocationPage
+   GHashTable   *location_app_switches;
+   GHashTable   *location_app_rows;
+ 
++  GHashTable   *snaps_app_ids;
++
+   GtkSizeGroup *location_icon_size_group;
+ };
+ 
+@@ -171,12 +171,11 @@ add_location_app (CcLocationPage *self,
+                   gint64          last_used)
+ {
+   LocationAppStateData *data;
+-  g_autoptr(GDesktopAppInfo) app_info = NULL;
++  g_autoptr(GAppInfo) app_info = NULL;
+   g_autoptr(GDateTime) t = NULL;
+   GtkWidget *row, *w;
+   GIcon *icon;
+   gchar *last_used_str;
+-  gchar *desktop_id;
+ 
+   w = g_hash_table_lookup (self->location_app_switches, app_id);
+   if (w != NULL)
+@@ -185,16 +184,14 @@ add_location_app (CcLocationPage *self,
+       return;
+     }
+ 
+-  desktop_id = g_strdup_printf ("%s.desktop", app_id);
+-  app_info = g_desktop_app_info_new (desktop_id);
+-  g_free (desktop_id);
++  app_info = cc_util_lookup_app_info_by_portal_id (&self->snaps_app_ids, app_id);
+   if (app_info == NULL)
+       return;
+ 
+   row = adw_action_row_new ();
+   gtk_list_box_append (self->location_apps_list_box, row);
+ 
+-  icon = g_app_info_get_icon (G_APP_INFO (app_info));
++  icon = g_app_info_get_icon (app_info);
+   w = gtk_image_new_from_gicon (icon);
+   gtk_image_set_icon_size (GTK_IMAGE (w), GTK_ICON_SIZE_LARGE);
+   gtk_widget_set_valign (w, GTK_ALIGN_CENTER);
+@@ -202,7 +199,7 @@ add_location_app (CcLocationPage *self,
+   adw_action_row_add_prefix (ADW_ACTION_ROW (row), w);
+ 
+   adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row),
+-                                 g_app_info_get_name (G_APP_INFO (app_info)));
++                                 g_app_info_get_name (app_info));
+ 
+   t = g_date_time_new_from_unix_utc (last_used);
+   last_used_str = cc_util_get_smart_date (t);
+@@ -409,6 +406,7 @@ cc_location_page_finalize (GObject *object)
+   g_clear_pointer (&self->location_apps_data, g_variant_unref);
+   g_clear_pointer (&self->location_app_switches, g_hash_table_unref);
+   g_clear_pointer (&self->location_app_rows, g_hash_table_unref);
++  g_clear_pointer (&self->snaps_app_ids, g_hash_table_unref);
+ 
+   G_OBJECT_CLASS (cc_location_page_parent_class)->finalize (object);
+ }

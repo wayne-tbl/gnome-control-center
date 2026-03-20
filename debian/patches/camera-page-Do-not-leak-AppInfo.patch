@@ -1,0 +1,22 @@
+From: =?utf-8?b?Ik1hcmNvIFRyZXZpc2FuIChUcmV2acOxbyki?= <mail@3v1n0.net>
+Date: Fri, 20 Mar 2026 19:54:22 +0100
+Subject: camera-page: Do not leak AppInfo
+
+Origin: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/3352
+---
+ panels/privacy/camera/cc-camera-page.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/panels/privacy/camera/cc-camera-page.c b/panels/privacy/camera/cc-camera-page.c
+index 1144691..3feb175 100644
+--- a/panels/privacy/camera/cc-camera-page.c
++++ b/panels/privacy/camera/cc-camera-page.c
+@@ -180,7 +180,7 @@ add_camera_app (CcCameraPage *self,
+ {
+   g_autofree gchar *desktop_id = NULL;
+   CameraAppStateData *data;
+-  GDesktopAppInfo *app_info;
++  g_autoptr(GDesktopAppInfo) app_info = NULL;
+   GtkWidget *row, *w;
+   GIcon *icon;
+ 
