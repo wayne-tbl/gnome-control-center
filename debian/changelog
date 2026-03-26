@@ -1,8 +1,10 @@
 gnome-control-center (1:49.0-1ubuntu2.1) questing; urgency=medium
 
-  [ Alessandro Astone ]
+  [ Mitchell Augustin ]
   * remote-desktop, desktop-sharing: Handle when keyring is locked
     (LP: #2000063)
+
+  [ Alessandro Astone ]
   * d/p: Fix crash when entering remote-dekstop settings (LP: #2000063)
 
  -- Mitchell Augustin <mitchell.augustin@canonical.com>  Wed, 25 Feb 2026 15:50:56 -0600
