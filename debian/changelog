@@ -1,3 +1,11 @@
+gnome-control-center (1:50.0-0ubuntu4) resolute; urgency=medium
+
+  * Replace keyring patch with the one that got forwarded upstream.
+    The previous patch was accidentally rebased to affect this same code
+    hunk, but we were not aware that had happened.
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Thu, 26 Mar 2026 19:22:01 +0100
+
 gnome-control-center (1:50.0-0ubuntu3) resolute; urgency=medium
 
   * d/p: Only show details for apps through snap store for snaps (LP: #2058923)
