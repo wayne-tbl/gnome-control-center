@@ -6,7 +6,6 @@ cc-util-Add-function-to-get-the-portal-ID-for-an-applicat.patch
 utils-Move-utility-to-compute-the-APP-Id-to-a-more-global.patch
 notifications-Try-to-use-the-portal-ID-for-an-application.patch
 camera-location-Add-snap-support-to-find-app-ID-from-port.patch
-remote-desktop-Correctly-handle-missing-secret-collection.patch
 debian/Debian-s-adduser-doesn-t-allow-uppercase-letters-by-defau.patch
 debian/Ignore-result-of-test-network-panel.patch
 ubuntu/keyboard-Add-launch-terminal-shortcut.patch
