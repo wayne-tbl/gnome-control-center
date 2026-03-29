@@ -710,6 +710,7 @@ update_suspend_notice_visibility (CcPowerPanel *self)
 
   supported = self->can_suspend == ACTION_AUTOMATIC &&
               g_strcmp0 (self->chassis_type, "vm") != 0;
+  supported = FALSE;
 
   enabled = adw_switch_row_get_active (self->suspend_on_ac_switch_row);
   if (enabled && self->has_batteries)
