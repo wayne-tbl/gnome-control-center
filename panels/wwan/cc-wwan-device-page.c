@@ -95,6 +95,8 @@ struct _CcWwanDevicePage
    */
   gboolean is_self_change;
   gboolean is_retry;
+
+  CcListRow     *stk_row;
 };
 
 G_DEFINE_TYPE (CcWwanDevicePage, cc_wwan_device_page, GTK_TYPE_BOX)
@@ -165,6 +167,12 @@ wwan_data_show_apn_dialog (CcWwanDevicePage *self)
     }
 
   gtk_widget_set_visible (GTK_WIDGET (self->apn_dialog), TRUE);
+}
+
+static void
+cc_wwan_open_stk_tool (CcWwanDevicePage *self)
+{
+  g_spawn_command_line_async ("dex /usr/share/applications/io.furios.StkTool.desktop", NULL);
 }
 
 static GcrPrompt *
@@ -412,6 +420,10 @@ wwan_advanced_settings_activated_cb (CcWwanDevicePage *self,
     {
       wwan_data_show_apn_dialog (self);
     }
+  else if (row == self->stk_row)
+    {
+      cc_wwan_open_stk_tool (self);
+    }
   else if (GTK_WIDGET (row) == GTK_WIDGET (self->sim_slot_row))
     {
         /* NOP handling sim_slot_row, since it is a combo row. */
@@ -646,6 +658,8 @@ cc_wwan_device_page_class_init (CcWwanDevicePageClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, wwan_data_settings_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, wwan_network_settings_activated_cb);
   gtk_widget_class_bind_template_callback (widget_class, wwan_advanced_settings_activated_cb);
+
+  gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, stk_row);
 }
 
 static void
