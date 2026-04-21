@@ -8,8 +8,8 @@ ifeq ($(shell dpkg-vendor --is Ubuntu && echo yes),yes)
 DISTRIBUTOR_LOGO := /usr/share/pixmaps/ubuntu-logo-text.svg
 DISTRIBUTOR_LOGO_DARK := /usr/share/pixmaps/ubuntu-logo-text-dark.svg
 else
-DISTRIBUTOR_LOGO := /usr/share/icons/vendor/scalable/emblems/emblem-vendor.svg
-DISTRIBUTOR_LOGO_DARK := /usr/share/icons/vendor/scalable/emblems/emblem-vendor.svg
+DISTRIBUTOR_LOGO := /usr/share/icons/vendor/256x256/emblems/emblem-vendor.png
+DISTRIBUTOR_LOGO_DARK := /usr/share/icons/vendor/256x256/emblems/emblem-vendor.png
 endif
 
 %:
