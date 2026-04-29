@@ -256,6 +256,7 @@ common_deps = [
   dependency('gio-unix-2.0'),
   dependency('gthread-2.0'),
   gtk_dep,
+  dependency('gstreamer-1.0'),
 ]
 
 polkit_gobject_dep = dependency('polkit-gobject-1', version: '>= 0.103')

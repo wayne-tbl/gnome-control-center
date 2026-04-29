@@ -1,0 +1,183 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $CcFacePanel: $CcPanel {
+  child: Adw.ToastOverlay toast_overlay {
+    child: Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {}
+
+      content: Adw.BottomSheet bottom_sheet {
+        can-open: true;
+        modal: true;
+        open: false;
+
+        notify::open => $cc_face_on_bottom_sheet_open_changed();
+
+        content: Adw.Clamp {
+          child: ScrolledWindow {
+            hscrollbar-policy: never;
+            min-content-height: 400;
+            vexpand: true;
+
+            child: Box {
+              orientation: vertical;
+              spacing: 24;
+              margin-top: 24;
+              margin-bottom: 24;
+              margin-start: 16;
+              margin-end: 16;
+
+              Adw.PreferencesGroup {
+                title: _("Face Unlock");
+
+                Adw.ActionRow face_row {
+                  title: _("Face Unlock");
+                  subtitle: _("Checking status...");
+
+                  [prefix]
+                  Image {
+                    icon-name: "auth-face-symbolic";
+                    pixel-size: 32;
+                  }
+
+                  [suffix]
+                  Box {
+                    orientation: horizontal;
+                    spacing: 3;
+                    valign: center;
+                    halign: end;
+
+                    Button enroll_button {
+                      icon-name: "list-add-symbolic";
+                      tooltip-text: _("Enroll");
+                      clicked => $on_enroll_clicked();
+
+                      styles [
+                        "suggested-action",
+                        "circular",
+                      ]
+                    }
+
+                    Button identify_button {
+                      icon-name: "view-refresh-symbolic";
+                      tooltip-text: _("Identify");
+                      visible: false;
+                      clicked => $on_identify_clicked();
+
+                      styles [
+                        "circular",
+                      ]
+                    }
+
+                    Button unenroll_button {
+                      icon-name: "user-trash-symbolic";
+                      tooltip-text: _("Unenroll");
+                      visible: false;
+                      clicked => $on_unenroll_clicked();
+
+                      styles [
+                        "destructive-action",
+                        "circular",
+                      ]
+                    }
+                  }
+                }
+
+                Adw.ExpanderRow {
+                  title: _("Security notice");
+                  subtitle: _("Face unlock is convenient, but less secure than a password.");
+
+                  [prefix]
+                  Image {
+                    icon-name: "dialog-warning-symbolic";
+                  }
+
+                  Label {
+                    label: _("People with similar facial features, or a high-quality photo of you, may be able to bypass face unlock. Use this feature for convenience, not as your primary security method.");
+                    wrap: true;
+                    xalign: 0;
+                    margin-top: 6;
+                    margin-bottom: 12;
+                    margin-start: 12;
+                    margin-end: 12;
+
+                    styles [
+                      "dim-label",
+                    ]
+                  }
+                }
+              }
+            };
+          };
+        };
+
+        sheet: Box {
+          orientation: vertical;
+          spacing: 18;
+          margin-top: 24;
+          margin-bottom: 24;
+          margin-start: 16;
+          margin-end: 16;
+
+          Label sheet_title {
+            label: _("Face");
+            justify: center;
+            wrap: true;
+
+            styles [
+              "title-2",
+            ]
+          }
+
+          Label sheet_subtitle {
+            label: _("Look at the camera.");
+            justify: center;
+            wrap: true;
+          }
+
+          Frame {
+            halign: center;
+            valign: center;
+
+            styles [
+              "card",
+            ]
+
+            Overlay {
+              Picture viewfinder_picture {
+                width-request: 280;
+                height-request: 210;
+                can-shrink: true;
+                content-fit: cover;
+              }
+
+              [overlay]
+              ProgressBar enroll_progress {
+                visible: false;
+                valign: end;
+                margin-start: 12;
+                margin-end: 12;
+                margin-bottom: 12;
+
+                styles [
+                  "osd",
+                ]
+              }
+            }
+          }
+
+          Label {
+            label: _("Close this sheet to cancel.");
+            justify: center;
+            wrap: true;
+
+            styles [
+              "dim-label",
+            ]
+          }
+        };
+      };
+    };
+  };
+}

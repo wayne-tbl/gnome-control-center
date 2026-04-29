@@ -422,6 +422,7 @@ static const gchar * const panel_order[] = {
   "gps",
   "crypted",
   "fingerprint",
+  "face",
   "printers",
   "wacom",
 
