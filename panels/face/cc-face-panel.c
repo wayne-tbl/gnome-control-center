@@ -873,7 +873,7 @@ on_agent_signal (GDBusProxy *proxy,
     if (state != self->last_enrollment_state) {
       self->last_enrollment_state = state;
 
-      if (state != ENROLLMENT_IDLE && state != ENROLLMENT_IN_PROGRESS)
+      if (state != ENROLLMENT_IDLE && state != ENROLLMENT_IN_PROGRESS && state != ENROLLMENT_FAIL)
         show_toast (self, "%s", enrollment_state_to_string (state));
     }
   } else if (g_strcmp0 (signal_name, "RecognitionStateChanged") == 0) {
