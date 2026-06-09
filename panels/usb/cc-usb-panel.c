@@ -207,18 +207,10 @@ cc_usb_panel_enable_mtp (CcUsbPanel *self, gboolean state)
 {
   GError *error = NULL;
   const gchar *home_dir = g_get_home_dir ();
-  gchar *filepath = g_build_filename (home_dir, ".mtp_disable", NULL);
+  gchar *filepath = g_build_filename (home_dir, ".mtp_enable", NULL);
   GFile *file = g_file_new_for_path (filepath);
 
   if (state) {
-    if (!g_file_delete (file, NULL, &error)) {
-      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-        g_warning ("Error deleting %s: %s", filepath, error->message);
-      g_clear_error (&error);
-    }
-    cc_start_service (MTP_SERVER_SERVICE, G_BUS_TYPE_SESSION, &error);
-  } else {
-    cc_stop_service (MTP_SERVER_SERVICE, G_BUS_TYPE_SESSION, &error);
     if (!g_file_query_exists (file, NULL)) {
       GFileOutputStream *output_stream = g_file_create (file, G_FILE_CREATE_NONE, NULL, &error);
       if (output_stream != NULL) {
@@ -228,6 +220,16 @@ cc_usb_panel_enable_mtp (CcUsbPanel *self, gboolean state)
         g_warning ("Error creating %s: %s", filepath, error->message);
         g_clear_error (&error);
       }
+    }
+
+    cc_start_service (MTP_SERVER_SERVICE, G_BUS_TYPE_SESSION, &error);
+  } else {
+    cc_stop_service (MTP_SERVER_SERVICE, G_BUS_TYPE_SESSION, &error);
+
+    if (!g_file_delete (file, NULL, &error)) {
+      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_warning ("Error deleting %s: %s", filepath, error->message);
+      g_clear_error (&error);
     }
   }
 
