@@ -47,6 +47,10 @@
 #define INTERFACE_COLOR_SCHEME_KEY "color-scheme"
 #define INTERFACE_ACCENT_COLOR_KEY "accent-color"
 
+#define PHOSH_PLUGINS_SCHEMA_ID "mobi.phosh.shell.plugins"
+#define PHOSH_STATUS_ICONS_KEY "status-icons"
+#define WEATHER_STATUS_ICON "weather-status-icon"
+
 struct _CcBackgroundPanel
 {
   CcPanel parent_instance;
@@ -67,6 +71,11 @@ struct _CcBackgroundPanel
   CcBackgroundPreview *dark_preview;
   GtkToggleButton *default_toggle;
   GtkToggleButton *dark_toggle;
+
+  GSettings *phosh_plugins_settings;
+  AdwPreferencesGroup *status_indicator_group;
+  AdwSwitchRow *weather_status_switch;
+  gboolean updating_weather_status;
 };
 
 CC_PANEL_REGISTER (CcBackgroundPanel, cc_background_panel)
@@ -477,6 +486,120 @@ on_add_picture_button_clicked_cb (CcBackgroundPanel *self)
   cc_background_chooser_select_file (self->background_chooser);
 }
 
+static gboolean
+weather_status_icon_is_enabled (CcBackgroundPanel *self)
+{
+  g_auto(GStrv) status_icons = NULL;
+
+  if (self->phosh_plugins_settings == NULL)
+    return FALSE;
+
+  status_icons = g_settings_get_strv (self->phosh_plugins_settings,
+                                      PHOSH_STATUS_ICONS_KEY);
+
+  return g_strv_contains ((const gchar * const *) status_icons,
+                          WEATHER_STATUS_ICON);
+}
+
+static void
+reload_weather_status_switch (CcBackgroundPanel *self)
+{
+  gboolean enabled;
+
+  if (self->phosh_plugins_settings == NULL)
+    return;
+
+  enabled = weather_status_icon_is_enabled (self);
+
+  self->updating_weather_status = TRUE;
+  adw_switch_row_set_active (self->weather_status_switch, enabled);
+  self->updating_weather_status = FALSE;
+}
+
+static void
+on_weather_status_switch_active_changed_cb (AdwSwitchRow      *row,
+                                            GParamSpec        *pspec,
+                                            CcBackgroundPanel *self)
+{
+  g_auto(GStrv) status_icons = NULL;
+  g_autoptr(GPtrArray) updated_status_icons = NULL;
+  gboolean active;
+  gboolean currently_enabled;
+  guint i;
+
+  if (self->updating_weather_status)
+    return;
+
+  if (self->phosh_plugins_settings == NULL)
+    return;
+
+  active = adw_switch_row_get_active (row);
+
+  status_icons = g_settings_get_strv (self->phosh_plugins_settings,
+                                      PHOSH_STATUS_ICONS_KEY);
+
+  currently_enabled = g_strv_contains ((const gchar * const *) status_icons,
+                                       WEATHER_STATUS_ICON);
+
+  if (active == currently_enabled)
+    return;
+
+  updated_status_icons = g_ptr_array_new_with_free_func (g_free);
+
+  for (i = 0; status_icons[i] != NULL; i++) {
+    if (!g_str_equal (status_icons[i], WEATHER_STATUS_ICON))
+      g_ptr_array_add (updated_status_icons, g_strdup (status_icons[i]));
+  }
+
+  if (active)
+    g_ptr_array_add (updated_status_icons, g_strdup (WEATHER_STATUS_ICON));
+
+  g_ptr_array_add (updated_status_icons, NULL);
+
+  if (!g_settings_set_strv (self->phosh_plugins_settings,
+                            PHOSH_STATUS_ICONS_KEY,
+                            (const gchar * const *) updated_status_icons->pdata)) {
+    g_warning ("Failed to update %s %s",
+               PHOSH_PLUGINS_SCHEMA_ID,
+               PHOSH_STATUS_ICONS_KEY);
+
+    reload_weather_status_switch (self);
+    return;
+  }
+}
+
+static void
+setup_weather_status_switch (CcBackgroundPanel *self)
+{
+  GSettingsSchemaSource *schema_source;
+  g_autoptr(GSettingsSchema) schema = NULL;
+
+  schema_source = g_settings_schema_source_get_default ();
+
+  if (schema_source != NULL)
+    schema = g_settings_schema_source_lookup (schema_source,
+                                              PHOSH_PLUGINS_SCHEMA_ID,
+                                              TRUE);
+
+  if (schema == NULL ||
+      !g_settings_schema_has_key (schema, PHOSH_STATUS_ICONS_KEY)) {
+    gtk_widget_set_visible (GTK_WIDGET (self->status_indicator_group), FALSE);
+    return;
+  }
+
+  gtk_widget_set_visible (GTK_WIDGET (self->status_indicator_group), TRUE);
+
+  self->phosh_plugins_settings = g_settings_new_full (schema, NULL, NULL);
+
+  reload_weather_status_switch (self);
+
+  g_signal_connect_object (self->phosh_plugins_settings,
+                           "changed::" PHOSH_STATUS_ICONS_KEY,
+                           G_CALLBACK (reload_weather_status_switch),
+                           self,
+                           G_CONNECT_SWAPPED);
+}
+
 static const char *
 cc_background_panel_get_help_uri (CcPanel *panel)
 {
@@ -488,6 +611,7 @@ cc_background_panel_dispose (GObject *object)
 {
   CcBackgroundPanel *self = CC_BACKGROUND_PANEL (object);
 
+  g_clear_object (&self->phosh_plugins_settings);
   g_clear_object (&self->settings);
   g_clear_object (&self->lock_settings);
   g_clear_object (&self->interface_settings);
@@ -523,6 +647,8 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
 
   gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/control-center/background/cc-background-panel.ui");
 
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, status_indicator_group);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, weather_status_switch);
   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, accent_box);
   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, background_chooser);
   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, default_preview);
@@ -533,6 +659,7 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, on_color_scheme_toggle_active_cb);
   gtk_widget_class_bind_template_callback (widget_class, on_chooser_background_chosen_cb);
   gtk_widget_class_bind_template_callback (widget_class, on_add_picture_button_clicked_cb);
+  gtk_widget_class_bind_template_callback (widget_class, on_weather_status_switch_active_changed_cb);
 }
 
 static void
@@ -581,6 +708,8 @@ cc_background_panel_init (CcBackgroundPanel *self)
                            G_CALLBACK (reload_accent_color_toggles),
                            self,
                            G_CONNECT_SWAPPED);
+
+  setup_weather_status_switch (self);
 
   g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
                             G_DBUS_PROXY_FLAGS_NONE,

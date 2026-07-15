@@ -133,6 +133,16 @@ template $CcBackgroundPanel: $CcPanel {
             }
           }
 
+          Adw.PreferencesGroup status_indicator_group {
+            title: _("Status Indicator");
+
+            Adw.SwitchRow weather_status_switch {
+              title: _("Weather");
+              subtitle: _("Display weather status");
+              notify::active => $on_weather_status_switch_active_changed_cb();
+            }
+          }
+
           Adw.PreferencesGroup {
             title: _("Background");
 
