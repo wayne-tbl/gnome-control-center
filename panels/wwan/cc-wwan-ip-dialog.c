@@ -42,6 +42,7 @@ struct _CcWwanIpDialog
 
   CcWwanDevice      *device;
   GDBusProxy        *modem_proxy;
+  GDBusProxy        *mmsd_proxy;
 
   GtkCheckButton    *ip_version_ipv4;
   GtkCheckButton    *ip_version_ipv6;
@@ -74,6 +75,87 @@ on_set_protocol_ready (GObject      *source_object,
     }
 
   g_debug ("Protocol set successfully");
+}
+
+static void
+on_set_mms_protocol_ready (GObject      *source_object,
+                           GAsyncResult *result,
+                           gpointer      user_data)
+{
+  g_autoptr(GError) error = NULL;
+  g_autoptr(GVariant) ret = NULL;
+
+  ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object), result, &error);
+
+  if (error)
+    {
+      g_warning ("Failed to set MMS context protocol: %s", error->message);
+      return;
+    }
+
+  g_debug ("MMS context protocol set successfully");
+}
+
+static void
+set_mms_context_protocol (CcWwanIpDialog *self,
+                          IpProtocol      protocol)
+{
+  GVariantBuilder builder;
+  GVariant *properties;
+  const gchar *mms_protocol;
+
+  if (!self->mmsd_proxy)
+    {
+      g_debug ("MMSD proxy is not available");
+      return;
+    }
+
+  if (!g_dbus_proxy_get_name_owner (self->mmsd_proxy))
+    {
+      g_debug ("MMSD is not running");
+      return;
+    }
+
+  if (protocol == IP_PROTOCOL_IPV4)
+    mms_protocol = "ip";
+  else if (protocol == IP_PROTOCOL_IPV6)
+    mms_protocol = "dual";
+  else
+    {
+      g_warning ("Unknown protocol value: %u", protocol);
+      return;
+    }
+
+  g_debug ("Setting MMS context Protocol to %s", mms_protocol);
+
+  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{ss}"));
+  g_variant_builder_add (&builder, "{ss}", "Protocol", mms_protocol);
+
+  properties = g_variant_builder_end (&builder);
+
+  g_dbus_proxy_call (self->mmsd_proxy,
+                     "SetMMSContextProperties",
+                     g_variant_new_tuple (&properties, 1),
+                     G_DBUS_CALL_FLAGS_NONE,
+                     -1,
+                     NULL,
+                     on_set_mms_protocol_ready,
+                     self);
+}
+
+static void
+sync_mms_context_protocol (CcWwanIpDialog *self)
+{
+  IpProtocol protocol;
+
+  if (gtk_check_button_get_active (self->ip_version_ipv4))
+    protocol = IP_PROTOCOL_IPV4;
+  else if (gtk_check_button_get_active (self->ip_version_ipv6))
+    protocol = IP_PROTOCOL_IPV6;
+  else
+    return;
+
+  set_mms_context_protocol (self, protocol);
 }
 
 static void
@@ -110,6 +192,54 @@ on_ip_version_changed (GtkCheckButton *button,
                      NULL,
                      on_set_protocol_ready,
                      self);
+
+  set_mms_context_protocol (self, protocol);
+}
+
+static void
+on_mmsd_name_owner_changed (GDBusProxy     *proxy,
+                            GParamSpec     *pspec,
+                            CcWwanIpDialog *self)
+{
+  if (!g_dbus_proxy_get_name_owner (proxy))
+    {
+      g_debug ("MMSD is not running");
+      return;
+    }
+
+  g_debug ("MMSD became available");
+
+  sync_mms_context_protocol (self);
+}
+
+static void
+on_mmsd_proxy_ready (GObject      *source_object,
+                     GAsyncResult *result,
+                     gpointer      user_data)
+{
+  CcWwanIpDialog *self = CC_WWAN_IP_DIALOG (user_data);
+  g_autoptr(GError) error = NULL;
+
+  self->mmsd_proxy = g_dbus_proxy_new_for_bus_finish (result, &error);
+
+  if (error)
+    {
+      g_debug ("Failed to create MMSD proxy: %s", error->message);
+      return;
+    }
+
+  g_debug ("MMSD proxy created successfully");
+
+  g_signal_connect (self->mmsd_proxy, "notify::g-name-owner",
+                    G_CALLBACK (on_mmsd_name_owner_changed), self);
+
+  if (!g_dbus_proxy_get_name_owner (self->mmsd_proxy))
+    {
+      g_debug ("MMSD is not running");
+      return;
+    }
+
+  sync_mms_context_protocol (self);
 }
 
 static void
@@ -167,6 +297,8 @@ on_modem_proxy_ready (GObject      *source_object,
                     G_CALLBACK (on_ip_version_changed), self);
   g_signal_connect (self->ip_version_ipv6, "toggled",
                     G_CALLBACK (on_ip_version_changed), self);
+
+  sync_mms_context_protocol (self);
 }
 
 static void
@@ -184,6 +316,16 @@ cc_wwan_ip_dialog_constructed (GObject *object)
                             "org.freedesktop.ModemManager1.Modem",
                             NULL,
                             on_modem_proxy_ready,
+                            self);
+
+  g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
+                            G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
+                            NULL,
+                            "org.ofono.mms",
+                            "/org/ofono/mms",
+                            "org.ofono.mms.Manager",
+                            NULL,
+                            on_mmsd_proxy_ready,
                             self);
 }
 
@@ -232,6 +374,7 @@ cc_wwan_ip_dialog_dispose (GObject *object)
 
   g_clear_object (&self->device);
   g_clear_object (&self->modem_proxy);
+  g_clear_object (&self->mmsd_proxy);
 
   G_OBJECT_CLASS (cc_wwan_ip_dialog_parent_class)->dispose (object);
 }
