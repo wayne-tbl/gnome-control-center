@@ -189,9 +189,14 @@ device_added_cb (CcDeviceComboRow *self,
 {
   GvcMixerUIDevice *device = lookup_device_id (self, id);
   GvcMixerStream *stream;
+  const char *description;
   guint stream_id;
 
   if (device == NULL)
+    return;
+
+  description = gvc_mixer_ui_device_get_description (device);
+  if (g_strcmp0 (description, "Parking port") == 0)
     return;
 
   stream_id = gvc_mixer_ui_device_get_stream_id (device);
@@ -204,6 +209,9 @@ device_added_cb (CcDeviceComboRow *self,
       /* Don't add role loopbacks as switching to them is not useful */
       if (g_str_has_prefix (name, "input.loopback.sink.role."))
 	return;
+      /* Ignore the fake SCO input/output streams */
+      if (g_strcmp0 (name, "source.fake.sco") == 0 || g_strcmp0 (name, "sink.fake.sco") == 0)
+        return;
   }
 
   g_signal_handlers_block_by_func (self, selection_changed_cb, self);
