@@ -308,6 +308,50 @@ wwan_data_list_selected_sim_changed_cb (CcWwanPanel *self)
 }
 
 #if IS_FURIOS
+static void
+cc_wwan_panel_update_view (CcWwanPanel *self);
+
+static void
+wwan_enable_switch_changed_done_cb (GObject      *source_object,
+                                    GAsyncResult *result,
+                                    gpointer      user_data)
+{
+  CcWwanPanel *self = CC_WWAN_PANEL (user_data);
+  g_autoptr(GError) error = NULL;
+  g_autoptr(GVariant) response = NULL;
+
+  response = g_dbus_proxy_call_finish (G_DBUS_PROXY (source_object),
+                                       result,
+                                       &error);
+
+  if (!response &&
+      !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    g_warning ("Failed to change airplane mode: %s", error->message);
+
+  cc_wwan_panel_update_view (self);
+}
+
+static void
+wwan_enable_switch_changed_cb (CcWwanPanel *self)
+{
+  gboolean enabled;
+
+  enabled = gtk_switch_get_active (self->enable_switch);
+
+  g_debug ("Setting airplane mode to %s", enabled ? "off" : "on");
+
+  g_dbus_proxy_call (self->rfkill_proxy,
+                     "org.freedesktop.DBus.Properties.Set",
+                     g_variant_new_parsed ("('org.gnome.SettingsDaemon.Rfkill',"
+                                           "'AirplaneMode', %v)",
+                                           g_variant_new_boolean (!enabled)),
+                     G_DBUS_CALL_FLAGS_NONE,
+                     -1,
+                     self->cancellable,
+                     wwan_enable_switch_changed_done_cb,
+                     self);
+}
+
 static gboolean
 get_rfkill_property (const gchar *property)
 {
@@ -356,7 +400,7 @@ get_rfkill_property (const gchar *property)
 static void
 cc_wwan_panel_update_view (CcWwanPanel *self)
 {
-  gboolean has_airplane, is_airplane = FALSE, enabled = FALSE;
+  gboolean has_airplane, is_airplane = FALSE;
 
   has_airplane = get_rfkill_property ("HasAirplaneMode");
   has_airplane &= get_rfkill_property ("ShouldShowAirplaneMode");
@@ -367,19 +411,24 @@ cc_wwan_panel_update_view (CcWwanPanel *self)
       is_airplane |= get_rfkill_property ("HardwareAirplaneMode");
     }
 
-  if (self->nm_client)
-    enabled = nm_client_wwan_get_enabled (self->nm_client);
+  g_signal_handlers_block_by_func (self->enable_switch,
+                                   wwan_enable_switch_changed_cb,
+                                   self);
+  gtk_switch_set_active (self->enable_switch, !is_airplane);
+  g_signal_handlers_unblock_by_func (self->enable_switch,
+                                     wwan_enable_switch_changed_cb,
+                                     self);
 
   if (has_airplane && is_airplane)
     gtk_stack_set_visible_child_name (self->main_stack, "airplane-mode");
-  else if (enabled && g_list_model_get_n_items (G_LIST_MODEL (self->devices)) > 0)
+  else if (g_list_model_get_n_items (G_LIST_MODEL (self->devices)) > 0)
     gtk_stack_set_visible_child_name (self->main_stack, "device-settings");
   else
     gtk_stack_set_visible_child_name (self->main_stack, "no-wwan-devices");
 
   gtk_widget_set_sensitive (GTK_WIDGET (self->enable_switch), !is_airplane);
 
-  if (enabled)
+  if (!is_airplane)
     gtk_revealer_set_reveal_child (self->multi_device_revealer,
                                    g_list_model_get_n_items (G_LIST_MODEL (self->devices)) > 1);
 }
@@ -780,23 +829,27 @@ cc_wwan_panel_init (CcWwanPanel *self)
   if (cc_object_storage_has_object (CC_OBJECT_NMCLIENT))
     {
       self->nm_client = cc_object_storage_get_object (CC_OBJECT_NMCLIENT);
+#if !IS_FURIOS
       g_signal_connect_object (self->nm_client,
                                "notify::wwan-enabled",
                                G_CALLBACK (cc_wwan_panel_update_view),
                                self, G_CONNECT_SWAPPED);
-
+#endif
     }
   else
     {
       g_warn_if_reached ();
     }
 
+
+#if !IS_FURIOS
   if (self->nm_client)
     {
       g_object_bind_property (self->nm_client, "wwan-enabled",
                               self->enable_switch, "active",
                               G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE);
     }
+#endif
 
   if (cc_object_storage_has_object (CC_OBJECT_MMMANAGER))
     {
@@ -832,6 +885,11 @@ cc_wwan_panel_init (CcWwanPanel *self)
     }
   else
     {
+#if IS_FURIOS
+      g_signal_connect_object (self->enable_switch, "notify::active",
+                               G_CALLBACK (wwan_enable_switch_changed_cb),
+                               self, G_CONNECT_SWAPPED);
+#endif
       g_signal_connect_object (self->rfkill_proxy,
                                "g-properties-changed",
                                G_CALLBACK (cc_wwan_panel_update_view),
