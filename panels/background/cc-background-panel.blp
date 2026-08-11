@@ -66,7 +66,12 @@ template $CcBackgroundPanel: $CcPanel {
                   }
 
                   Label default_label {
-                    label: _("_Default");
+                    /* Upstream calls this "Default" because on the desktop it
+                       means "whatever the app asks for". phosh has no such
+                       middle state: anything that is not prefer-dark loads the
+                       light stylesheet, so the choice really is light or dark
+                       and the label should say so. */
+                    label: _("_Light");
                     use-underline: true;
                     mnemonic-widget: default_toggle;
 
@@ -117,7 +122,7 @@ template $CcBackgroundPanel: $CcPanel {
           }
 
           Adw.PreferencesGroup {
-            title: _("Accent Color");
+            title: _("Accent");
 
             Adw.PreferencesRow {
               accessible-role: group;
@@ -131,22 +136,314 @@ template $CcBackgroundPanel: $CcPanel {
                 halign: center;
               }
             }
+
+            Adw.ActionRow accent_custom_row {
+              title: _("Color");
+              subtitle: _("Overrides the swatches above. Applies to the shell, not to apps");
+
+              [suffix]
+              ColorDialogButton custom_accent_button {
+                valign: center;
+
+                dialog: ColorDialog {
+                  with-alpha: false;
+                };
+
+                notify::rgba => $on_custom_accent_changed_cb();
+              }
+
+              [suffix]
+              Button {
+                icon-name: "edit-clear-symbolic";
+                valign: center;
+                tooltip-text: _("Follow the accent color above");
+                clicked => $on_custom_accent_clear_cb();
+
+                styles [
+                  "flat",
+                ]
+              }
+            }
+
+            Adw.ActionRow accent_text_row {
+              title: _("Text on Accent");
+              subtitle: _("Text on selected buttons and cards. Clear to follow the text color");
+
+              [suffix]
+              ColorDialogButton accent_text_button {
+                valign: center;
+
+                dialog: ColorDialog {
+                  with-alpha: false;
+                };
+
+                notify::rgba => $on_accent_text_changed_cb();
+              }
+
+              [suffix]
+              Button {
+                icon-name: "edit-clear-symbolic";
+                valign: center;
+                tooltip-text: _("Follow the text color above");
+                clicked => $on_accent_text_clear_cb();
+
+                styles [
+                  "flat",
+                ]
+              }
+            }
           }
 
-          Adw.PreferencesGroup status_indicator_group {
-            title: _("Status Indicator");
+          Adw.PreferencesGroup text_glass_group {
+            title: _("Text");
 
-            Adw.SwitchRow weather_status_switch {
-              title: _("Weather");
-              subtitle: _("Display weather status");
-              notify::active => $on_weather_status_switch_active_changed_cb();
+            Adw.ActionRow {
+              title: _("Color");
+              subtitle: _("Shell text and icons. Clear to follow the theme");
+
+              [suffix]
+              ColorDialogButton text_color_button {
+                valign: center;
+
+                dialog: ColorDialog {
+                  with-alpha: false;
+                };
+
+                notify::rgba => $on_text_color_changed_cb();
+              }
+
+              [suffix]
+              Button {
+                icon-name: "edit-clear-symbolic";
+                valign: center;
+                tooltip-text: _("Follow the theme");
+                clicked => $on_text_color_clear_cb();
+
+                styles [
+                  "flat",
+                ]
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Opacity");
+              subtitle: _("How much the frost shows through the text itself");
+
+              [suffix]
+              Scale {
+                adjustment: glass_text_opacity_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Shadow");
+              subtitle: _("Lifts text off the wallpaper. 0 turns it off");
+
+              [suffix]
+              Scale {
+                adjustment: glass_text_shadow_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Shadow Color");
+              subtitle: _("Clear to take the opposite of the text color");
+
+              [suffix]
+              ColorDialogButton shadow_color_button {
+                valign: center;
+
+                dialog: ColorDialog {
+                  with-alpha: false;
+                };
+
+                notify::rgba => $on_shadow_color_changed_cb();
+              }
+
+              [suffix]
+              Button {
+                icon-name: "edit-clear-symbolic";
+                valign: center;
+                tooltip-text: _("Contrast with the text automatically");
+                clicked => $on_shadow_color_clear_cb();
+
+                styles [
+                  "flat",
+                ]
+              }
+            }
+          }
+
+          Adw.PreferencesGroup glass_group {
+            title: _("Glass");
+            description: _("How solid the shell's translucent surfaces are, and how strongly the compositor blurs what is behind them. Applications pick these up when they are next opened, so a window that is already running keeps the old look until it is closed and reopened");
+
+            Adw.ActionRow {
+              title: _("Blur");
+              subtitle: _("Blur behind the panel, drawer and lock screen");
+
+              [suffix]
+              Scale {
+                adjustment: glass_blur_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Opacity");
+              subtitle: _("How much of the blur shows through");
+
+              [suffix]
+              Scale {
+                adjustment: glass_opacity_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Lightness");
+              subtitle: _("How much white is mixed into the glass");
+
+              [suffix]
+              Scale {
+                adjustment: glass_lightness_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Accent Tint");
+              subtitle: _("How much of the accent color tints the glass");
+
+              [suffix]
+              Scale {
+                adjustment: glass_accent_wash_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.SwitchRow lockscreen_tint_switch {
+              title: _("Dim the Lock Screen");
+              subtitle: _("Lay the glass over the wallpaper behind the clock. Off shows the picture as it is; the keypad keeps its glass either way");
+            }
+}
+
+          Adw.PreferencesGroup recording_group {
+            title: _("Screen Recording");
+            description: _("The recorder tile only appears if wf-recorder is installed");
+
+            Adw.SwitchRow screen_recorder_switch {
+              title: _("Screen Recorder in Quick Settings");
+
+              notify::active => $on_screen_recorder_switch_changed_cb(template);
+            }
+
+            Adw.ExpanderRow recorder_expander {
+              title: _("Recording Settings");
+              subtitle: _("Applied to the next recording");
+
+              Adw.ComboRow recorder_speed_row {
+                title: _("Speed");
+                subtitle: _("Play the finished recording faster than real time. Applied after recording by restamping the timestamps, so nothing is re-encoded and no quality is lost");
+
+                model: StringList {
+                  strings [
+                    _("Normal"),
+                    _("1.5×"),
+                    _("2×"),
+                    _("4×"),
+                    _("8×"),
+                  ]
+                };
+
+                notify::selected => $on_recorder_speed_changed_cb(template);
+              }
+
+              Adw.ComboRow recorder_codec_row {
+                title: _("Codec");
+                subtitle: _("This hardware has no usable video encoder, so all of these are software");
+
+                notify::selected => $on_recorder_codec_changed_cb(template);
+              }
+
+              Adw.ComboRow recorder_bitrate_row {
+                title: _("Bit Rate");
+                subtitle: _("Automatic aims at a constant quality instead, which is usually a smaller file for the same picture");
+
+                model: StringList {
+                  strings [
+                    _("Automatic"),
+                    _("4 Mb/s"),
+                    _("8 Mb/s"),
+                    _("12 Mb/s"),
+                  ]
+                };
+
+                notify::selected => $on_recorder_bitrate_changed_cb(template);
+              }
+
+              Adw.SwitchRow recorder_audio_switch {
+                title: _("Record Audio");
+              }
+
+              Adw.ComboRow recorder_audio_source_row {
+                title: _("Audio Source");
+
+                notify::selected => $on_recorder_audio_source_changed_cb(template);
+              }
+
+              Adw.SwitchRow recorder_touches_switch {
+                title: _("Show Touches");
+                subtitle: _("Mark where the screen is touched while recording");
+              }
+            }
+          }
+
+          Adw.PreferencesGroup screenshot_group {
+            title: _("Screenshots");
+
+            Adw.SwitchRow screenshot_switch {
+              title: _("Screenshot in Quick Settings");
+
+              notify::active => $on_screenshot_switch_changed_cb(template);
+            }
+
+            Adw.ComboRow screenshot_delay_row {
+              title: _("Screenshot Delay");
+              subtitle: _("Time for the drawer to get out of the picture");
+
+              model: StringList {
+                strings [
+                  _("1s"),
+                  _("2s"),
+                  _("3s"),
+                  _("4s"),
+                  _("5s"),
+                ]
+              };
+
+              notify::selected => $on_screenshot_delay_changed_cb(template);
             }
           }
 
           Adw.PreferencesGroup {
-            title: _("Background");
+            title: _("Wallpaper");
 
-            header-suffix: Button {
+            header-suffix: Button add_picture_button {
               Adw.ButtonContent {
                 icon-name: "list-add-symbolic";
                 label: _("_Add Picture…");
@@ -160,7 +457,21 @@ template $CcBackgroundPanel: $CcPanel {
               ]
             };
 
-            Adw.Bin {
+            Adw.ComboRow wallpaper_mode_row {
+              title: _("Source");
+              subtitle: _("One picture, or the next from a folder each time the lock screen appears");
+
+              model: StringList {
+                strings [
+                  _("Single"),
+                  _("Folder"),
+                ]
+              };
+
+              notify::selected => $on_wallpaper_mode_changed_cb(template);
+            }
+
+            Adw.Bin chooser_bin {
               styles [
                 "card",
               ]
@@ -175,9 +486,104 @@ template $CcBackgroundPanel: $CcPanel {
                 background-chosen => $on_chooser_background_chosen_cb(template);
               }
             }
-          }
+
+            Adw.ActionRow wallpaper_folder_row {
+              /* No subtitle: the folder button carries the folder's own name,
+               * which is wide, and a subtitle beside it wraps down to two
+               * words a line. The Source row above already says what the
+               * folder is for. */
+              title: _("Folder");
+
+              [suffix]
+              Box {
+                spacing: 6;
+                valign: center;
+
+                Button wallpaper_folder_button {
+                  valign: center;
+
+                  Adw.ButtonContent wallpaper_folder_content {
+                    icon-name: "folder-symbolic";
+                    label: _("Choose…");
+                  }
+
+                  clicked => $on_wallpaper_folder_clicked_cb(template);
+                }
+
+                Button {
+                  icon-name: "edit-clear-symbolic";
+                  valign: center;
+                  tooltip-text: _("Turn off wallpaper rotation");
+                  clicked => $on_wallpaper_folder_clear_cb(template);
+
+                  styles ["flat"]
+                }
+              }
+            }
+
+            Adw.ComboRow fit_row {
+              title: _("Fit");
+              subtitle: _("How a picture is sized to the screen. Applies to the home screen and the lock screen together");
+
+              model: StringList {
+                strings [
+                  _("Fill"),
+                  _("Fit"),
+                  _("Stretch"),
+                  _("Centered"),
+                  _("Tiled"),
+                  _("Spanned"),
+                ]
+              };
+
+              notify::selected => $on_fit_changed_cb(template);
+            }
+}
+
         };
       };
     };
   };
+}
+
+Adjustment glass_blur_adjustment {
+  lower: 0;
+  upper: 200;
+  step-increment: 5;
+  page-increment: 20;
+}
+
+Adjustment glass_opacity_adjustment {
+  lower: 0;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
+}
+
+Adjustment glass_lightness_adjustment {
+  lower: 0;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
+}
+
+Adjustment glass_accent_wash_adjustment {
+  lower: 0;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
+}
+
+Adjustment glass_text_opacity_adjustment {
+  lower: 0.2;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
+}
+
+Adjustment glass_text_shadow_adjustment {
+  lower: 0;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
 }
