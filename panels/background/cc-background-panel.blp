@@ -131,6 +131,216 @@ template $CcBackgroundPanel: $CcPanel {
                 halign: center;
               }
             }
+            Adw.ActionRow accent_custom_row {
+              title: _("Color");
+              subtitle: _("Overrides the swatches above. Applies to the shell, not to apps");
+
+              [suffix]
+              ColorDialogButton custom_accent_button {
+                valign: center;
+
+                dialog: ColorDialog {
+                  with-alpha: false;
+                };
+
+                notify::rgba => $on_custom_accent_changed_cb();
+              }
+
+              [suffix]
+              Button {
+                icon-name: "edit-clear-symbolic";
+                valign: center;
+                tooltip-text: _("Follow the accent color above");
+                clicked => $on_custom_accent_clear_cb();
+
+                styles [
+                  "flat",
+                ]
+              }
+            }
+
+            Adw.ActionRow accent_text_row {
+              title: _("Text on Accent");
+              subtitle: _("Text on selected buttons and cards. Clear to follow the text color");
+
+              [suffix]
+              ColorDialogButton accent_text_button {
+                valign: center;
+
+                dialog: ColorDialog {
+                  with-alpha: false;
+                };
+
+                notify::rgba => $on_accent_text_changed_cb();
+              }
+
+              [suffix]
+              Button {
+                icon-name: "edit-clear-symbolic";
+                valign: center;
+                tooltip-text: _("Follow the text color above");
+                clicked => $on_accent_text_clear_cb();
+
+                styles [
+                  "flat",
+                ]
+              }
+            }
+          }
+
+          Adw.PreferencesGroup text_glass_group {
+            title: _("Text");
+
+            Adw.ActionRow {
+              title: _("Color");
+              subtitle: _("Shell text and icons. Clear to follow the theme");
+
+              [suffix]
+              ColorDialogButton text_color_button {
+                valign: center;
+
+                dialog: ColorDialog {
+                  with-alpha: false;
+                };
+
+                notify::rgba => $on_text_color_changed_cb();
+              }
+
+              [suffix]
+              Button {
+                icon-name: "edit-clear-symbolic";
+                valign: center;
+                tooltip-text: _("Follow the theme");
+                clicked => $on_text_color_clear_cb();
+
+                styles [
+                  "flat",
+                ]
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Opacity");
+              subtitle: _("How much the frost shows through the text itself");
+
+              [suffix]
+              Scale {
+                adjustment: glass_text_opacity_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Shadow");
+              subtitle: _("Lifts text off the wallpaper. 0 turns it off");
+
+              [suffix]
+              Scale {
+                adjustment: glass_text_shadow_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Shadow Color");
+              subtitle: _("Clear to take the opposite of the text color");
+
+              [suffix]
+              ColorDialogButton shadow_color_button {
+                valign: center;
+
+                dialog: ColorDialog {
+                  with-alpha: false;
+                };
+
+                notify::rgba => $on_shadow_color_changed_cb();
+              }
+
+              [suffix]
+              Button {
+                icon-name: "edit-clear-symbolic";
+                valign: center;
+                tooltip-text: _("Contrast with the text automatically");
+                clicked => $on_shadow_color_clear_cb();
+
+                styles [
+                  "flat",
+                ]
+              }
+            }
+          }
+
+          Adw.PreferencesGroup glass_theme_group {
+            Adw.SwitchRow glass_theme_switch {
+              title: _("Glass Theme");
+              subtitle: _("Style the shell as frosted glass, and give applications a matching look. Off leaves the shell's own theme alone");
+            }
+          }
+
+          Adw.PreferencesGroup glass_group {
+            title: _("Glass");
+            description: _("How solid the shell's translucent surfaces are, and how strongly the compositor blurs what is behind them. Applications pick these up when they are next opened, so a window that is already running keeps the old look until it is closed and reopened");
+
+            Adw.ActionRow {
+              title: _("Blur");
+              subtitle: _("Blur behind the panel, drawer and lock screen");
+
+              [suffix]
+              Scale {
+                adjustment: glass_blur_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Opacity");
+              subtitle: _("How much of the blur shows through");
+
+              [suffix]
+              Scale {
+                adjustment: glass_opacity_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Lightness");
+              subtitle: _("How much white is mixed into the glass");
+
+              [suffix]
+              Scale {
+                adjustment: glass_lightness_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.ActionRow {
+              title: _("Accent Tint");
+              subtitle: _("How much of the accent color tints the glass");
+
+              [suffix]
+              Scale {
+                adjustment: glass_accent_wash_adjustment;
+                width-request: 160;
+                valign: center;
+                draw-value: false;
+              }
+            }
+
+            Adw.SwitchRow lockscreen_tint_switch {
+              title: _("Dim the Lock Screen");
+              subtitle: _("Lay the glass over the wallpaper behind the clock. Off shows the picture as it is; the keypad keeps its glass either way");
+            }
           }
 
           Adw.PreferencesGroup status_indicator_group {
@@ -180,4 +390,46 @@ template $CcBackgroundPanel: $CcPanel {
       };
     };
   };
+}
+
+Adjustment glass_blur_adjustment {
+  lower: 0;
+  upper: 200;
+  step-increment: 5;
+  page-increment: 20;
+}
+
+Adjustment glass_opacity_adjustment {
+  lower: 0;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
+}
+
+Adjustment glass_lightness_adjustment {
+  lower: 0;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
+}
+
+Adjustment glass_accent_wash_adjustment {
+  lower: 0;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
+}
+
+Adjustment glass_text_opacity_adjustment {
+  lower: 0.2;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
+}
+
+Adjustment glass_text_shadow_adjustment {
+  lower: 0;
+  upper: 1;
+  step-increment: 0.05;
+  page-increment: 0.1;
 }
