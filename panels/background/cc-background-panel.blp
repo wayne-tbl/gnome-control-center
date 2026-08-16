@@ -433,6 +433,24 @@ template $CcBackgroundPanel: $CcPanel {
                 }
               }
             }
+
+            Adw.ComboRow fit_row {
+              title: _("Fit");
+              subtitle: _("How a picture is sized to the screen. Applies to the home screen and the lock screen together");
+
+              model: StringList {
+                strings [
+                  _("Fill"),
+                  _("Fit"),
+                  _("Stretch"),
+                  _("Centered"),
+                  _("Tiled"),
+                  _("Spanned"),
+                ]
+              };
+
+              notify::selected => $on_fit_changed_cb(template);
+            }
           }
         };
       };
