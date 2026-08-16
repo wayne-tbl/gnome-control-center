@@ -354,9 +354,9 @@ template $CcBackgroundPanel: $CcPanel {
           }
 
           Adw.PreferencesGroup {
-            title: _("Background");
+            title: _("Wallpaper");
 
-            header-suffix: Button {
+            header-suffix: Button add_picture_button {
               Adw.ButtonContent {
                 icon-name: "list-add-symbolic";
                 label: _("_Add Picture…");
@@ -370,7 +370,21 @@ template $CcBackgroundPanel: $CcPanel {
               ]
             };
 
-            Adw.Bin {
+            Adw.ComboRow wallpaper_mode_row {
+              title: _("Source");
+              subtitle: _("One picture, or the next from a folder each time the lock screen appears");
+
+              model: StringList {
+                strings [
+                  _("Single"),
+                  _("Folder"),
+                ]
+              };
+
+              notify::selected => $on_wallpaper_mode_changed_cb(template);
+            }
+
+            Adw.Bin chooser_bin {
               styles [
                 "card",
               ]
@@ -383,6 +397,40 @@ template $CcBackgroundPanel: $CcPanel {
                 hexpand: true;
                 toast-overlay: toast_overlay;
                 background-chosen => $on_chooser_background_chosen_cb(template);
+              }
+            }
+
+            Adw.ActionRow wallpaper_folder_row {
+              /* No subtitle: the folder button carries the folder's own name,
+               * which is wide, and a subtitle beside it wraps down to two
+               * words a line. The Source row above already says what the
+               * folder is for. */
+              title: _("Folder");
+
+              [suffix]
+              Box {
+                spacing: 6;
+                valign: center;
+
+                Button wallpaper_folder_button {
+                  valign: center;
+
+                  Adw.ButtonContent wallpaper_folder_content {
+                    icon-name: "folder-symbolic";
+                    label: _("Choose…");
+                  }
+
+                  clicked => $on_wallpaper_folder_clicked_cb(template);
+                }
+
+                Button {
+                  icon-name: "edit-clear-symbolic";
+                  valign: center;
+                  tooltip-text: _("Turn off wallpaper rotation");
+                  clicked => $on_wallpaper_folder_clear_cb(template);
+
+                  styles ["flat"]
+                }
               }
             }
           }
