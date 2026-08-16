@@ -47,9 +47,31 @@
 #define INTERFACE_COLOR_SCHEME_KEY "color-scheme"
 #define INTERFACE_ACCENT_COLOR_KEY "accent-color"
 
+
+#define FURIOS_SHELL_SCHEMA_ID "io.furios.phosh.shell"
+
+/* Screen recording and screenshots. Checked separately from the glass keys so
+ * that a phosh with the glass look but not these still shows everything it
+ * does support. */
+#define FURIOS_SCREENSHOT_DELAY_KEY   "screenshot-delay"
+#define FURIOS_REC_SPEED_KEY          "screen-recorder-speed"
+#define FURIOS_REC_CODEC_KEY          "screen-recorder-codec"
+#define FURIOS_REC_BITRATE_KEY        "screen-recorder-bitrate"
+#define FURIOS_REC_AUDIO_KEY          "screen-recorder-audio"
+#define FURIOS_REC_AUDIO_SOURCE_KEY   "screen-recorder-audio-source"
+#define FURIOS_REC_TOUCHES_KEY        "screen-recorder-touches"
+
 #define PHOSH_PLUGINS_SCHEMA_ID "mobi.phosh.shell.plugins"
 #define PHOSH_STATUS_ICONS_KEY "status-icons"
 #define WEATHER_STATUS_ICON "weather-status-icon"
+
+/* Which quick settings the drawer loads. Phosh watches this key and rebuilds,
+ * so adding or removing a tile takes effect without a restart -- which is why
+ * the two switches below drive this rather than a flag of their own. */
+#define PHOSH_QS_PLUGINS_SCHEMA_ID "sm.puri.phosh.plugins"
+#define PHOSH_QUICK_SETTINGS_KEY  "quick-settings"
+#define SCREEN_RECORDER_PLUGIN    "screen-recorder-quick-setting"
+#define SCREENSHOT_PLUGIN         "screenshot-quick-setting"
 
 struct _CcBackgroundPanel
 {
@@ -76,6 +98,26 @@ struct _CcBackgroundPanel
   AdwPreferencesGroup *status_indicator_group;
   AdwSwitchRow *weather_status_switch;
   gboolean updating_weather_status;
+
+
+  GSettings *furios_shell_settings;
+
+  GSettings           *qs_plugin_settings;
+  AdwPreferencesGroup *recording_group;
+  AdwPreferencesGroup *screenshot_group;
+  AdwSwitchRow        *screen_recorder_switch;
+  AdwSwitchRow        *screenshot_switch;
+  AdwComboRow         *screenshot_delay_row;
+  AdwExpanderRow      *recorder_expander;
+  AdwComboRow         *recorder_speed_row;
+  AdwComboRow         *recorder_codec_row;
+  AdwComboRow         *recorder_bitrate_row;
+  AdwSwitchRow        *recorder_audio_switch;
+  AdwComboRow         *recorder_audio_source_row;
+  AdwSwitchRow        *recorder_touches_switch;
+  GStrv                audio_source_ids;
+  GStrv                codec_ids;
+  gboolean             updating_capture;
 };
 
 CC_PANEL_REGISTER (CcBackgroundPanel, cc_background_panel)
@@ -486,6 +528,361 @@ on_add_picture_button_clicked_cb (CcBackgroundPanel *self)
   cc_background_chooser_select_file (self->background_chooser);
 }
 
+/* Kept parallel to the strings in the .blp models */
+static const int    screenshot_delays[]  = { 1, 2, 3, 4, 5 };
+static const double recorder_speeds[]    = { 1.0, 1.5, 2.0, 4.0, 8.0 };
+static const char * const recorder_bitrates[] = { "", "4M", "8M", "12M" };
+
+
+static gboolean
+plugin_list_contains (GStrv list, const char *plugin)
+{
+  return list != NULL && g_strv_contains ((const char * const *) list, plugin);
+}
+
+
+static void
+set_plugin_enabled (CcBackgroundPanel *self, const char *plugin, gboolean enabled)
+{
+  g_auto (GStrv) current = NULL;
+  g_autoptr (GStrvBuilder) builder = NULL;
+  g_auto (GStrv) updated = NULL;
+
+  if (self->qs_plugin_settings == NULL)
+    return;
+
+  current = g_settings_get_strv (self->qs_plugin_settings, PHOSH_QUICK_SETTINGS_KEY);
+
+  if (plugin_list_contains (current, plugin) == enabled)
+    return;
+
+  builder = g_strv_builder_new ();
+
+  for (guint i = 0; current != NULL && current[i]; i++) {
+    if (!g_str_equal (current[i], plugin))
+      g_strv_builder_add (builder, current[i]);
+  }
+
+  if (enabled)
+    g_strv_builder_add (builder, plugin);
+
+  updated = g_strv_builder_end (builder);
+  g_settings_set_strv (self->qs_plugin_settings,
+                       PHOSH_QUICK_SETTINGS_KEY,
+                       (const char * const *) updated);
+}
+
+
+static void
+reload_capture_switches (CcBackgroundPanel *self)
+{
+  g_auto (GStrv) plugins = NULL;
+
+  if (self->qs_plugin_settings == NULL)
+    return;
+
+  plugins = g_settings_get_strv (self->qs_plugin_settings, PHOSH_QUICK_SETTINGS_KEY);
+
+  /* Guarded because setting "active" here would otherwise come straight back
+   * as a user edit and rewrite the very key being read. */
+  self->updating_capture = TRUE;
+  adw_switch_row_set_active (self->screen_recorder_switch,
+                             plugin_list_contains (plugins, SCREEN_RECORDER_PLUGIN));
+  adw_switch_row_set_active (self->screenshot_switch,
+                             plugin_list_contains (plugins, SCREENSHOT_PLUGIN));
+  self->updating_capture = FALSE;
+}
+
+
+static void
+on_screen_recorder_switch_changed_cb (CcBackgroundPanel *self)
+{
+  if (self->updating_capture)
+    return;
+
+  set_plugin_enabled (self, SCREEN_RECORDER_PLUGIN,
+                      adw_switch_row_get_active (self->screen_recorder_switch));
+}
+
+
+static void
+on_screenshot_switch_changed_cb (CcBackgroundPanel *self)
+{
+  if (self->updating_capture)
+    return;
+
+  set_plugin_enabled (self, SCREENSHOT_PLUGIN,
+                      adw_switch_row_get_active (self->screenshot_switch));
+}
+
+
+static void
+on_screenshot_delay_changed_cb (CcBackgroundPanel *self)
+{
+  guint selected = adw_combo_row_get_selected (self->screenshot_delay_row);
+
+  if (self->updating_capture || self->furios_shell_settings == NULL)
+    return;
+  if (selected >= G_N_ELEMENTS (screenshot_delays))
+    return;
+
+  g_settings_set_int (self->furios_shell_settings,
+                      FURIOS_SCREENSHOT_DELAY_KEY,
+                      screenshot_delays[selected]);
+}
+
+
+static void
+on_recorder_speed_changed_cb (CcBackgroundPanel *self)
+{
+  guint selected = adw_combo_row_get_selected (self->recorder_speed_row);
+
+  if (self->updating_capture || self->furios_shell_settings == NULL)
+    return;
+  if (selected >= G_N_ELEMENTS (recorder_speeds))
+    return;
+
+  g_settings_set_double (self->furios_shell_settings,
+                         FURIOS_REC_SPEED_KEY,
+                         recorder_speeds[selected]);
+}
+
+
+
+static void
+on_recorder_bitrate_changed_cb (CcBackgroundPanel *self)
+{
+  guint selected = adw_combo_row_get_selected (self->recorder_bitrate_row);
+
+  if (self->updating_capture || self->furios_shell_settings == NULL)
+    return;
+  if (selected >= G_N_ELEMENTS (recorder_bitrates))
+    return;
+
+  g_settings_set_string (self->furios_shell_settings,
+                         FURIOS_REC_BITRATE_KEY,
+                         recorder_bitrates[selected]);
+}
+
+
+static void
+on_recorder_codec_changed_cb (CcBackgroundPanel *self)
+{
+  guint selected = adw_combo_row_get_selected (self->recorder_codec_row);
+
+  if (self->updating_capture || self->furios_shell_settings == NULL)
+    return;
+  if (self->codec_ids == NULL || selected >= g_strv_length (self->codec_ids))
+    return;
+
+  g_settings_set_string (self->furios_shell_settings,
+                         FURIOS_REC_CODEC_KEY,
+                         self->codec_ids[selected]);
+}
+
+
+static void
+on_recorder_audio_source_changed_cb (CcBackgroundPanel *self)
+{
+  guint selected = adw_combo_row_get_selected (self->recorder_audio_source_row);
+
+  if (self->updating_capture || self->furios_shell_settings == NULL)
+    return;
+  if (self->audio_source_ids == NULL || selected >= g_strv_length (self->audio_source_ids))
+    return;
+
+  g_settings_set_string (self->furios_shell_settings,
+                         FURIOS_REC_AUDIO_SOURCE_KEY,
+                         self->audio_source_ids[selected]);
+}
+
+
+/*
+ * Offer only encoders this ffmpeg actually has. The list is a candidate set
+ * rather than everything ffmpeg reports: the full list runs to hundreds, most
+ * of them irrelevant to a screen recording, and none of the hardware encoders
+ * on this device work through wf-recorder anyway.
+ */
+static void
+populate_codecs (CcBackgroundPanel *self)
+{
+  /* H.265 is deliberately absent. Measured on this device at 1078x2410 it
+   * encodes about 5 frames a second even at preset=ultrafast, so ten seconds of
+   * recording arrives as a handful of frames -- there is no setting that makes
+   * it usable here, only a choice that looks broken. */
+  static const struct { const char *id; const char *label; } candidates[] = {
+    { "libx264",    N_("H.264 (fastest, most compatible)") },
+    { "libvpx-vp9", N_("VP9 (smaller files, slower)") },
+  };
+  g_autoptr (GtkStringList) model = gtk_string_list_new (NULL);
+  g_autoptr (GStrvBuilder) ids = g_strv_builder_new ();
+  g_autofree char *out = NULL;
+  g_autoptr (GError) err = NULL;
+
+  if (!g_spawn_command_line_sync ("ffmpeg -hide_banner -encoders", &out, NULL, NULL, &err)) {
+    g_debug ("Cannot list encoders: %s", err->message);
+    out = NULL;
+  }
+
+  for (guint i = 0; i < G_N_ELEMENTS (candidates); i++) {
+    /* With no ffmpeg to ask, offer the default alone rather than an empty list
+     * the user cannot choose out of. */
+    if (out != NULL && strstr (out, candidates[i].id) == NULL)
+      continue;
+    if (out == NULL && !g_str_equal (candidates[i].id, "libx264"))
+      continue;
+
+    gtk_string_list_append (model, _(candidates[i].label));
+    g_strv_builder_add (ids, candidates[i].id);
+  }
+
+  g_clear_pointer (&self->codec_ids, g_strfreev);
+  self->codec_ids = g_strv_builder_end (ids);
+
+  adw_combo_row_set_model (self->recorder_codec_row, G_LIST_MODEL (model));
+}
+
+
+/*
+ * Sources come from pactl. A monitor source is what the phone is playing, any
+ * other is a capture device -- worth spelling out, because the raw names
+ * ("sink.primary_output.monitor") do not say which is which to anyone who has
+ * not met PulseAudio.
+ */
+static void
+populate_audio_sources (CcBackgroundPanel *self)
+{
+  g_autoptr (GtkStringList) model = gtk_string_list_new (NULL);
+  g_autoptr (GStrvBuilder) ids = g_strv_builder_new ();
+  g_autofree char *out = NULL;
+  g_auto (GStrv) lines = NULL;
+  g_autoptr (GError) err = NULL;
+
+  gtk_string_list_append (model, _("Default input"));
+  g_strv_builder_add (ids, "");
+
+  if (!g_spawn_command_line_sync ("pactl list short sources", &out, NULL, NULL, &err)) {
+    g_debug ("Cannot list audio sources: %s", err->message);
+  } else {
+    lines = g_strsplit (out, "\n", -1);
+
+    for (guint i = 0; lines[i]; i++) {
+      g_auto (GStrv) fields = NULL;
+      g_autofree char *label = NULL;
+
+      if (*lines[i] == '\0')
+        continue;
+
+      fields = g_strsplit (lines[i], "\t", -1);
+      if (g_strv_length (fields) < 2)
+        continue;
+
+      if (g_str_has_suffix (fields[1], ".monitor"))
+        /* Translators: '%s' is an audio device name */
+        label = g_strdup_printf (_("%s (internal audio)"), fields[1]);
+      else
+        /* Translators: '%s' is an audio device name */
+        label = g_strdup_printf (_("%s (microphone)"), fields[1]);
+
+      gtk_string_list_append (model, label);
+      g_strv_builder_add (ids, fields[1]);
+    }
+  }
+
+  g_clear_pointer (&self->audio_source_ids, g_strfreev);
+  self->audio_source_ids = g_strv_builder_end (ids);
+
+  adw_combo_row_set_model (self->recorder_audio_source_row, G_LIST_MODEL (model));
+}
+
+
+static guint
+index_of_int (const int *values, guint n, int wanted)
+{
+  for (guint i = 0; i < n; i++) {
+    if (values[i] == wanted)
+      return i;
+  }
+
+  return 0;
+}
+
+
+static void
+reload_capture_rows (CcBackgroundPanel *self)
+{
+  g_autofree char *codec = NULL;
+  g_autofree char *bitrate = NULL;
+  g_autofree char *source = NULL;
+  double speed;
+  guint selected;
+  gboolean found;
+
+  if (self->furios_shell_settings == NULL)
+    return;
+
+  self->updating_capture = TRUE;
+
+  adw_combo_row_set_selected (self->screenshot_delay_row,
+                              index_of_int (screenshot_delays,
+                                            G_N_ELEMENTS (screenshot_delays),
+                                            g_settings_get_int (self->furios_shell_settings,
+                                                                FURIOS_SCREENSHOT_DELAY_KEY)));
+
+  /* Doubles do not compare exactly, so match on the nearest offered speed */
+  speed = g_settings_get_double (self->furios_shell_settings, FURIOS_REC_SPEED_KEY);
+  selected = 0;
+  for (guint i = 0; i < G_N_ELEMENTS (recorder_speeds); i++) {
+    if (ABS (recorder_speeds[i] - speed) < ABS (recorder_speeds[selected] - speed))
+      selected = i;
+  }
+  adw_combo_row_set_selected (self->recorder_speed_row, selected);
+
+  bitrate = g_settings_get_string (self->furios_shell_settings, FURIOS_REC_BITRATE_KEY);
+  selected = 0;
+  for (guint i = 0; i < G_N_ELEMENTS (recorder_bitrates); i++) {
+    if (g_strcmp0 (recorder_bitrates[i], bitrate) == 0) {
+      selected = i;
+      break;
+    }
+  }
+  adw_combo_row_set_selected (self->recorder_bitrate_row, selected);
+
+  codec = g_settings_get_string (self->furios_shell_settings, FURIOS_REC_CODEC_KEY);
+  selected = 0;
+  found = FALSE;
+  for (guint i = 0; self->codec_ids != NULL && self->codec_ids[i]; i++) {
+    if (g_strcmp0 (self->codec_ids[i], codec) == 0) {
+      selected = i;
+      found = TRUE;
+      break;
+    }
+  }
+  adw_combo_row_set_selected (self->recorder_codec_row, selected);
+  /* A codec that is no longer offered -- H.265 was dropped, and ffmpeg may be
+   * built without one -- would otherwise leave the row showing the first entry
+   * while the recorder went on using the old key. Setting the row does not
+   * write it back, because selecting what is already selected notifies nothing.
+   */
+  if (!found && self->codec_ids != NULL && self->codec_ids[0] != NULL) {
+    g_settings_set_string (self->furios_shell_settings, FURIOS_REC_CODEC_KEY,
+                           self->codec_ids[0]);
+  }
+
+  source = g_settings_get_string (self->furios_shell_settings, FURIOS_REC_AUDIO_SOURCE_KEY);
+  selected = 0;
+  for (guint i = 0; self->audio_source_ids != NULL && self->audio_source_ids[i]; i++) {
+    if (g_strcmp0 (self->audio_source_ids[i], source) == 0) {
+      selected = i;
+      break;
+    }
+  }
+  adw_combo_row_set_selected (self->recorder_audio_source_row, selected);
+
+  self->updating_capture = FALSE;
+}
+
+
 static gboolean
 weather_status_icon_is_enabled (CcBackgroundPanel *self)
 {
@@ -501,6 +898,7 @@ weather_status_icon_is_enabled (CcBackgroundPanel *self)
                           WEATHER_STATUS_ICON);
 }
 
+
 static void
 reload_weather_status_switch (CcBackgroundPanel *self)
 {
@@ -515,6 +913,7 @@ reload_weather_status_switch (CcBackgroundPanel *self)
   adw_switch_row_set_active (self->weather_status_switch, enabled);
   self->updating_weather_status = FALSE;
 }
+
 
 static void
 on_weather_status_switch_active_changed_cb (AdwSwitchRow      *row,
@@ -568,6 +967,7 @@ on_weather_status_switch_active_changed_cb (AdwSwitchRow      *row,
   }
 }
 
+
 static void
 setup_weather_status_switch (CcBackgroundPanel *self)
 {
@@ -600,6 +1000,118 @@ setup_weather_status_switch (CcBackgroundPanel *self)
                            G_CONNECT_SWAPPED);
 }
 
+
+/*
+ * The shell's own settings, shared by the groups that read them.
+ *
+ * Looked up rather than opened: the schema is only present where a phosh that
+ * has these keys is installed, and asking GSettings for one that is not there
+ * aborts the process. %NULL means no such phosh, and each group hides itself.
+ */
+static GSettings *
+ensure_furios_shell_settings (CcBackgroundPanel *self)
+{
+  GSettingsSchemaSource *schema_source;
+  g_autoptr (GSettingsSchema) schema = NULL;
+
+  if (self->furios_shell_settings != NULL)
+    return self->furios_shell_settings;
+
+  schema_source = g_settings_schema_source_get_default ();
+  if (schema_source != NULL)
+    schema = g_settings_schema_source_lookup (schema_source, FURIOS_SHELL_SCHEMA_ID, TRUE);
+
+  if (schema == NULL)
+    return NULL;
+
+  self->furios_shell_settings = g_settings_new_full (schema, NULL, NULL);
+
+  return self->furios_shell_settings;
+}
+
+
+static void
+setup_capture_group (CcBackgroundPanel *self)
+{
+  GSettingsSchemaSource *schema_source;
+  g_autoptr (GSettingsSchema) schema = NULL;
+  const char * const keys[] = {
+    FURIOS_SCREENSHOT_DELAY_KEY,
+    FURIOS_REC_SPEED_KEY,
+    FURIOS_REC_CODEC_KEY,
+    FURIOS_REC_BITRATE_KEY,
+    FURIOS_REC_AUDIO_KEY,
+    FURIOS_REC_AUDIO_SOURCE_KEY,
+    FURIOS_REC_TOUCHES_KEY,
+  };
+
+  /* Checked on their own: a phosh that predates these keys should still show
+   * everything else it does support, and asking for a key a schema lacks
+   * aborts the process. */
+  if (ensure_furios_shell_settings (self) == NULL) {
+    gtk_widget_set_visible (GTK_WIDGET (self->recording_group), FALSE);
+    gtk_widget_set_visible (GTK_WIDGET (self->screenshot_group), FALSE);
+    return;
+  }
+
+  schema_source = g_settings_schema_source_get_default ();
+  if (schema_source != NULL)
+    schema = g_settings_schema_source_lookup (schema_source, FURIOS_SHELL_SCHEMA_ID, TRUE);
+
+  for (guint i = 0; schema != NULL && i < G_N_ELEMENTS (keys); i++) {
+    if (!g_settings_schema_has_key (schema, keys[i])) {
+      g_clear_pointer (&schema, g_settings_schema_unref);
+      break;
+    }
+  }
+
+  if (schema == NULL) {
+    gtk_widget_set_visible (GTK_WIDGET (self->recording_group), FALSE);
+    gtk_widget_set_visible (GTK_WIDGET (self->screenshot_group), FALSE);
+    return;
+  }
+
+  gtk_widget_set_visible (GTK_WIDGET (self->recording_group), TRUE);
+  gtk_widget_set_visible (GTK_WIDGET (self->screenshot_group), TRUE);
+
+  g_settings_bind (self->furios_shell_settings, FURIOS_REC_AUDIO_KEY,
+                   self->recorder_audio_switch, "active", G_SETTINGS_BIND_DEFAULT);
+  g_settings_bind (self->furios_shell_settings, FURIOS_REC_TOUCHES_KEY,
+                   self->recorder_touches_switch, "active", G_SETTINGS_BIND_DEFAULT);
+
+  /* Choosing a source is meaningless while nothing is being recorded */
+  g_object_bind_property (self->recorder_audio_switch, "active",
+                          self->recorder_audio_source_row, "visible",
+                          G_BINDING_SYNC_CREATE);
+
+  populate_codecs (self);
+  populate_audio_sources (self);
+  reload_capture_rows (self);
+
+  g_signal_connect_object (self->furios_shell_settings, "changed",
+                           G_CALLBACK (reload_capture_rows), self, G_CONNECT_SWAPPED);
+
+  /* The plugin list lives in phosh's own schema, which a non-phosh system will
+   * not have -- hence a separate lookup rather than assuming it is there. */
+  schema = NULL;
+  if (schema_source != NULL)
+    schema = g_settings_schema_source_lookup (schema_source, PHOSH_QS_PLUGINS_SCHEMA_ID, TRUE);
+
+  if (schema == NULL || !g_settings_schema_has_key (schema, PHOSH_QUICK_SETTINGS_KEY)) {
+    gtk_widget_set_visible (GTK_WIDGET (self->screen_recorder_switch), FALSE);
+    gtk_widget_set_visible (GTK_WIDGET (self->screenshot_switch), FALSE);
+    return;
+  }
+
+  self->qs_plugin_settings = g_settings_new_full (schema, NULL, NULL);
+
+  reload_capture_switches (self);
+  g_signal_connect_object (self->qs_plugin_settings,
+                           "changed::" PHOSH_QUICK_SETTINGS_KEY,
+                           G_CALLBACK (reload_capture_switches), self, G_CONNECT_SWAPPED);
+}
+
+
 static const char *
 cc_background_panel_get_help_uri (CcPanel *panel)
 {
@@ -612,6 +1124,10 @@ cc_background_panel_dispose (GObject *object)
   CcBackgroundPanel *self = CC_BACKGROUND_PANEL (object);
 
   g_clear_object (&self->phosh_plugins_settings);
+  g_clear_object (&self->furios_shell_settings);
+  g_clear_object (&self->qs_plugin_settings);
+  g_clear_pointer (&self->audio_source_ids, g_strfreev);
+  g_clear_pointer (&self->codec_ids, g_strfreev);
   g_clear_object (&self->settings);
   g_clear_object (&self->lock_settings);
   g_clear_object (&self->interface_settings);
@@ -649,6 +1165,18 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, status_indicator_group);
   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, weather_status_switch);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, recording_group);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, screenshot_group);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, screen_recorder_switch);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, screenshot_switch);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, screenshot_delay_row);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, recorder_expander);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, recorder_speed_row);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, recorder_codec_row);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, recorder_bitrate_row);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, recorder_audio_switch);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, recorder_audio_source_row);
+  gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, recorder_touches_switch);
   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, accent_box);
   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, background_chooser);
   gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, default_preview);
@@ -660,6 +1188,13 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, on_chooser_background_chosen_cb);
   gtk_widget_class_bind_template_callback (widget_class, on_add_picture_button_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, on_weather_status_switch_active_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, on_screen_recorder_switch_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, on_screenshot_switch_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, on_screenshot_delay_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, on_recorder_speed_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, on_recorder_codec_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, on_recorder_bitrate_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, on_recorder_audio_source_changed_cb);
 }
 
 static void
@@ -710,6 +1245,7 @@ cc_background_panel_init (CcBackgroundPanel *self)
                            G_CONNECT_SWAPPED);
 
   setup_weather_status_switch (self);
+  setup_capture_group (self);
 
   g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
                             G_DBUS_PROXY_FLAGS_NONE,

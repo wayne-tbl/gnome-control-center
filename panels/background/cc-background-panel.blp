@@ -141,6 +141,105 @@ template $CcBackgroundPanel: $CcPanel {
                 halign: center;
               }
             }
+
+          }
+
+          Adw.PreferencesGroup recording_group {
+            title: _("Screen Recording");
+            description: _("The recorder tile only appears if wf-recorder is installed");
+
+            Adw.SwitchRow screen_recorder_switch {
+              title: _("Screen Recorder in Quick Settings");
+
+              notify::active => $on_screen_recorder_switch_changed_cb(template);
+            }
+
+            Adw.ExpanderRow recorder_expander {
+              title: _("Recording Settings");
+              subtitle: _("Applied to the next recording");
+
+              Adw.ComboRow recorder_speed_row {
+                title: _("Speed");
+                subtitle: _("Play the finished recording faster than real time. Applied after recording by restamping the timestamps, so nothing is re-encoded and no quality is lost");
+
+                model: StringList {
+                  strings [
+                    _("Normal"),
+                    _("1.5×"),
+                    _("2×"),
+                    _("4×"),
+                    _("8×"),
+                  ]
+                };
+
+                notify::selected => $on_recorder_speed_changed_cb(template);
+              }
+
+              Adw.ComboRow recorder_codec_row {
+                title: _("Codec");
+                subtitle: _("This hardware has no usable video encoder, so all of these are software");
+
+                notify::selected => $on_recorder_codec_changed_cb(template);
+              }
+
+              Adw.ComboRow recorder_bitrate_row {
+                title: _("Bit Rate");
+                subtitle: _("Automatic aims at a constant quality instead, which is usually a smaller file for the same picture");
+
+                model: StringList {
+                  strings [
+                    _("Automatic"),
+                    _("4 Mb/s"),
+                    _("8 Mb/s"),
+                    _("12 Mb/s"),
+                  ]
+                };
+
+                notify::selected => $on_recorder_bitrate_changed_cb(template);
+              }
+
+              Adw.SwitchRow recorder_audio_switch {
+                title: _("Record Audio");
+              }
+
+              Adw.ComboRow recorder_audio_source_row {
+                title: _("Audio Source");
+
+                notify::selected => $on_recorder_audio_source_changed_cb(template);
+              }
+
+              Adw.SwitchRow recorder_touches_switch {
+                title: _("Show Touches");
+                subtitle: _("Mark where the screen is touched while recording");
+              }
+            }
+          }
+
+          Adw.PreferencesGroup screenshot_group {
+            title: _("Screenshots");
+
+            Adw.SwitchRow screenshot_switch {
+              title: _("Screenshot in Quick Settings");
+
+              notify::active => $on_screenshot_switch_changed_cb(template);
+            }
+
+            Adw.ComboRow screenshot_delay_row {
+              title: _("Screenshot Delay");
+              subtitle: _("Time for the drawer to get out of the picture");
+
+              model: StringList {
+                strings [
+                  _("1s"),
+                  _("2s"),
+                  _("3s"),
+                  _("4s"),
+                  _("5s"),
+                ]
+              };
+
+              notify::selected => $on_screenshot_delay_changed_cb(template);
+            }
           }
 
           Adw.PreferencesGroup {
