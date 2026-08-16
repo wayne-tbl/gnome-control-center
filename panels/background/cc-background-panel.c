@@ -111,7 +111,15 @@ transition_screen (CcBackgroundPanel *self)
                           &error);
 
   if (error)
-    g_warning ("Couldn't transition screen: %s", error->message);
+    {
+      /* phosh does not implement org.gnome.Shell.ScreenTransition, so there is
+       * no screen fade to do here. Saying so once per accent click filled the
+       * log with a warning about a shell we are not running under. */
+      if (g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD))
+        g_debug ("No ScreenTransition on this shell, skipping the fade");
+      else
+        g_warning ("Couldn't transition screen: %s", error->message);
+    }
 }
 
 static void
