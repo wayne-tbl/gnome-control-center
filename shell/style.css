@@ -361,7 +361,7 @@ flowboxchild.active-item .selected-check {
 }
 
 .slate {
-  --accent-bg-color: var(--accent-slate);
+  --accent-bg-color: #000000;
 }
 
 /* Color Calibration */
